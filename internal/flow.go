@@ -2,7 +2,13 @@ package internal
 
 import (
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/yeqown/gitlab-flow/internal/types"
+
+	"github.com/yeqown/log"
 )
 
 // IFlow to control branches, MRs, milestones and issues.
@@ -25,4 +31,39 @@ type IFlow interface {
 func extractProjectNameFromCWD(cwd string) string {
 	splited := strings.Split(cwd, string(filepath.Separator))
 	return splited[len(splited)-1]
+}
+
+var (
+	_closePattern = "[Cc]loses? #(\\d+)"
+
+	_closeReg *regexp.Regexp
+)
+
+func init() {
+	_closeReg = regexp.MustCompile(_closePattern)
+}
+
+// parseIssueIIDFromMergeRequestIssue .
+func parseIssueIIDFromMergeRequestIssue(desc string) (issueIID int) {
+	data := _closeReg.FindSubmatch([]byte(desc))
+	if len(data) == 0 {
+		return
+	}
+
+	d, err := strconv.Atoi(string(data[1]))
+	if err != nil {
+		log.WithField("find", string(data[1])).
+			Warn("parse issue iid from desc: %v", err)
+		return
+	}
+
+	return d
+}
+
+func notBuiltinBranch(branchName string) bool {
+	switch branchName {
+	case types.DevBranch.String(), types.TestBranch.String(), types.MasterBranch.String():
+		return true
+	}
+	return false
 }

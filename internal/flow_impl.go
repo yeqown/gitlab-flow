@@ -9,7 +9,6 @@ import (
 	"github.com/yeqown/gitlab-flow/internal/repository"
 	"github.com/yeqown/gitlab-flow/internal/repository/impl"
 	"github.com/yeqown/gitlab-flow/internal/types"
-	"github.com/yeqown/gitlab-flow/pkg"
 
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
@@ -245,7 +244,7 @@ func (f flowImpl) syncFormatResultIntoDO(
 	}
 
 	for _, mr := range mrs {
-		issueIID := pkg.ParseIssueIIDFromMergeRequestIssue(mr.Description)
+		issueIID := parseIssueIIDFromMergeRequestIssue(mr.Description)
 
 		log.WithFields(log.Fields{
 			"id":       mr.ID,
@@ -305,7 +304,7 @@ func (f flowImpl) syncFormatResultIntoDO(
 		})
 
 		// 需要把 targetBranch 也同步
-		if !f.notBuiltinBranch(mr.TargetBranch) {
+		if notBuiltinBranch(mr.TargetBranch) {
 			branchDO = append(branchDO, &repository.BranchDO{
 				ProjectID:   projectID,
 				MilestoneID: milestoneID,
@@ -316,12 +315,4 @@ func (f flowImpl) syncFormatResultIntoDO(
 	}
 
 	return issueDO, mrDO, branchDO, featureBranchName
-}
-
-func (f flowImpl) notBuiltinBranch(branchName string) bool {
-	switch branchName {
-	case types.DevBranch.String(), types.TestBranch.String(), types.MasterBranch.String():
-		return true
-	}
-	return false
 }
