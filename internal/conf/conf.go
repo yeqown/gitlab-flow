@@ -65,10 +65,9 @@ func Save(confpath string, cfg *types.Config, parser ConfigParser) error {
 
 var (
 	defaultConf = &types.Config{
-		AccessToken:       "",
-		DebugMode:         false,
-		GitlabAPIURL:      "https://YOUR_HOSTNAME/api/v4",
-		OpenWebCommandTpl: "open -a Safari %s",
+		AccessToken:  "",
+		DebugMode:    false,
+		GitlabAPIURL: "https://YOUR_HOSTNAME/api/v4",
 	}
 )
 

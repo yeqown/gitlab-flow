@@ -12,3 +12,7 @@ const (
 	DevBranch    BranchTyp = "develop"
 	TestBranch   BranchTyp = "test"
 )
+
+const (
+	FeatureBranchPrefix = "feature/"
+)

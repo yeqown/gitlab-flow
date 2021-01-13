@@ -6,31 +6,29 @@ import (
 
 // IFlowRepository is used to manage local flow data.
 type IFlowRepository interface {
-	QueryProject(filter *ProjectDO) (*ProjectDO, error)
-	SaveProject(m *ProjectDO) error
+	StartTransaction() *gorm2.DB
+	CommitTransaction(tx *gorm2.DB) error
 
-	SaveMilestone(m *MilestoneDO) error
+	SaveProject(m *ProjectDO, txs ...*gorm2.DB) error
+	QueryProject(filter *ProjectDO) (*ProjectDO, error)
+
+	SaveMilestone(m *MilestoneDO, txs ...*gorm2.DB) error
 	QueryMilestone(filter *MilestoneDO) (*MilestoneDO, error)
 	QueryMilestones(filter *MilestoneDO) ([]*MilestoneDO, error)
 
+	SaveBranch(m *BranchDO, txs ...*gorm2.DB) error
+	BatchCreateBranch(records []*BranchDO, txs ...*gorm2.DB) error
 	QueryBranch(filter *BranchDO) (*BranchDO, error)
-	SaveBranch(m *BranchDO) error
 
-	SaveIssue(m *IssueDO) error
+	SaveIssue(m *IssueDO, txs ...*gorm2.DB) error
+	BatchCreateIssue(records []*IssueDO, txs ...*gorm2.DB) error
 	QueryIssue(filter *IssueDO) (*IssueDO, error)
 	QueryIssues(filter *IssueDO) ([]*IssueDO, error)
 
-	SaveMergeRequest(m *MergeRequestDO) error
+	SaveMergeRequest(m *MergeRequestDO, txs ...*gorm2.DB) error
+	BatchCreateMergeRequest(records []*MergeRequestDO, txs ...*gorm2.DB) error
 	QueryMergeRequest(filter *MergeRequestDO) (*MergeRequestDO, error)
 	QueryMergeRequests(filter *MergeRequestDO) ([]*MergeRequestDO, error)
-
-	ClearMilestoneAndRelated(milestoneID int) error
-	SaveSyncFeaturesData(
-		m *MilestoneDO,
-		b []*BranchDO,
-		i []*IssueDO,
-		mr []*MergeRequestDO,
-	) (err error)
 }
 
 // ProjectDO data model

@@ -7,26 +7,19 @@ var (
 	ErrEmptyGitlabAPI   = errors.New("empty gitlab API URL")
 )
 
-// GitlabUser contains necessary information of current gitlab user.
-type GitlabUser struct {
-	ID        int    `toml:"id"`
-	UserName  string `toml:"user_name"`
-	Email     string `toml:"email"`
-	AvatarURL string `toml:"avatar_url"`
-}
+//// GitlabUser contains necessary information of current gitlab user.
+//type GitlabUser struct {
+//	ID        int    `toml:"id"`
+//	UserName  string `toml:"user_name"`
+//	Email     string `toml:"email"`
+//	AvatarURL string `toml:"avatar_url"`
+//}
 
 // Config contains all fields can be specified by user.
 type Config struct {
-	AccessToken  string      `toml:"access_token"`
-	GitlabUser   *GitlabUser `toml:"user"`
-	DebugMode    bool        `toml:"debug"`
-	GitlabAPIURL string      `toml:"gitlab_api_url"`
-
-	// open browser command.
-	OpenWebCommandTpl string `toml:"open_web_cmd_tpl"`
-
-	// get from CLI environment not from
-	CWD string `toml:"-"`
+	AccessToken  string `toml:"access_token"`
+	DebugMode    bool   `toml:"debug"`
+	GitlabAPIURL string `toml:"gitlab_api_url"`
 }
 
 func (cfg Config) Valid() error {
