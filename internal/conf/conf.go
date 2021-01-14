@@ -71,8 +71,37 @@ var (
 	}
 )
 
+// Default .
+func Default() *types.Config {
+	return defaultConf
+}
+
+// DefaultConfPath
+func DefaultConfPath() string {
+	// generate default config directory
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Errorf("get user home failed: %v", err)
+	}
+
+	configDirectory := filepath.Join(home, _defaultConfigDirectory)
+	if _, err = os.Stat(configDirectory); err == nil {
+		return configDirectory
+	}
+
+	// check directory exists or not.
+	if os.IsNotExist(err) {
+		// could not find the directory, then mkdir
+		if err = os.MkdirAll(configDirectory, 0777); err != nil {
+			panic(err)
+		}
+	}
+
+	return configDirectory
+}
+
 const (
-	_defaultConfigDirectory = ".gitlab-flow"
+	_defaultConfigDirectory = ".gitlab-flow" // under user home path.
 	_configFilename         = "config.toml"
 )
 

@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/yeqown/log"
 )
 
@@ -13,19 +15,21 @@ var _ IGitOperator = &operatorBasedCmd{}
 
 // 使用本地的 git 客户端完成操作
 type operatorBasedCmd struct {
-	Cmd         string // git command
-	Dir         string // repo dir
-	fetchCmd    string // fetch command
-	checkoutCmd string // checkout command
+	Cmd              string // git command
+	Dir              string // repo dir
+	fetchCmd         string // fetch command
+	checkoutCmd      string // checkout command
+	currentBranchCmd string
 }
 
 // NewBasedCmd generate a git operator based command line.
 func NewBasedCmd(dir string) IGitOperator {
 	return operatorBasedCmd{
-		Cmd:         "git",
-		Dir:         dir,
-		fetchCmd:    "fetch {arg}",
-		checkoutCmd: "checkout {branch}",
+		Cmd:              "git",
+		Dir:              dir,
+		fetchCmd:         "fetch {arg}",
+		checkoutCmd:      "checkout {branch}",
+		currentBranchCmd: "rev-parse --abbrev-ref HEAD",
 	}
 }
 
@@ -82,6 +86,18 @@ func (c operatorBasedCmd) Checkout(branchName string, b bool) error {
 // FetchOrigin fetch origin branched.
 func (c operatorBasedCmd) FetchOrigin() error {
 	return c.run(c.Dir, c.fetchCmd, "arg", "--all")
+}
+
+// Current get current repository info, includes:
+// * current branch name
+// * repository name ?
+func (c operatorBasedCmd) CurrentBranch() (string, error) {
+	branchName, err := c.run1(c.Dir, c.currentBranchCmd, nil, false)
+	if err != nil {
+		return "", errors.Wrapf(err, "get current branch name failed")
+	}
+
+	return strings.TrimSpace(string(branchName)), nil
 }
 
 // expand rewrites s to replace {k} with match[k] for each key k in match.

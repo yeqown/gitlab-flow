@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/yeqown/gitlab-flow/internal/conf"
 	"github.com/yeqown/gitlab-flow/internal/types"
 
 	"github.com/yeqown/log"
@@ -87,24 +86,4 @@ func notBuiltinBranch(branchName string) bool {
 		return true
 	}
 	return false
-}
-
-// NewContext be generated with non project information.
-// Do not use Project directly!!!
-func NewContext(cwd, configFilePath string) *types.FlowContext {
-	c, err := conf.Load(configFilePath, nil)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"cwd":            cwd,
-			"configFilePath": configFilePath,
-		}).Fatalf("load config failed: %v", err)
-	}
-
-	return &types.FlowContext{
-		Conf:           c,
-		CWD:            cwd,
-		Project:        nil,
-		ConfigFilePath: configFilePath,
-		DBFilePath:     "", // TODO(@yeqown): fill the logic to calc the db filepath
-	}
 }

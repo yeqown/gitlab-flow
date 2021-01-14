@@ -35,8 +35,8 @@ func NewFlow(ctx *types.FlowContext) IFlow {
 	flow := &flowImpl{
 		ctx:            ctx,
 		gitlabOperator: gitlabop.NewGitlabOperator(ctx.Conf.AccessToken, ctx.Conf.GitlabAPIURL),
-		gitOperator:    gitop.New(ctx.CWD),
-		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.DBFilePath)),
+		gitOperator:    gitop.NewBasedCmd(ctx.CWD),
+		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath)),
 	}
 
 	// flowContext with null project information, so we need to fill it.
@@ -61,9 +61,12 @@ func (f flowImpl) fillContextWithProject() error {
 	if err == nil {
 		project.ID = out.ProjectID
 		project.WebURL = out.WebURL
+		f.ctx.Project = project
 		return nil
 	}
-	log.WithFields(log.Fields{"project": projectName}).Warn("could not found from local.")
+	log.
+		WithFields(log.Fields{"project": projectName}).
+		Warn("could not found from local")
 
 	// query from remote repository.
 	result, err := f.gitlabOperator.ListProjects(context.Background(), &gitlabop.ListProjectRequest{
@@ -94,7 +97,7 @@ func (f flowImpl) fillContextWithProject() error {
 			if err = f.repo.SaveProject(&projectDO); err != nil {
 				log.WithField("project", projectDO).Warn("could not save project")
 			}
-
+			f.ctx.Project = project
 			return nil
 		}
 	}

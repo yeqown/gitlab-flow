@@ -22,6 +22,14 @@ type Config struct {
 	GitlabAPIURL string `toml:"gitlab_api_url"`
 }
 
+func (cfg *Config) Debug(debug bool) *Config {
+	if debug {
+		cfg.DebugMode = debug
+	}
+
+	return cfg
+}
+
 func (cfg Config) Valid() error {
 	if cfg.AccessToken == "" {
 		return ErrEmptyAccessToken
