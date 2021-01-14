@@ -11,16 +11,9 @@ type FlowContext struct {
 
 	//// Branch current branch name.
 	//ProjectBranch string
-}
 
-// NewContext be generated with non project information.
-// Do not use Project directly!!!
-func NewContext(conf *Config, cwd string) *FlowContext {
-	return &FlowContext{
-		Conf:    conf,
-		CWD:     cwd,
-		Project: nil,
-	}
+	ConfigFilePath string
+	DBFilePath     string
 }
 
 // ProjectBasics contains basic attributes of project.

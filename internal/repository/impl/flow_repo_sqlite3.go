@@ -2,6 +2,7 @@ package impl
 
 import (
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/yeqown/gitlab-flow/internal/repository"
@@ -9,6 +10,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mattn/go-sqlite3"
 	"github.com/yeqown/log"
+	"gorm.io/driver/sqlite"
 	gorm2 "gorm.io/gorm"
 )
 
@@ -35,22 +37,48 @@ type sqliteFlowRepositoryImpl struct {
 }
 
 func ConnectDB(path string) func() *gorm2.DB {
-	// TODO(@yeqown): init or load database file.
-	return nil
+	return func() *gorm2.DB {
+		init := false
+		if _, err := os.Stat(path); err != nil {
+			init = os.IsNotExist(err)
+		}
+
+		db, err := gorm2.Open(sqlite.Open(path), &gorm2.Config{})
+		if err != nil {
+			log.Fatalf("loading db failed: %v", err)
+		}
+
+		// if first load database then auto migrate tables into database.
+		if init {
+			if err = db.AutoMigrate(
+				&repository.ProjectDO{},
+				&repository.MilestoneDO{},
+				&repository.BranchDO{},
+				&repository.IssueDO{},
+				&repository.MergeRequestDO{},
+			); err != nil {
+				log.Warnf("auto migrate database failed: %v", err)
+			}
+		}
+
+		// DONE(@yeqown): init or load database file.
+		return db
+	}
 }
 
 // DONE(@yeqown): load or create sqlite3 database.
 func NewBasedSqlite3(connectFunc func() *gorm2.DB) repository.IFlowRepository {
 	repo := sqliteFlowRepositoryImpl{
 		connectFunc: connectFunc,
+		db:          connectFunc(),
 	}
 
-	repo.reinit()
+	// repo.reinit()
 
-	return repo
+	return &repo
 }
 
-func (repo sqliteFlowRepositoryImpl) reinit() {
+func (repo *sqliteFlowRepositoryImpl) reinit() {
 	if repo.db != nil {
 		sqlDB, err := repo.db.DB()
 		if err != nil {
@@ -64,31 +92,31 @@ func (repo sqliteFlowRepositoryImpl) reinit() {
 	repo.db = repo.connectFunc()
 }
 
-func (repo sqliteFlowRepositoryImpl) txIn(txs ...*gorm2.DB) (tx *gorm2.DB) {
+func (repo *sqliteFlowRepositoryImpl) txIn(txs ...*gorm2.DB) (tx *gorm2.DB) {
 	if len(txs) != 0 {
 		tx = txs[0]
 	} else {
-		tx = repo.db.Begin()
+		tx = repo.db
 	}
 
 	return
 }
 
-func (repo sqliteFlowRepositoryImpl) StartTransaction() *gorm2.DB {
+func (repo *sqliteFlowRepositoryImpl) StartTransaction() *gorm2.DB {
 	return repo.db.Begin()
 }
 
-func (repo sqliteFlowRepositoryImpl) CommitTransaction(tx *gorm2.DB) error {
+func (repo *sqliteFlowRepositoryImpl) CommitTransaction(tx *gorm2.DB) error {
 	return tx.Commit().Error
 }
 
 // 保存项目记录
-func (repo sqliteFlowRepositoryImpl) SaveProject(m *repository.ProjectDO, txs ...*gorm2.DB) (err error) {
+func (repo *sqliteFlowRepositoryImpl) SaveProject(m *repository.ProjectDO, txs ...*gorm2.DB) (err error) {
 	return repo.insertRecordWithCheck(repo.txIn(txs...), m)
 }
 
 // 根据项目名查询项目
-func (repo sqliteFlowRepositoryImpl) QueryProject(filter *repository.ProjectDO) (*repository.ProjectDO, error) {
+func (repo *sqliteFlowRepositoryImpl) QueryProject(filter *repository.ProjectDO) (*repository.ProjectDO, error) {
 	out := new(repository.ProjectDO)
 	if err := repo.db.
 		Model(out).
@@ -100,11 +128,11 @@ func (repo sqliteFlowRepositoryImpl) QueryProject(filter *repository.ProjectDO) 
 	return out, nil
 }
 
-func (repo sqliteFlowRepositoryImpl) SaveMilestone(m *repository.MilestoneDO, txs ...*gorm2.DB) (err error) {
+func (repo *sqliteFlowRepositoryImpl) SaveMilestone(m *repository.MilestoneDO, txs ...*gorm2.DB) (err error) {
 	return repo.insertRecordWithCheck(repo.txIn(txs...), m)
 }
 
-func (repo sqliteFlowRepositoryImpl) QueryMilestone(filter *repository.MilestoneDO) (*repository.MilestoneDO, error) {
+func (repo *sqliteFlowRepositoryImpl) QueryMilestone(filter *repository.MilestoneDO) (*repository.MilestoneDO, error) {
 	out := new(repository.MilestoneDO)
 	err := repo.db.
 		Model(filter).
@@ -114,7 +142,7 @@ func (repo sqliteFlowRepositoryImpl) QueryMilestone(filter *repository.Milestone
 	return out, err
 }
 
-func (repo sqliteFlowRepositoryImpl) QueryMilestones(
+func (repo *sqliteFlowRepositoryImpl) QueryMilestones(
 	filter *repository.MilestoneDO) ([]*repository.MilestoneDO, error) {
 
 	out := make([]*repository.MilestoneDO, 0, 10)
@@ -125,20 +153,36 @@ func (repo sqliteFlowRepositoryImpl) QueryMilestones(
 	return out, err
 }
 
-func (repo sqliteFlowRepositoryImpl) SaveBranch(m *repository.BranchDO, txs ...*gorm2.DB) (err error) {
+func (repo *sqliteFlowRepositoryImpl) SaveBranch(m *repository.BranchDO, txs ...*gorm2.DB) (err error) {
 	return repo.insertRecordWithCheck(repo.txIn(txs...), m)
 }
 
-func (repo sqliteFlowRepositoryImpl) BatchCreateBranch(records []*repository.BranchDO, txs ...*gorm2.DB) error {
-	dos := make([]interface{}, len(records))
-	for idx := range records {
-		dos[idx] = records[idx]
+func (repo *sqliteFlowRepositoryImpl) BatchCreateBranch(records []*repository.BranchDO, txs ...*gorm2.DB) error {
+	// uniq records with local database.
+	uniq := make([]*repository.BranchDO, 0, len(records))
+	for idx, v := range records {
+		count := int64(0)
+		err := repo.db.Model(v).Where(v).Count(&count).Error
+		if err != nil {
+			return err
+		}
+
+		if count > 0 {
+			continue
+		}
+
+		uniq = append(uniq, records[idx])
 	}
 
-	return repo.batchCreate(dos, txs...)
+	// no need to create new records.
+	if len(uniq) == 0 {
+		return nil
+	}
+
+	return repo.batchCreate(uniq, len(uniq), txs...)
 }
 
-func (repo sqliteFlowRepositoryImpl) QueryBranch(filter *repository.BranchDO) (*repository.BranchDO, error) {
+func (repo *sqliteFlowRepositoryImpl) QueryBranch(filter *repository.BranchDO) (*repository.BranchDO, error) {
 	out := new(repository.BranchDO)
 	err := repo.db.
 		Model(filter).
@@ -148,20 +192,36 @@ func (repo sqliteFlowRepositoryImpl) QueryBranch(filter *repository.BranchDO) (*
 	return out, err
 }
 
-func (repo sqliteFlowRepositoryImpl) SaveIssue(m *repository.IssueDO, txs ...*gorm2.DB) (err error) {
+func (repo *sqliteFlowRepositoryImpl) SaveIssue(m *repository.IssueDO, txs ...*gorm2.DB) (err error) {
 	return repo.insertRecordWithCheck(repo.txIn(txs...), m)
 }
 
-func (repo sqliteFlowRepositoryImpl) BatchCreateIssue(records []*repository.IssueDO, txs ...*gorm2.DB) error {
-	dos := make([]interface{}, len(records))
-	for idx := range records {
-		dos[idx] = records[idx]
+func (repo *sqliteFlowRepositoryImpl) BatchCreateIssue(records []*repository.IssueDO, txs ...*gorm2.DB) error {
+	// uniq records with local database.
+	uniq := make([]*repository.IssueDO, 0, len(records))
+	for idx, v := range records {
+		count := int64(0)
+		err := repo.db.Model(v).Where(v).Count(&count).Error
+		if err != nil {
+			return err
+		}
+
+		if count > 0 {
+			continue
+		}
+
+		uniq = append(uniq, records[idx])
 	}
 
-	return repo.batchCreate(dos, txs...)
+	// no need to create new records.
+	if len(uniq) == 0 {
+		return nil
+	}
+
+	return repo.batchCreate(uniq, len(uniq), txs...)
 }
 
-func (repo sqliteFlowRepositoryImpl) QueryIssue(filter *repository.IssueDO) (*repository.IssueDO, error) {
+func (repo *sqliteFlowRepositoryImpl) QueryIssue(filter *repository.IssueDO) (*repository.IssueDO, error) {
 	out := new(repository.IssueDO)
 	err := repo.db.
 		Model(filter).
@@ -171,7 +231,7 @@ func (repo sqliteFlowRepositoryImpl) QueryIssue(filter *repository.IssueDO) (*re
 	return out, err
 }
 
-func (repo sqliteFlowRepositoryImpl) QueryIssues(filter *repository.IssueDO) ([]*repository.IssueDO, error) {
+func (repo *sqliteFlowRepositoryImpl) QueryIssues(filter *repository.IssueDO) ([]*repository.IssueDO, error) {
 	out := make([]*repository.IssueDO, 0, 10)
 	err := repo.db.
 		Model(filter).
@@ -181,20 +241,36 @@ func (repo sqliteFlowRepositoryImpl) QueryIssues(filter *repository.IssueDO) ([]
 	return out, err
 }
 
-func (repo sqliteFlowRepositoryImpl) SaveMergeRequest(m *repository.MergeRequestDO, txs ...*gorm2.DB) error {
+func (repo *sqliteFlowRepositoryImpl) SaveMergeRequest(m *repository.MergeRequestDO, txs ...*gorm2.DB) error {
 	return repo.insertRecordWithCheck(repo.txIn(txs...), m)
 }
 
-func (repo sqliteFlowRepositoryImpl) BatchCreateMergeRequest(records []*repository.MergeRequestDO, txs ...*gorm2.DB) error {
-	dos := make([]interface{}, len(records))
-	for idx := range records {
-		dos[idx] = records[idx]
+func (repo *sqliteFlowRepositoryImpl) BatchCreateMergeRequest(records []*repository.MergeRequestDO, txs ...*gorm2.DB) error {
+	// uniq records with local database.
+	uniq := make([]*repository.MergeRequestDO, 0, len(records))
+	for idx, v := range records {
+		count := int64(0)
+		err := repo.db.Model(v).Where(v).Count(&count).Error
+		if err != nil {
+			return err
+		}
+
+		if count > 0 {
+			continue
+		}
+
+		uniq = append(uniq, records[idx])
 	}
 
-	return repo.batchCreate(dos, txs...)
+	// no need to create new records.
+	if len(uniq) == 0 {
+		return nil
+	}
+
+	return repo.batchCreate(uniq, len(uniq), txs...)
 }
 
-func (repo sqliteFlowRepositoryImpl) QueryMergeRequest(
+func (repo *sqliteFlowRepositoryImpl) QueryMergeRequest(
 	filter *repository.MergeRequestDO) (*repository.MergeRequestDO, error) {
 	out := new(repository.MergeRequestDO)
 	err := repo.db.
@@ -205,7 +281,7 @@ func (repo sqliteFlowRepositoryImpl) QueryMergeRequest(
 	return out, err
 }
 
-func (repo sqliteFlowRepositoryImpl) QueryMergeRequests(
+func (repo *sqliteFlowRepositoryImpl) QueryMergeRequests(
 	filter *repository.MergeRequestDO) ([]*repository.MergeRequestDO, error) {
 
 	out := make([]*repository.MergeRequestDO, 0, 10)
@@ -218,7 +294,7 @@ func (repo sqliteFlowRepositoryImpl) QueryMergeRequests(
 }
 
 // FIXED: resolve "Database is locked"
-func (repo sqliteFlowRepositoryImpl) insertRecordWithCheck(tx *gorm2.DB, m interface{}) (err error) {
+func (repo *sqliteFlowRepositoryImpl) insertRecordWithCheck(tx *gorm2.DB, m interface{}) (err error) {
 	insertFunc := func() (err error) {
 		defer func() {
 			if isDatabaseLocked(err) {
@@ -265,30 +341,9 @@ func (repo sqliteFlowRepositoryImpl) insertRecordWithCheck(tx *gorm2.DB, m inter
 	return nil
 }
 
-func (repo sqliteFlowRepositoryImpl) batchCreate(records []interface{}, txs ...*gorm2.DB) error {
-	// uniq records with local database.
-	uniq := make([]interface{}, 0, len(records))
-	for idx, v := range records {
-		count := int64(0)
-		err := repo.db.Model(v).Where(v).Count(&count).Error
-		if err != nil {
-			return err
-		}
-
-		if count >= 0 {
-			continue
-		}
-
-		uniq = append(uniq, records[idx])
-	}
-
-	// no need to create new records.
-	if len(uniq) == 0 {
-		return nil
-	}
-
+func (repo *sqliteFlowRepositoryImpl) batchCreate(value interface{}, size int, txs ...*gorm2.DB) error {
 	tx := repo.txIn(txs...)
-	if err := tx.Model(uniq[0]).CreateInBatches(uniq, len(uniq)).Error; err != nil {
+	if err := tx.CreateInBatches(value, size).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -298,7 +353,7 @@ func (repo sqliteFlowRepositoryImpl) batchCreate(records []interface{}, txs ...*
 
 //
 //// ClearMilestoneAndRelated 清理跟里程碑相关联
-//func (repo sqliteFlowRepositoryImpl) ClearMilestoneAndRelated(milestoneID int) error {
+//func (repo *sqliteFlowRepositoryImpl) ClearMilestoneAndRelated(milestoneID int) error {
 //	if milestoneID == 0 {
 //		log.Warn("milestoneID = 0")
 //		return nil
@@ -361,7 +416,7 @@ func (repo sqliteFlowRepositoryImpl) batchCreate(records []interface{}, txs ...*
 //// SaveSyncFeaturesData
 //// 一次事务中插入，本次同步所获取到的数据, 插入过程中会忽略已经存在的数据
 //// 批量需要拆分
-//func (repo sqliteFlowRepositoryImpl) SaveSyncFeaturesData(
+//func (repo *sqliteFlowRepositoryImpl) SaveSyncFeaturesData(
 //	m *repository.MilestoneDO,
 //	b []*repository.BranchDO,
 //	i []*repository.IssueDO,

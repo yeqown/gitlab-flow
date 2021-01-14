@@ -29,13 +29,14 @@ type flowImpl struct {
 
 func NewFlow(ctx *types.FlowContext) IFlow {
 	if ctx == nil {
-		panic("empty FlowContext initialized")
+		log.Fatal("empty FlowContext initialized")
+		panic("can not reach")
 	}
 	flow := &flowImpl{
 		ctx:            ctx,
 		gitlabOperator: gitlabop.NewGitlabOperator(ctx.Conf.AccessToken, ctx.Conf.GitlabAPIURL),
 		gitOperator:    gitop.New(ctx.CWD),
-		repo:           impl.NewBasedSqlite3(nil), // TODO(@yeqown): fill this
+		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.DBFilePath)),
 	}
 
 	// flowContext with null project information, so we need to fill it.
@@ -50,6 +51,7 @@ func NewFlow(ctx *types.FlowContext) IFlow {
 // FlowContext with null project information, so we need to fill it.
 func (f flowImpl) fillContextWithProject() error {
 	// DONE(@yeqown): fill project information from local repository or remote gitlab repository.
+	// FIXME(@yeqown): projectName would be different from project path, use git repository name as project name.
 	projectName := extractProjectNameFromCWD(f.ctx.CWD)
 	project := new(types.ProjectBasics)
 	project.Name = projectName
@@ -100,7 +102,7 @@ func (f flowImpl) fillContextWithProject() error {
 	return errCouldNotFound
 }
 
-func (f flowImpl) FeatureStart(title, desc string) error {
+func (f flowImpl) FeatureBegin(title, desc string) error {
 	// query from local to prevent duplicate create.
 	// create remote
 	panic("implement me")
@@ -118,7 +120,7 @@ func (f flowImpl) FeatureRelease(featureBranchName string) error {
 	panic("implement me")
 }
 
-func (f flowImpl) FeatureStartIssue(featureBranchName string, params ...string) error {
+func (f flowImpl) FeatureBeginIssue(featureBranchName string, params ...string) error {
 	panic("implement me")
 }
 
@@ -126,11 +128,11 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 	panic("implement me")
 }
 
-func (f flowImpl) HotfixStart(title, desc string) error {
+func (f flowImpl) HotfixBegin(title, desc string) error {
 	panic("implement me")
 }
 
-func (f flowImpl) HotfixRelease(hotfixBranchName string) error {
+func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 	panic("implement me")
 }
 
