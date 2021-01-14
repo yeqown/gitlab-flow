@@ -28,7 +28,7 @@ func NewBasedCmd(dir string) IGitOperator {
 		Cmd:              "git",
 		Dir:              dir,
 		fetchCmd:         "fetch {arg}",
-		checkoutCmd:      "checkout {branch}",
+		checkoutCmd:      "checkout {createFlag} {branch}",
 		currentBranchCmd: "rev-parse --abbrev-ref HEAD",
 	}
 }
@@ -78,9 +78,13 @@ func (c operatorBasedCmd) run1(dir string, cmdline string, keyval []string, verb
 }
 
 // Checkout local branch and control whether create a new branch or not.
-// TODO(@yeqown) use `b` parameter.
+// DONE(@yeqown) use `b` parameter.
 func (c operatorBasedCmd) Checkout(branchName string, b bool) error {
-	return c.run(c.Dir, c.checkoutCmd, "branch", branchName)
+	createFlag := ""
+	if b {
+		createFlag = "-b"
+	}
+	return c.run(c.Dir, c.checkoutCmd, "createFlag", createFlag, "branch", branchName)
 }
 
 // FetchOrigin fetch origin branched.

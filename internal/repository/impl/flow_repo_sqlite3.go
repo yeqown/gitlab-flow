@@ -3,6 +3,7 @@ package impl
 import (
 	"math/rand"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/yeqown/gitlab-flow/internal/repository"
@@ -36,11 +37,22 @@ type sqliteFlowRepositoryImpl struct {
 	// txCounter atomic.Value
 }
 
-func ConnectDB(path string) func() *gorm2.DB {
+func ConnectDB(path string, debug bool) func() *gorm2.DB {
+	dbName := "gitlab-flow.db"
+	if debug {
+		dbName = "gitlab-flow.debug.db"
+	}
+	path = filepath.Join(path, dbName)
+
 	return func() *gorm2.DB {
 		init := false
 		if _, err := os.Stat(path); err != nil {
-			init = os.IsNotExist(err)
+			if os.IsNotExist(err) {
+				init = true
+			} else {
+				log.Fatal(err)
+				panic("could not reach")
+			}
 		}
 
 		db, err := gorm2.Open(sqlite.Open(path), &gorm2.Config{})
@@ -59,6 +71,10 @@ func ConnectDB(path string) func() *gorm2.DB {
 			); err != nil {
 				log.Warnf("auto migrate database failed: %v", err)
 			}
+		}
+
+		if debug {
+			db = db.Debug()
 		}
 
 		// DONE(@yeqown): init or load database file.

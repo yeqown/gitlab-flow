@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -31,7 +32,7 @@ type IFlow interface {
 
 	// FeatureBeginIssue checkout a issue branch from feature branch, also open a merge request
 	// which is from issue branch to feature branch.
-	FeatureBeginIssue(featureBranchName string, params ...string) error
+	FeatureBeginIssue(featureBranchName string, title, desc string) error
 	// FeatureFinishIssue open the WebURL of merge request which is from issue branch to feature branch.
 	FeatureFinishIssue(featureBranchName, issueBranchName string) error
 
@@ -43,7 +44,7 @@ type IFlow interface {
 
 	// SyncMilestone synchronize remote repository milestone and
 	// related issues / merge requests to local.
-	SyncMilestone(milestoneID int) error
+	SyncMilestone(milestoneID int, interact bool) error
 }
 
 // extractProjectNameFromCWD get project name from current working directory.
@@ -86,4 +87,41 @@ func notBuiltinBranch(branchName string) bool {
 		return true
 	}
 	return false
+}
+
+const (
+	FeatureBranchPrefix = "feature/"
+	HotfixBranchPrefix  = "hotfix/"
+)
+
+func GenFeatureBranchName(name string) string {
+	if strings.HasPrefix(name, FeatureBranchPrefix) {
+		return name
+	}
+
+	return FeatureBranchPrefix + name
+}
+
+// GenHotfixBranchName .
+func GenHotfixBranchName(name string) string {
+	if strings.HasPrefix(name, HotfixBranchPrefix) {
+		return name
+	}
+
+	return HotfixBranchPrefix + name
+}
+
+func GenMRTitle(srcBranch, targetBranch string) string {
+	return fmt.Sprintf("Merge %s to %s", srcBranch, targetBranch)
+}
+
+// GenIssueBranchName .
+// @result = 1-milestoneTitle as default
+// fmt.Sprintf("%d-%s", issue.IID, milestone.Title)
+func GenIssueBranchName(name string, issueIID int) string {
+	if strings.HasPrefix(name, strconv.Itoa(issueIID)+"-") {
+		return name
+	}
+
+	return fmt.Sprintf("%d-%s", issueIID, name)
 }

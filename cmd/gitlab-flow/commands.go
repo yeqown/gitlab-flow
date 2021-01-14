@@ -22,16 +22,17 @@ func getInitCommand() *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:     "gitlab_host",
-				Aliases:  []string{"h"},
+				Aliases:  []string{"hh"},
 				Required: true,
 				Usage:    "gitlab_host is the domain of YOUR gitlab server.",
 			},
 			&cli.StringFlag{
-				Name:     "conf_path",
-				Aliases:  []string{"c"},
-				Value:    conf.DefaultConfPath(),
-				Required: true,
-				Usage:    "conf_path is the directory which contains your config and local database.",
+				Name:        "conf_path",
+				Aliases:     []string{"c"},
+				Value:       conf.DefaultConfPath(),
+				DefaultText: conf.DefaultConfPath(),
+				Required:    false,
+				Usage:       "conf_path is the directory which contains your config and local database.",
 			},
 		},
 		ArgsUsage: "gitlab-flow init -s ACCESS_TOKEN -h GITLAB_HOST [-c CONF_PATH]",
@@ -65,11 +66,12 @@ func getFeatureCommand() *cli.Command {
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "conf_path",
-				Aliases:  []string{"c"},
-				Value:    conf.DefaultConfPath(),
-				Usage:    "-c, --conf_path",
-				Required: true,
+				Name:        "conf_path",
+				Aliases:     []string{"c"},
+				Value:       conf.DefaultConfPath(),
+				DefaultText: conf.DefaultConfPath(),
+				Usage:       "-c, --conf_path",
+				Required:    false,
 			},
 			&cli.BoolFlag{
 				Name:     "debug",
@@ -92,11 +94,12 @@ func getHotfixCommand() *cli.Command {
 		Category:  "hotfix",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "conf_path",
-				Aliases:  []string{"c"},
-				Value:    conf.DefaultConfPath(),
-				Usage:    "-c, --conf_path",
-				Required: true,
+				Name:        "conf_path",
+				Aliases:     []string{"c"},
+				Value:       conf.DefaultConfPath(),
+				DefaultText: conf.DefaultConfPath(),
+				Usage:       "-c, --conf_path",
+				Required:    false,
 			},
 			&cli.BoolFlag{
 				Name:     "debug",
@@ -119,11 +122,12 @@ func getDashCommand() *cli.Command {
 		Category:    "dash",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "conf_path",
-				Aliases:  []string{"c"},
-				Value:    conf.DefaultConfPath(),
-				Usage:    "-c, --conf_path",
-				Required: true,
+				Name:        "conf_path",
+				Aliases:     []string{"c"},
+				Value:       conf.DefaultConfPath(),
+				DefaultText: conf.DefaultConfPath(),
+				Usage:       "-c, --conf_path",
+				Required:    false,
 			},
 			&cli.BoolFlag{
 				Name:     "debug",

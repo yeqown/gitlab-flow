@@ -30,8 +30,8 @@ type CreateBranchRequest struct {
 }
 
 type CreateBranchResult struct {
-	BranchName string
-	BranchURL  string
+	Name   string
+	WebURL string
 }
 
 // CreateMilestoneRequest

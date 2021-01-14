@@ -25,7 +25,7 @@ func getFlow(confPath string, debug bool) internal.IFlow {
 		panic("could not reach")
 	}
 
-	// FIXME(@yeqown) get cwd correctly.
+	// DONE(@yeqown) get cwd correctly.
 	cwd, _ := os.Getwd()
 	return internal.NewFlow(types.NewContext(cwd, confPath, cfg))
 }

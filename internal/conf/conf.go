@@ -20,8 +20,8 @@ type ConfigParser interface {
 	Marshal(cfg *types.Config) ([]byte, error)
 }
 
-// Load to load config from confpath with specified parser.
-func Load(confpath string, parser ConfigParser) (cfg *types.Config, err error) {
+// Load to load config from confPath with specified parser.
+func Load(confPath string, parser ConfigParser) (cfg *types.Config, err error) {
 	if parser == nil {
 		parser = NewTOMLParser()
 	}
@@ -30,14 +30,7 @@ func Load(confpath string, parser ConfigParser) (cfg *types.Config, err error) {
 		r io.Reader
 	)
 	cfg = new(types.Config)
-	p, create := precheckConfigDirectory(confpath)
-	if create {
-		cfg = defaultConf
-		if err = Save(p, cfg, parser); err != nil {
-			return nil, fmt.Errorf("init config file failed: %v", err)
-		}
-	}
-
+	p := precheckConfigDirectory(confPath)
 	r, err = os.OpenFile(p, os.O_RDONLY, 0777)
 	err = parser.Unmarshal(r, cfg)
 
@@ -45,7 +38,7 @@ func Load(confpath string, parser ConfigParser) (cfg *types.Config, err error) {
 }
 
 // Save to save config with specified parser.
-func Save(confpath string, cfg *types.Config, parser ConfigParser) error {
+func Save(confPath string, cfg *types.Config, parser ConfigParser) error {
 	if parser == nil {
 		parser = NewTOMLParser()
 	}
@@ -54,12 +47,14 @@ func Save(confpath string, cfg *types.Config, parser ConfigParser) error {
 	if err != nil {
 		return err
 	}
-	w, err := os.OpenFile(confpath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
+
+	p := precheckConfigDirectory(confPath)
+	w, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
 	if err != nil {
 		return err
 	}
 
-	_, err = fmt.Fprint(w, data)
+	_, err = fmt.Fprint(w, string(data))
 	return err
 }
 
@@ -106,32 +101,16 @@ const (
 )
 
 // precheckConfigDirectory could parse filename and path from configDirectory.
-func precheckConfigDirectory(configDirectory string) (s string, create bool) {
-	if configDirectory != "" {
-		return configDirectory, false
-	}
-
-	// generate default config directory
-	home, err := os.UserHomeDir()
+func precheckConfigDirectory(configDirectory string) string {
+	fi, err := os.Stat(configDirectory)
 	if err != nil {
-		log.Errorf("get user home failed: %v", err)
+		log.Fatalf("could not stat config file: %v", err)
+		panic("could not reach")
 	}
 
-	configDirectory = filepath.Join(home, _defaultConfigDirectory)
-	s = filepath.Join(configDirectory, _configFilename)
-	if _, err = os.Stat(configDirectory); err == nil {
-		return s, false
+	if fi.IsDir() {
+		return filepath.Join(configDirectory, _configFilename)
 	}
 
-	// check directory exists or not.
-	if os.IsNotExist(err) {
-		// could not find the directory, then mkdir
-		if err = os.MkdirAll(configDirectory, 0777); err != nil {
-			panic(err)
-		}
-		return s, true
-	}
-
-	// other errors while stat config directory.
-	panic(err)
+	return configDirectory
 }

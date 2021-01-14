@@ -42,8 +42,8 @@ func (g gitlabOperator) CreateBranch(ctx context.Context, req *CreateBranchReque
 	}
 
 	return &CreateBranchResult{
-		BranchName: branch.Name,
-		BranchURL:  branch.WebURL,
+		Name:   branch.Name,
+		WebURL: branch.WebURL,
 	}, nil
 }
 

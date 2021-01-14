@@ -75,18 +75,11 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 
 			issueTitle := c.Args().Get(0)
 			issueDesc := c.Args().Get(1)
-			params := make([]string, 0, 2)
-			if issueTitle != "" {
-				params = append(params, issueTitle)
-			}
-			if issueDesc != "" {
-				params = append(params, issueDesc)
-			}
 
 			confPath := c.String("conf_path")
 			featureBranchName := c.String("feature_branch_name")
 			debug := c.Bool("debug")
-			return getFlow(confPath, debug).FeatureBeginIssue(featureBranchName, params...)
+			return getFlow(confPath, debug).FeatureBeginIssue(featureBranchName, issueTitle, issueDesc)
 		},
 	}
 }
@@ -224,34 +217,7 @@ func getSyncMilestoneSubCommand() *cli.Command {
 			interact := c.Bool("interact")
 
 			f := getFlow(confPath, debug)
-			if !interact {
-				return f.SyncMilestone(milestoneID)
-			}
-			//
-			//milestoneOptions, err := f.gitlabOperator.Milestones()
-			//if err != nil {
-			//	return errors.Wrap(err, "获取里程碑列表失败")
-			//}
-			//
-			//qs := []*survey.Question{
-			//	{
-			//		Name: "milestones",
-			//		Prompt: &survey.Select{
-			//			Message: "choosing one by moving your arrow up and down",
-			//			Options: milestoneOptions,
-			//		},
-			//	},
-			//}
-			//type milestoneAnswer struct {
-			//	MilestoneID string `survey:"milestones"`
-			//}
-			//response := new(milestoneAnswer)
-			//if err = survey.Ask(qs, response); err != nil {
-			//	return err
-			//}
-			//
-			//milestoneID, _ = strconv.Atoi(strings.Split(a.MilestoneID, ":")[1])
-			return errors.New("not support yet")
+			return f.SyncMilestone(milestoneID, interact)
 		},
 	}
 }

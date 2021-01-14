@@ -16,3 +16,6 @@
 
 .idea/
 testdata/
+gitlab-flow
+flow-debug
+!gitlab-flow/

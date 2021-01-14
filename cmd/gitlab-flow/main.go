@@ -33,6 +33,6 @@ func mountCommands(app *cli.App) {
 		getInitCommand(),
 		getFeatureCommand(),
 		getHotfixCommand(),
-		//getDashCommand(),
+		getDashCommand(),
 	}
 }
