@@ -221,9 +221,12 @@ func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string
 		}).
 		Debug("create issue finished")
 
+	f.printAndOpenBrowser("Open Issue", issue.WebURL)
+
 	return nil
 }
 
+// TODO(@yeqown): issue merge request should be called here, rather than FeatureBeginIssue
 func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) (err error) {
 	var milestoneID = 0
 

@@ -64,9 +64,11 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			log.
-				WithFields(log.Fields{"args": c.Args().Slice()}).
-				Debug("open Issue")
+			defer func() {
+				log.
+					WithFields(log.Fields{"args": c.Args().Slice()}).
+					Debug("open Issue")
+			}()
 
 			issueTitle := c.Args().Get(0)
 			issueDesc := c.Args().Get(1)
