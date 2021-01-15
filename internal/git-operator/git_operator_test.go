@@ -4,21 +4,38 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func Test_gitOp(t *testing.T) {
-	home, _ := os.UserHomeDir()
-	repoPath := filepath.Join(home, "Projects", "medlinker", "micro-server-template")
+var (
+	home, _  = os.UserHomeDir()
+	repoPath = filepath.Join(home, "Projects", "opensource", "test")
+)
 
+func Test_gitOp_FetchOrigin(t *testing.T) {
+	op := NewBasedCmd(repoPath)
+	err := op.FetchOrigin()
+	assert.Nil(t, err)
+}
+
+func Test_gitOp_Checkout(t *testing.T) {
+	op := NewBasedCmd(repoPath)
+	err := op.Checkout("hotfix/hotfix-1", false)
+	assert.Nil(t, err)
+}
+
+func Test_gitOp_Checkout_create(t *testing.T) {
+	op := NewBasedCmd(repoPath)
+	err := op.Checkout("checkout-ddd", true)
+	assert.Nil(t, err)
+}
+
+func Test_gitOp_CurrentBranch(t *testing.T) {
 	op := NewBasedCmd(repoPath)
 
-	if err := op.FetchOrigin(); err != nil {
-		t.Error(err)
-		t.FailNow()
-	}
-
-	if err := op.Checkout("test", false); err != nil {
-		t.Error(err)
-		t.FailNow()
-	}
+	b := "hotfix/hotfix-1"
+	cb, err := op.CurrentBranch()
+	assert.Nil(t, err)
+	assert.Equal(t, b, cb)
 }

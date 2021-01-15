@@ -29,7 +29,7 @@ func NewBasedCmd(dir string) IGitOperator {
 		Cmd:              "git",
 		Dir:              dir,
 		fetchCmd:         "fetch {arg}",
-		checkoutCmd:      "checkout {createFlag} {branch}",
+		checkoutCmd:      "checkout {createFlag}{branch}",
 		currentBranchCmd: "rev-parse --abbrev-ref HEAD",
 	}
 }
@@ -43,10 +43,6 @@ func (c operatorBasedCmd) run(dir string, cmd string, keyval ...string) error {
 func (c operatorBasedCmd) run1(dir string, cmdline string, keyval []string, verbose bool) ([]byte, error) {
 	m := make(map[string]string)
 	for i := 0; i < len(keyval); i += 2 {
-		// FIXED: ignore empty val
-		if keyval[i] == "" {
-			continue
-		}
 		m[keyval[i]] = keyval[i+1]
 	}
 	args := strings.Fields(cmdline)

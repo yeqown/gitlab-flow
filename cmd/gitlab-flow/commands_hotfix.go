@@ -18,11 +18,12 @@ func getHotfixSubCommands() cli.Commands {
 // gitlab-flow hotfix start @title @desc
 func getHotfixStartSubCommand() *cli.Command {
 	return &cli.Command{
-		Name:        "start",
-		Usage:       "open a hotfix branch and merge request to master",
-		ArgsUsage:   "@title @desc",
-		Description: "@title title \n\t @desc description",
-		Category:    "hotfix",
+		Name:      "open",
+		Usage:     "open @title @description",
+		ArgsUsage: "@title] [@description",
+		Description: "open a hotfix branch and merge request to master. " +
+			"\n@title title \n@desc description",
+		Category: "hotfix",
 		Action: func(c *cli.Context) error {
 			log.
 				WithFields(log.Fields{"args": c.Args().Slice()}).
@@ -33,11 +34,9 @@ func getHotfixStartSubCommand() *cli.Command {
 			if title == "" {
 				return errors.New("title could not be empty")
 			}
-
 			if desc == "" {
 				return errors.New("desc could not be empty")
 			}
-
 			confPath := c.String("conf_path")
 			debug := c.Bool("debug")
 			return getFlow(confPath, debug).HotfixBegin(title, desc)
@@ -49,11 +48,20 @@ func getHotfixStartSubCommand() *cli.Command {
 // gitlab-flow hotfix release @title @desc
 func getHotfixFinishSubCommand() *cli.Command {
 	return &cli.Command{
-		Name:        "release",
-		Usage:       "finish a hotfix",
-		ArgsUsage:   "@branchName",
-		Description: "@title title",
+		Name:        "close",
+		Usage:       "close [-hb, --hotfix_branch_name `hotfixBranchName`]",
+		ArgsUsage:   "[-hb, --hotfix_branch_name `hotfixBranchName`]",
+		Description: "close a hotfix development, then create a merge request into master",
 		Category:    "hotfix",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "hotfix_branch_name",
+				Aliases:  []string{"hb"},
+				Value:    "",                          // default current branch
+				Usage:    "-hb, --hotfix_branch_name", // be be overwritten
+				Required: false,
+			},
+		},
 		Action: func(c *cli.Context) error {
 			log.
 				WithFields(log.Fields{"args": c.Args().Slice()}).
