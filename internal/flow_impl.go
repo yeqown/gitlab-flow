@@ -339,20 +339,40 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 		return errors.Wrap(err, "locate issue failed")
 	}
 
-	// MR to master
+	// locate MR first
+	mr, err := f.repo.QueryMergeRequest(&repository.MergeRequestDO{
+		ProjectID:   f.ctx.Project.ID,
+		MilestoneID: issue.MilestoneID,
+		IssueIID:    issue.IssueIID,
+		//SourceBranch:   "",
+		TargetBranch: types.MasterBranch.String(),
+	})
+	if err != nil && !repository.IsErrNotFound(err) {
+		return errors.Wrap(err, "query database failed")
+	}
+
+	// hit hotfix merge request
+	if mr != nil {
+		f.printAndOpenBrowser("Hotfix Merge Request", mr.WebURL)
+		return nil
+	}
+
+	// then create MR to master
 	title := genMRTitle(hotfixBranchName, types.MasterBranch.String())
-	mr, err := f.createMergeRequest(
+	result, err := f.createMergeRequest(
 		title, issue.Desc, 0, issue.IssueIID, hotfixBranchName, types.MasterBranch.String())
 	if err != nil {
 		return errors.Wrap(err, "create hotfix MR failed")
 	}
 
+	f.printAndOpenBrowser("Hotfix Merge Request", result.WebURL)
+
 	log.
 		WithFields(log.Fields{
 			"issue":        issue,
-			"mergeRequest": mr,
+			"mergeRequest": result,
 		}).
-		Debug("hotfix begin finished")
+		Debug("hotfix finish done")
 
 	return nil
 }

@@ -63,15 +63,13 @@ func getHotfixFinishSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			log.
-				WithFields(log.Fields{"args": c.Args().Slice()}).
-				Debug("finish hotfix")
+			defer func() {
+				log.
+					WithFields(log.Fields{"args": c.Args().Slice()}).
+					Debug("finish hotfix")
+			}()
 
-			hotfixBranchName := c.Args().Get(0)
-			if hotfixBranchName == "" {
-				return errors.New("title could not be empty")
-			}
-
+			hotfixBranchName := c.String("hotfix_branch_name")
 			confPath := c.String("conf_path")
 			debug := c.Bool("debug")
 			return getFlow(confPath, debug).HotfixFinish(hotfixBranchName)

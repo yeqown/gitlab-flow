@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/pkg/errors"
 	gorm2 "gorm.io/gorm"
 )
 
@@ -29,6 +30,10 @@ type IFlowRepository interface {
 	BatchCreateMergeRequest(records []*MergeRequestDO, txs ...*gorm2.DB) error
 	QueryMergeRequest(filter *MergeRequestDO) (*MergeRequestDO, error)
 	QueryMergeRequests(filter *MergeRequestDO) ([]*MergeRequestDO, error)
+}
+
+func IsErrNotFound(err error) bool {
+	return errors.Is(err, gorm2.ErrRecordNotFound)
 }
 
 // ProjectDO data model
