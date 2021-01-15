@@ -13,6 +13,7 @@ import (
 	"github.com/yeqown/log"
 	"gorm.io/driver/sqlite"
 	gorm2 "gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func init() {
@@ -57,7 +58,8 @@ func ConnectDB(path string, debug bool) func() *gorm2.DB {
 	}
 
 	return func() *gorm2.DB {
-		db, err := gorm2.Open(sqlite.Open(path), &gorm2.Config{})
+		cfg := gorm2.Config{}
+		db, err := gorm2.Open(sqlite.Open(path), &cfg)
 		if err != nil {
 			log.Fatalf("loading db failed: %v", err)
 		}
@@ -82,9 +84,10 @@ func ConnectDB(path string, debug bool) func() *gorm2.DB {
 			}
 		}
 
-		// set debug
+		// db logger SetLogLevel
+		db.Logger = db.Logger.LogMode(logger.Silent)
 		if debug {
-			db = db.Debug()
+			db.Logger = db.Logger.LogMode(logger.Info)
 		}
 
 		// DONE(@yeqown): init or load database file.

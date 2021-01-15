@@ -36,14 +36,15 @@ type flowImpl struct {
 }
 
 func NewFlow(ctx *types.FlowContext) IFlow {
-	log.
-		WithField("context", ctx).
-		Debugf("constructing flow")
-
 	if ctx == nil {
 		log.Fatal("empty FlowContext initialized")
 		panic("can not reach")
 	}
+
+	log.
+		WithField("context", ctx).
+		Debugf("constructing flow")
+
 	flow := &flowImpl{
 		ctx:            ctx,
 		gitlabOperator: gitlabop.NewGitlabOperator(ctx.Conf.AccessToken, ctx.Conf.GitlabAPIURL),
@@ -844,7 +845,7 @@ func (f flowImpl) featureProcessMR(featureBranchName string, targetBranchName ty
 }
 
 const _printTpl = `
-	😺 Title: %s
+	🛳 Title: %s
 	👽 URL	: %s
 `
 

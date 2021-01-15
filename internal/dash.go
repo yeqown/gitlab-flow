@@ -7,8 +7,8 @@ type IDash interface {
 	FeatureDetail(featureBranchName string) ([]byte, error)
 
 	// MilestoneOverview get milestone detail
-	MilestoneOverview(milestoneName, mergeRequestURLs string) ([]byte, error)
+	MilestoneOverview(milestoneName, branchFilter string) ([]byte, error)
 
 	// ProjectDetail display project detail
-	ProjectDetail(openWeb bool) ([]byte, error)
+	ProjectDetail() ([]byte, error)
 }

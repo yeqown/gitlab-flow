@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/yeqown/gitlab-flow/internal/types"
 
@@ -21,26 +22,27 @@ func getDashFeatureDetailSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "feature",
 		Aliases:   []string{"f"},
-		Usage:     "overview of one feature of current project.",
-		ArgsUsage: "-fb, --feature_branch_name `BranchName`",
+		Usage:     "overview of the feature of current project.",
+		ArgsUsage: "-b, --branch_name `BranchName`",
 		Category:  "dash",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "feature_branch_name",
-				Aliases:  []string{"fb"},
-				Usage:    "input the target branch name",
-				Required: false,
+				Name:        "branch_name",
+				Aliases:     []string{"b"},
+				Usage:       "input the target `BranchName`",
+				DefaultText: "current branch",
+				Required:    false,
 			},
 		},
 		Action: func(c *cli.Context) error {
 			confPath := c.String("conf_path")
 			debug := c.Bool("debug")
-			featureBranchName := c.String("branchName")
+			featureBranchName := c.String("branch_name")
 			data, err := getDash(confPath, debug).FeatureDetail(featureBranchName)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("%s\n", data)
+			_, _ = fmt.Fprintf(os.Stdout, "%s\n", data)
 			return nil
 		},
 	}
@@ -52,32 +54,32 @@ func getDashMilestoneOverviewSubCommand() *cli.Command {
 		Name:      "milestone",
 		Aliases:   []string{"m"},
 		Usage:     "overview of one milestone, includes: merges, issues, branch",
-		ArgsUsage: "@milestoneName",
+		ArgsUsage: "-m, --milestone_name -b --branch_name",
 		Category:  "dash",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "milestone_name",
 				Aliases:  []string{"m"},
-				Usage:    "-m, --milestone_name",
+				Usage:    "input `milestoneName` which you want to get its information",
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:        "filter_branch",
-				Aliases:     []string{"f"},
-				Usage:       "-f, --filter_branch @branchName default: master",
+				Name:        "branch_name",
+				Aliases:     []string{"b"},
+				Usage:       "filter `branchName`",
 				DefaultText: types.MasterBranch.String(),
 			},
 		},
 		Action: func(c *cli.Context) error {
 			milestoneName := c.String("milestone_name")
-			filterBranchName := c.String("filter_branch")
+			filterBranchName := c.String("branch_name")
 			confPath := c.String("conf_path")
 			debug := c.Bool("debug")
 			data, err := getDash(confPath, debug).MilestoneOverview(milestoneName, filterBranchName)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("%s\n", data)
+			_, _ = fmt.Fprintf(os.Stdout, "%s\n", data)
 			return nil
 		},
 	}
@@ -86,29 +88,19 @@ func getDashMilestoneOverviewSubCommand() *cli.Command {
 // gitlab-flow dash project
 func getDashProjectDetailSubCommand() *cli.Command {
 	return &cli.Command{
-		Name:      "project",
-		Aliases:   []string{"p"},
-		Usage:     "-p, --project",
-		ArgsUsage: "-p @projectName, default current project",
-		Category:  "dash",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:     "open_web",
-				Aliases:  []string{"o"},
-				Usage:    "-o, --open_web",
-				Required: false,
-				Value:    false,
-			},
-		},
+		Name:     "project",
+		Aliases:  []string{"p"},
+		Usage:    "do something of current project.",
+		Category: "dash",
+		//Flags:    []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			confPath := c.String("conf_path")
 			debug := c.Bool("debug")
-			open := c.Bool("open_web")
-			data, err := getDash(confPath, debug).ProjectDetail(open)
+			data, err := getDash(confPath, debug).ProjectDetail()
 			if err != nil {
 				return err
 			}
-			fmt.Printf("%s\n", data)
+			_, _ = fmt.Fprintf(os.Stdout, "%s\n", data)
 			return nil
 		},
 	}

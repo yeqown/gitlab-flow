@@ -12,7 +12,6 @@ import (
 
 func getFlow(confPath string, debug bool) internal.IFlow {
 	cfg := setEnviron(confPath, debug)
-
 	// DONE(@yeqown) get cwd correctly.
 	cwd, _ := os.Getwd()
 	ctx := types.NewContext(cwd, confPath, cfg)
@@ -20,9 +19,10 @@ func getFlow(confPath string, debug bool) internal.IFlow {
 }
 
 func getDash(confPath string, debug bool) internal.IDash {
-	_ = setEnviron(confPath, debug)
-
-	return internal.NewDash(confPath, debug)
+	cfg := setEnviron(confPath, debug)
+	cwd, _ := os.Getwd()
+	ctx := types.NewContext(cwd, confPath, cfg)
+	return internal.NewDash(ctx)
 }
 
 // setEnviron set global environment of debug mode.
