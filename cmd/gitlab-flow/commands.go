@@ -11,7 +11,7 @@ func getInitCommand() *cli.Command {
 	return &cli.Command{
 		Name: "init",
 		Usage: "initialize gitlab-flow, generate default config file and sqlite DB " +
-			"related to the path (default path is `~/.gitlab-flow/`)",
+			"related to the path",
 		Category: "tools",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -26,16 +26,8 @@ func getInitCommand() *cli.Command {
 				Required: true,
 				Usage:    "gitlab_host is the domain of YOUR gitlab server.",
 			},
-			&cli.StringFlag{
-				Name:        "conf_path",
-				Aliases:     []string{"c"},
-				Value:       conf.DefaultConfPath(),
-				DefaultText: conf.DefaultConfPath(),
-				Required:    false,
-				Usage:       "conf_path is the directory which contains your config and local database.",
-			},
 		},
-		ArgsUsage: "gitlab-flow init -s ACCESS_TOKEN -h GITLAB_HOST [-c CONF_PATH]",
+		ArgsUsage: "-s ACCESS_TOKEN -h GITLAB_HOST [-c, --conf_path CONF_PATH]",
 		Action: func(c *cli.Context) error {
 			accessToken := c.String("access_token")
 			host := c.String("gitlab_host")
@@ -60,27 +52,9 @@ func getInitCommand() *cli.Command {
 // gitlab-flow feature [command options] -c --conf_path
 func getFeatureCommand() *cli.Command {
 	return &cli.Command{
-		Name:      "feature",
-		Usage:     "managing the works in developing.",
-		ArgsUsage: "gitlab-flow hotfix [-c, --conf_path] [-v, --debug]",
-		Category:  "feature",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "conf_path",
-				Aliases:     []string{"c"},
-				Value:       conf.DefaultConfPath(),
-				DefaultText: conf.DefaultConfPath(),
-				Usage:       "-c, --conf_path",
-				Required:    false,
-			},
-			&cli.BoolFlag{
-				Name:     "debug",
-				Aliases:  []string{"v"},
-				Value:    false,
-				Usage:    "-v, --debug ",
-				Required: false,
-			},
-		},
+		Name:        "feature",
+		Usage:       "managing the works in developing.",
+		Category:    "feature",
 		Subcommands: getFeatureSubCommands(),
 	}
 }
@@ -88,27 +62,9 @@ func getFeatureCommand() *cli.Command {
 // gitlab-flow hotfix [command options] -p --specProject
 func getHotfixCommand() *cli.Command {
 	return &cli.Command{
-		Name:      "hotfix",
-		Usage:     "managing the works in hotfix.",
-		ArgsUsage: "gitlab-flow hotfix [-c, --conf_path] [-v, --debug]",
-		Category:  "hotfix",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "conf_path",
-				Aliases:     []string{"c"},
-				Value:       conf.DefaultConfPath(),
-				DefaultText: conf.DefaultConfPath(),
-				Usage:       "-c, --conf_path",
-				Required:    false,
-			},
-			&cli.BoolFlag{
-				Name:     "debug",
-				Aliases:  []string{"v"},
-				Value:    false,
-				Usage:    "-v, --debug ",
-				Required: false,
-			},
-		},
+		Name:        "hotfix",
+		Usage:       "managing the works in hotfix.",
+		Category:    "hotfix",
 		Subcommands: getHotfixSubCommands(),
 	}
 }
@@ -117,26 +73,8 @@ func getHotfixCommand() *cli.Command {
 func getDashCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "dash",
-		Usage:       "gitlab-flow dash",
-		Description: "overview of local development",
+		Usage:       "overview of local development",
 		Category:    "dash",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "conf_path",
-				Aliases:     []string{"c"},
-				Value:       conf.DefaultConfPath(),
-				DefaultText: conf.DefaultConfPath(),
-				Usage:       "-c, --conf_path",
-				Required:    false,
-			},
-			&cli.BoolFlag{
-				Name:     "debug",
-				Aliases:  []string{"v"},
-				Value:    false,
-				Usage:    "-v, --debug ",
-				Required: false,
-			},
-		},
 		Subcommands: getDashSubCommands(),
 	}
 }

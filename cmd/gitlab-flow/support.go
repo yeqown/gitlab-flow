@@ -11,6 +11,14 @@ import (
 )
 
 func getFlow(confPath string, debug bool) internal.IFlow {
+	setDebugEnviron(debug)
+	log.
+		WithFields(log.Fields{
+			"confPath": confPath,
+			"debug":    debug,
+		}).
+		Debugf("getFlow called")
+
 	cfg, err := conf.Load(confPath, nil)
 	if err != nil {
 		log.
@@ -27,9 +35,29 @@ func getFlow(confPath string, debug bool) internal.IFlow {
 
 	// DONE(@yeqown) get cwd correctly.
 	cwd, _ := os.Getwd()
-	return internal.NewFlow(types.NewContext(cwd, confPath, cfg))
+	ctx := types.NewContext(cwd, confPath, cfg)
+	return internal.NewFlow(ctx)
 }
 
 func getDash(confPath string, debug bool) internal.IDash {
+	setDebugEnviron(debug)
+	log.
+		WithFields(log.Fields{
+			"confPath": confPath,
+			"debug":    debug,
+		}).
+		Debugf("getFlow called")
+
 	return internal.NewDash(confPath, debug)
+}
+
+func setDebugEnviron(debug bool) {
+	if !debug {
+		return
+	}
+
+	// open caller report
+	log.SetCallerReporter(true)
+	// open debug log
+	log.SetLogLevel(log.LevelDebug)
 }

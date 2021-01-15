@@ -19,7 +19,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// isDatabaseLocked 检查是不是数据库 busy [并发写导致写操作失败]
+// isDatabaseLocked check err is sqlite3.ErrBusy or not.
 func isDatabaseLocked(err error) bool {
 	v, ok := err.(sqlite3.Error)
 	if !ok {
@@ -30,6 +30,8 @@ func isDatabaseLocked(err error) bool {
 }
 
 type sqliteFlowRepositoryImpl struct {
+	// connectFunc provide the way to connect database.MasterBranch
+	// also helps resolve "database is locked".
 	connectFunc func() *gorm2.DB
 
 	db *gorm2.DB
@@ -39,26 +41,34 @@ type sqliteFlowRepositoryImpl struct {
 
 func ConnectDB(path string, debug bool) func() *gorm2.DB {
 	dbName := "gitlab-flow.db"
+	init := false
+
 	if debug {
 		dbName = "gitlab-flow.debug.db"
 	}
 	path = filepath.Join(path, dbName)
 
-	return func() *gorm2.DB {
-		init := false
-		if _, err := os.Stat(path); err != nil {
-			if os.IsNotExist(err) {
-				init = true
-			} else {
-				log.Fatal(err)
-				panic("could not reach")
-			}
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			init = true
+		} else {
+			log.Fatal(err)
+			panic("could not reach")
 		}
+	}
 
+	return func() *gorm2.DB {
 		db, err := gorm2.Open(sqlite.Open(path), &gorm2.Config{})
 		if err != nil {
 			log.Fatalf("loading db failed: %v", err)
 		}
+
+		log.
+			WithFields(log.Fields{
+				"path": path,
+				"init": init,
+			}).
+			Debug("ConnectDB() called")
 
 		// if first load database then auto migrate tables into database.
 		if init {
@@ -73,6 +83,7 @@ func ConnectDB(path string, debug bool) func() *gorm2.DB {
 			}
 		}
 
+		// set debug
 		if debug {
 			db = db.Debug()
 		}
@@ -88,8 +99,6 @@ func NewBasedSqlite3(connectFunc func() *gorm2.DB) repository.IFlowRepository {
 		connectFunc: connectFunc,
 		db:          connectFunc(),
 	}
-
-	// repo.reinit()
 
 	return &repo
 }
@@ -108,11 +117,11 @@ func (repo *sqliteFlowRepositoryImpl) reinit() {
 	repo.db = repo.connectFunc()
 }
 
+// txIn get tx from txs, if txs is nil we return repo.db instead of tx.
+// txs must be got from repo.StartTransaction().
 func (repo *sqliteFlowRepositoryImpl) txIn(txs ...*gorm2.DB) (tx *gorm2.DB) {
 	if len(txs) != 0 {
 		tx = txs[0]
-	} else {
-		tx = repo.db
 	}
 
 	return
@@ -126,12 +135,10 @@ func (repo *sqliteFlowRepositoryImpl) CommitTransaction(tx *gorm2.DB) error {
 	return tx.Commit().Error
 }
 
-// 保存项目记录
 func (repo *sqliteFlowRepositoryImpl) SaveProject(m *repository.ProjectDO, txs ...*gorm2.DB) (err error) {
 	return repo.insertRecordWithCheck(repo.txIn(txs...), m)
 }
 
-// 根据项目名查询项目
 func (repo *sqliteFlowRepositoryImpl) QueryProject(filter *repository.ProjectDO) (*repository.ProjectDO, error) {
 	out := new(repository.ProjectDO)
 	if err := repo.db.
@@ -309,8 +316,18 @@ func (repo *sqliteFlowRepositoryImpl) QueryMergeRequests(
 	return out, err
 }
 
+// insertRecordWithCheck would insert data and checking data is exists or not.
+// If data has been exists, function would return directly, otherwise function would
+// insert into database. Externally, it would retry when insert got err `database is locked`.
+// The way to retry is reopening after closing DB  with backoff algorithm.
 // FIXED: resolve "Database is locked"
 func (repo *sqliteFlowRepositoryImpl) insertRecordWithCheck(tx *gorm2.DB, m interface{}) (err error) {
+	isTransaction := true
+	if tx == nil {
+		tx = repo.db
+		isTransaction = false
+	}
+
 	insertFunc := func() (err error) {
 		defer func() {
 			if isDatabaseLocked(err) {
@@ -321,24 +338,35 @@ func (repo *sqliteFlowRepositoryImpl) insertRecordWithCheck(tx *gorm2.DB, m inte
 		count := int64(0)
 		if err = tx.Model(m).Where(m).Count(&count).Error; err != nil {
 			// database error
-			log.WithFields(log.Fields{
-				"filter": m, "count": count,
-			}).
+			log.
+				WithFields(log.Fields{
+					"filter": m, "count": count,
+				}).
 				Warnf("create recheck failed: %v", err)
 			return err
 		}
 
-		if count >= 0 {
+		if count > 0 {
 			// has exists
 			return nil
 		}
 
 		// do not exists, then create it.
-		if err = tx.Model(m).Create(m).Error; err != nil {
-			tx.Rollback()
-			return err
+		err = tx.Model(m).Create(m).Error
+		if err != nil && isTransaction {
+			_ = tx.Rollback()
 		}
-		return tx.Commit().Error
+		if err != nil {
+			log.
+				WithFields(log.Fields{
+					"err":           err,
+					"data":          m,
+					"isTransaction": isTransaction,
+				}).
+				Debugf("insertRecordWithCheck")
+		}
+
+		return err
 	}
 
 	// backoff retry
@@ -359,6 +387,10 @@ func (repo *sqliteFlowRepositoryImpl) insertRecordWithCheck(tx *gorm2.DB, m inte
 
 func (repo *sqliteFlowRepositoryImpl) batchCreate(value interface{}, size int, txs ...*gorm2.DB) error {
 	tx := repo.txIn(txs...)
+	if tx == nil {
+		tx = repo.db
+	}
+
 	if err := tx.CreateInBatches(value, size).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -366,139 +398,3 @@ func (repo *sqliteFlowRepositoryImpl) batchCreate(value interface{}, size int, t
 
 	return nil
 }
-
-//
-//// ClearMilestoneAndRelated 清理跟里程碑相关联
-//func (repo *sqliteFlowRepositoryImpl) ClearMilestoneAndRelated(milestoneID int) error {
-//	if milestoneID == 0 {
-//		log.Warn("milestoneID = 0")
-//		return nil
-//	}
-//	tx := repo.db.Begin()
-//
-//	// 删除里程碑
-//	filter0 := &repository.MilestoneDO{MilestoneID: milestoneID}
-//	result := tx.Where(filter0).Delete(repository.MilestoneDO{})
-//	log.WithFields(log.Fields{
-//		"error":    result.Error,
-//		"affected": result.RowsAffected,
-//	}).Debugf("删除里程碑")
-//	if result.Error != nil {
-//		tx.Rollback()
-//		return result.Error
-//	}
-//
-//	// 删除分支
-//	filter1 := repository.BranchDO{MilestoneID: milestoneID}
-//	result = tx.Where(filter1).Delete(repository.BranchDO{})
-//	log.WithFields(log.Fields{
-//		"error":    result.Error,
-//		"affected": result.RowsAffected,
-//	}).Debugf("删除分支")
-//	if result.Error != nil {
-//		tx.Rollback()
-//		return result.Error
-//	}
-//
-//	// 删除 ISSUE
-//	filter2 := repository.IssueDO{MilestoneID: milestoneID}
-//	result = tx.Where(filter2).Delete(repository.IssueDO{})
-//	log.WithFields(log.Fields{
-//		"error":    result.Error,
-//		"affected": result.RowsAffected,
-//	}).Debugf("删除Issue")
-//	if result.Error != nil {
-//		tx.Rollback()
-//		return result.Error
-//	}
-//
-//	// 删除 MR
-//	filter3 := repository.MergeRequestDO{MilestoneID: milestoneID}
-//	result = tx.Where(filter3).Delete(repository.MergeRequestDO{})
-//	log.WithFields(log.Fields{
-//		"error":    result.Error,
-//		"affected": result.RowsAffected,
-//	}).Debugf("删除MR")
-//	if result.Error != nil {
-//		tx.Rollback()
-//		return result.Error
-//	}
-//
-//	tx.Commit()
-//
-//	return nil
-//}
-//
-//// SaveSyncFeaturesData
-//// 一次事务中插入，本次同步所获取到的数据, 插入过程中会忽略已经存在的数据
-//// 批量需要拆分
-//func (repo *sqliteFlowRepositoryImpl) SaveSyncFeaturesData(
-//	m *repository.MilestoneDO,
-//	b []*repository.BranchDO,
-//	i []*repository.IssueDO,
-//	mrs []*repository.MergeRequestDO,
-//) (err error) {
-//	tx := repo.db.Begin()
-//
-//	// milestone
-//	milestoneRecords := make([]*repository.MilestoneDO, 0, 10)
-//	if _, err = repo.QueryMilestone(m); err != nil {
-//		if !errors.Is(err, gorm2.ErrRecordNotFound) {
-//			return err
-//		}
-//		milestoneRecords = append(milestoneRecords, m)
-//	}
-//
-//	if err = tx.CreateInBatches(milestoneRecords, len(milestoneRecords)).Error; err != nil {
-//		tx.Rollback()
-//		return err
-//	}
-//
-//	// b
-//	branchRecords := make([]*repository.BranchDO, 0, 10)
-//	for idx, v := range b {
-//		if _, err = repo.QueryBranch(v); err != nil {
-//			if !errors.Is(err, gorm2.ErrRecordNotFound) {
-//				return err
-//			}
-//			branchRecords = append(branchRecords, b[idx])
-//		}
-//	}
-//	if err = tx.CreateInBatches(branchRecords, len(branchRecords)).Error; err != nil {
-//		tx.Rollback()
-//		return err
-//	}
-//
-//	// i
-//	issueRecords := make([]*repository.IssueDO, 0, 10)
-//	for idx, v := range i {
-//		if _, err := repo.QueryIssue(v); err != nil {
-//			if !errors.Is(err, gorm2.ErrRecordNotFound) {
-//				return err
-//			}
-//			issueRecords = append(issueRecords, i[idx])
-//		}
-//	}
-//	if err = tx.CreateInBatches(issueRecords, len(issueRecords)).Error; err != nil {
-//		tx.Rollback()
-//		return err
-//	}
-//
-//	// mrs
-//	mrRecords := make([]*repository.MergeRequestDO, 0, 10)
-//	for idx, v := range mrs {
-//		if _, err := repo.QueryMergeRequest(v); err != nil {
-//			if !errors.Is(err, gorm2.ErrRecordNotFound) {
-//				return err
-//			}
-//			mrRecords = append(mrRecords, mrs[idx])
-//		}
-//	}
-//	if err = tx.CreateInBatches(mrRecords, len(mrRecords)).Error; err != nil {
-//		tx.Rollback()
-//		return err
-//	}
-//
-//	tx.Commit()
-//	return nil
-//}

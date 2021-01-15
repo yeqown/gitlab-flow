@@ -22,6 +22,7 @@ type Config struct {
 	GitlabAPIURL string `toml:"gitlab_api_url"`
 }
 
+// Debug open debug in Config if debug is true, otherwise do nothing.
 func (cfg *Config) Debug(debug bool) *Config {
 	if debug {
 		cfg.DebugMode = debug

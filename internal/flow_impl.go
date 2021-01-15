@@ -33,6 +33,10 @@ type flowImpl struct {
 }
 
 func NewFlow(ctx *types.FlowContext) IFlow {
+	log.
+		WithField("context", ctx).
+		Debugf("constructing flow")
+
 	if ctx == nil {
 		log.Fatal("empty FlowContext initialized")
 		panic("can not reach")
@@ -90,6 +94,13 @@ func (f flowImpl) fillContextWithProject() error {
 	for _, v := range result.Data {
 		if strings.Compare(projectName, v.Name) == 0 {
 			// matched
+			log.
+				WithFields(log.Fields{
+					"project":   projectName,
+					"projectID": v.ID,
+					"webURL":    v.WebURL,
+				}).
+				Debug("hit project in remote")
 			project.ID = v.ID
 			project.WebURL = v.WebURL
 			// DONE(@yeqown): save into local database
@@ -100,7 +111,9 @@ func (f flowImpl) fillContextWithProject() error {
 				WebURL:      project.WebURL,
 			}
 			if err = f.repo.SaveProject(&projectDO); err != nil {
-				log.WithField("project", projectDO).Warn("could not save project")
+				log.
+					WithField("project", projectDO).
+					Warn("could not save project")
 			}
 			f.ctx.Project = project
 			return nil
@@ -111,31 +124,21 @@ func (f flowImpl) fillContextWithProject() error {
 }
 
 func (f flowImpl) FeatureBegin(title, desc string) error {
-	ctx := context.Background()
+	log.
+		WithFields(log.Fields{
+			"title": title,
+			"desc":  desc,
+		}).
+		Debug("FeatureBegin called")
 
-	// 创建里程碑
-	result, err := f.gitlabOperator.CreateMilestone(ctx, &gitlabop.CreateMilestoneRequest{
-		Title:     title,
-		Desc:      desc,
-		ProjectID: f.ctx.Project.ID,
-	})
+	// create milestone
+	result, err := f.createMilestone(title, desc)
 	if err != nil {
 		return errors.Wrap(err, "CreateMilestone failed")
 	}
 
-	// DONE(@yeqown): save milestone data
-	if err = f.repo.SaveMilestone(&repository.MilestoneDO{
-		ProjectID:   f.ctx.Project.ID,
-		MilestoneID: result.ID,
-		Title:       title,
-		Desc:        desc,
-		WebURL:      result.WebURL,
-	}); err != nil {
-		log.Errorf("save milestone failed")
-	}
-
-	// 创建迭代分支 (默认从 master 分支创建)
-	featureBranchName := GenFeatureBranchName(title)
+	// create feature branch
+	featureBranchName := genFeatureBranchName(title)
 	_, err = f.createBranch(featureBranchName, types.MasterBranch.String(), result.ID, 0)
 	if err != nil {
 		return err
@@ -145,15 +148,15 @@ func (f flowImpl) FeatureBegin(title, desc string) error {
 }
 
 func (f flowImpl) FeatureDebugging(featureBranchName string) error {
-	return f.featureProcess(featureBranchName, types.DevBranch)
+	return f.featureProcessMR(featureBranchName, types.DevBranch)
 }
 
 func (f flowImpl) FeatureTest(featureBranchName string) error {
-	return f.featureProcess(featureBranchName, types.TestBranch)
+	return f.featureProcessMR(featureBranchName, types.TestBranch)
 }
 
 func (f flowImpl) FeatureRelease(featureBranchName string) error {
-	return f.featureProcess(featureBranchName, types.MasterBranch)
+	return f.featureProcessMR(featureBranchName, types.MasterBranch)
 }
 
 func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string) error {
@@ -162,7 +165,7 @@ func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string
 		featureBranchName, _ = f.gitOperator.CurrentBranch()
 	}
 
-	featureBranchName = GenFeatureBranchName(featureBranchName)
+	featureBranchName = genFeatureBranchName(featureBranchName)
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
 		BranchName: featureBranchName,
@@ -194,7 +197,7 @@ func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string
 	}
 
 	// create issue branch
-	issueBranchName := GenIssueBranchName(milestone.Title, issue.IID)
+	issueBranchName := genIssueBranchName(milestone.Title, issue.IID)
 	issueBranch, err := f.createBranch(issueBranchName, featureBranch.BranchName, milestone.MilestoneID, issue.IID)
 	if err != nil {
 		return err
@@ -202,7 +205,7 @@ func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string
 
 	// create mr
 	targetBranch := featureBranch.BranchName
-	mrTitle := GenMRTitle(issueBranchName, targetBranch)
+	mrTitle := genMRTitle(issueBranchName, targetBranch)
 	mr, err := f.createMergeRequest(mrTitle, desc, milestone.MilestoneID, issue.IID, issueBranchName, targetBranch)
 	if err != nil {
 		return nil
@@ -218,7 +221,7 @@ func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string
 }
 
 func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) error {
-	featureBranchName = GenFeatureBranchName(featureBranchName)
+	featureBranchName = genFeatureBranchName(featureBranchName)
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
 		BranchName: featureBranchName,
@@ -269,7 +272,7 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 }
 
 func (f flowImpl) HotfixBegin(title, desc string) error {
-	hotfixBranchName := GenHotfixBranchName(title)
+	hotfixBranchName := genHotfixBranchName(title)
 
 	// create ISSUE
 	issue, err := f.createIssue(title, desc, hotfixBranchName, 0)
@@ -298,7 +301,7 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 		hotfixBranchName, _ = f.gitOperator.CurrentBranch()
 	}
 
-	hotfixBranchName = GenHotfixBranchName(hotfixBranchName)
+	hotfixBranchName = genHotfixBranchName(hotfixBranchName)
 	_, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
 		BranchName: hotfixBranchName,
@@ -317,7 +320,7 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 	}
 
 	// MR to master
-	title := GenMRTitle(hotfixBranchName, types.MasterBranch.String())
+	title := genMRTitle(hotfixBranchName, types.MasterBranch.String())
 	mr, err := f.createMergeRequest(
 		title, issue.Desc, 0, issue.IssueIID, hotfixBranchName, types.MasterBranch.String())
 	if err != nil {
@@ -570,18 +573,18 @@ func (f flowImpl) createBranch(
 		return nil, errors.Wrap(err, "create branch failed [gitlab]")
 	}
 
-	// 更新远程分支并切换
+	// fetch origin branch and checkout
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err = f.gitOperator.FetchOrigin(); err != nil {
+		if err := f.gitOperator.FetchOrigin(); err != nil {
 			log.
 				WithFields(log.Fields{"error": err}).
 				Errorf("FetchOrigin failed")
 			return
 		}
 
-		if err = f.gitOperator.Checkout(targetBranchName, false); err != nil {
+		if err := f.gitOperator.Checkout(targetBranchName, false); err != nil {
 			log.
 				WithFields(log.Fields{
 					"targetBranch": targetBranchName,
@@ -602,14 +605,17 @@ func (f flowImpl) createBranch(
 			BranchName:  targetBranchName,
 		}
 
-		if err = f.repo.SaveBranch(&m); err != nil {
-			log.WithFields(log.Fields{
-				"branch": targetBranchName,
-				"model":  m,
-				"error":  err,
-			}).Errorf("save branch data failed")
+		if err := f.repo.SaveBranch(&m); err != nil {
+			log.
+				WithFields(log.Fields{
+					"branch": targetBranchName,
+					"model":  m,
+					"error":  err,
+				}).
+				Errorf("save branch data failed")
 		}
 	}()
+	wg.Wait()
 
 	return result, nil
 }
@@ -669,7 +675,8 @@ func (f flowImpl) createIssue(title, desc, relatedBranch string, milestoneID int
 			WithFields(log.Fields{
 				"issue": result,
 				"error": err,
-			}).Errorf("save Issue failed")
+			}).
+			Errorf("save Issue failed")
 	}
 
 	return result, nil
@@ -677,7 +684,8 @@ func (f flowImpl) createIssue(title, desc, relatedBranch string, milestoneID int
 
 // CreateMergeRequest create MergeRequest
 func (f flowImpl) createMergeRequest(
-	title, desc string, milestoneID, issueIID int, srcBranch, targetBranch string) (*gitlabop.CreateMergeResult, error) {
+	title, desc string, milestoneID, issueIID int, srcBranch, targetBranch string,
+) (*gitlabop.CreateMergeResult, error) {
 	ctx := context.Background()
 	// MergeRequest is still Work in progress
 	title = "WIP: " + title
@@ -698,13 +706,15 @@ func (f flowImpl) createMergeRequest(
 	if err != nil {
 		return nil, errors.Wrap(err, "create MR failed")
 	}
-	log.WithFields(log.Fields{
-		"id":     result.ID,
-		"source": srcBranch,
-		"target": targetBranch,
-		"url":    result.WebURL,
-		"title":  title,
-	}).Debug("create mr success")
+	log.
+		WithFields(log.Fields{
+			"id":     result.ID,
+			"source": srcBranch,
+			"target": targetBranch,
+			"url":    result.WebURL,
+			"title":  title,
+		}).
+		Debug("create mr success")
 
 	if err = f.repo.SaveMergeRequest(&repository.MergeRequestDO{
 		ProjectID:      f.ctx.Project.ID,
@@ -725,12 +735,13 @@ func (f flowImpl) createMergeRequest(
 	return result, nil
 }
 
-func (f flowImpl) featureProcess(featureBranchName string, target types.BranchTyp) error {
+// featureProcessMR is a process for creating a merge request for feature branch to target branch
+func (f flowImpl) featureProcessMR(featureBranchName string, target types.BranchTyp) error {
 	if featureBranchName == "" {
 		featureBranchName, _ = f.gitOperator.CurrentBranch()
 	}
 
-	featureBranchName = GenFeatureBranchName(featureBranchName)
+	featureBranchName = genFeatureBranchName(featureBranchName)
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
 		BranchName: featureBranchName,
@@ -747,10 +758,10 @@ func (f flowImpl) featureProcess(featureBranchName string, target types.BranchTy
 
 	// create MR
 	targetBranch := target.String()
-	title := GenMRTitle(featureBranchName, targetBranch)
+	title := genMRTitle(featureBranchName, targetBranch)
 	if _, err = f.createMergeRequest(
 		title, milestone.Desc, milestone.MilestoneID, 0, featureBranch.BranchName, targetBranch); err != nil {
-		return errors.Wrapf(err, "featureProcess failed to create merge request")
+		return errors.Wrapf(err, "featureProcessMR failed to create merge request")
 	}
 
 	return nil

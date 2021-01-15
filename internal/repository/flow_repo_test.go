@@ -16,7 +16,7 @@ type flowRepoTestSuite struct {
 
 func (s *flowRepoTestSuite) SetupTest() {
 	s.T().Log("called")
-	s.repo = impl.NewBasedSqlite3(impl.ConnectDB("./testdata/test.db"))
+	s.repo = impl.NewBasedSqlite3(impl.ConnectDB("./testdata", true))
 	s.T().Logf("%+v", s.repo)
 }
 
@@ -90,6 +90,37 @@ func (s *flowRepoTestSuite) Test_batchCreate_WithoutTx() {
 		},
 	}
 	err := s.repo.BatchCreateBranch(branches)
+	s.Nil(err)
+}
+
+func (s *flowRepoTestSuite) Test_CreateBranch_withTx() {
+	s.NotNil(s.repo)
+
+	b := &repository.BranchDO{
+		ProjectID:   112312,
+		MilestoneID: 212312,
+		IssueIID:    1231233,
+		BranchName:  "with tx",
+	}
+
+	tx := s.repo.StartTransaction()
+	err := s.repo.SaveBranch(b, tx)
+	s.Nil(err)
+	err = s.repo.CommitTransaction(tx)
+	s.Nil(err)
+}
+
+func (s *flowRepoTestSuite) Test_CreateBranch_withoutTx() {
+	s.NotNil(s.repo)
+
+	b := &repository.BranchDO{
+		ProjectID:   112312,
+		MilestoneID: 212312,
+		IssueIID:    343534,
+		BranchName:  "without tx",
+	}
+
+	err := s.repo.SaveBranch(b)
 	s.Nil(err)
 }
 

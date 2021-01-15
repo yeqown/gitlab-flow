@@ -94,7 +94,8 @@ const (
 	HotfixBranchPrefix  = "hotfix/"
 )
 
-func GenFeatureBranchName(name string) string {
+// genFeatureBranchName
+func genFeatureBranchName(name string) string {
 	if strings.HasPrefix(name, FeatureBranchPrefix) {
 		return name
 	}
@@ -102,8 +103,8 @@ func GenFeatureBranchName(name string) string {
 	return FeatureBranchPrefix + name
 }
 
-// GenHotfixBranchName .
-func GenHotfixBranchName(name string) string {
+// genHotfixBranchName .
+func genHotfixBranchName(name string) string {
 	if strings.HasPrefix(name, HotfixBranchPrefix) {
 		return name
 	}
@@ -111,14 +112,15 @@ func GenHotfixBranchName(name string) string {
 	return HotfixBranchPrefix + name
 }
 
-func GenMRTitle(srcBranch, targetBranch string) string {
+// genMRTitle
+func genMRTitle(srcBranch, targetBranch string) string {
 	return fmt.Sprintf("Merge %s to %s", srcBranch, targetBranch)
 }
 
-// GenIssueBranchName .
+// genIssueBranchName .
 // @result = 1-milestoneTitle as default
 // fmt.Sprintf("%d-%s", issue.IID, milestone.Title)
-func GenIssueBranchName(name string, issueIID int) string {
+func genIssueBranchName(name string, issueIID int) string {
 	if strings.HasPrefix(name, strconv.Itoa(issueIID)+"-") {
 		return name
 	}

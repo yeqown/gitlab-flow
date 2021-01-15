@@ -31,20 +31,15 @@ func getFeatureBeginSubCommand() *cli.Command {
 		Description: "@title title of milestone \n\t @desc description of milestone",
 		Category:    "feature",
 		Action: func(c *cli.Context) error {
-			log.
-				WithFields(log.Fields{"args": c.Args().Slice()}).
-				Debug("create milestone and branch")
-
 			title := c.Args().Get(0)
 			desc := c.Args().Get(1)
 			if title == "" {
-				return errors.New("title could not be empty")
+				return errors.New("'Title' could not be empty")
 			}
 			if desc == "" {
-				return errors.New("description could not be empty")
+				return errors.New("'Description' could not be empty")
 			}
 			debug := c.Bool("debug")
-
 			confPath := c.String("conf_path")
 			return getFlow(confPath, debug).FeatureBegin(title, desc)
 		},
