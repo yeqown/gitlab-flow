@@ -21,21 +21,20 @@ func getDashFeatureDetailSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "feature",
 		Aliases:   []string{"f"},
-		Usage:     "查看一个迭代分支的详情（MR清单，Issue清单，Branch清单，关联的Milestone）",
-		ArgsUsage: "@branchName",
+		Usage:     "overview of one feature of current project.",
+		ArgsUsage: "-fb, --feature_branch_name `BranchName`",
 		Category:  "dash",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "branchName",
-				Aliases:  []string{"b"},
-				Usage:    "迭代分支名",
-				Required: true,
+				Name:     "feature_branch_name",
+				Aliases:  []string{"fb"},
+				Usage:    "input the target branch name",
+				Required: false,
 			},
 		},
 		Action: func(c *cli.Context) error {
 			confPath := c.String("conf_path")
 			debug := c.Bool("debug")
-
 			featureBranchName := c.String("branchName")
 			data, err := getDash(confPath, debug).FeatureDetail(featureBranchName)
 			if err != nil {

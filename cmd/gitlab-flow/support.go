@@ -11,27 +11,7 @@ import (
 )
 
 func getFlow(confPath string, debug bool) internal.IFlow {
-	setDebugEnviron(debug)
-	log.
-		WithFields(log.Fields{
-			"confPath": confPath,
-			"debug":    debug,
-		}).
-		Debugf("getFlow called")
-
-	cfg, err := conf.Load(confPath, nil)
-	if err != nil {
-		log.
-			Fatalf("could not load config file from %s", confPath)
-		panic("could not reach")
-	}
-
-	if err = cfg.Debug(debug).Valid(); err != nil {
-		log.
-			WithField("config", cfg).
-			Fatalf("config is invalid: %s", confPath)
-		panic("could not reach")
-	}
+	cfg := setEnviron(confPath, debug)
 
 	// DONE(@yeqown) get cwd correctly.
 	cwd, _ := os.Getwd()
@@ -40,26 +20,40 @@ func getFlow(confPath string, debug bool) internal.IFlow {
 }
 
 func getDash(confPath string, debug bool) internal.IDash {
-	setDebugEnviron(debug)
+	_ = setEnviron(confPath, debug)
+
+	return internal.NewDash(confPath, debug)
+}
+
+// setEnviron set global environment of debug mode.
+func setEnviron(confPath string, debug bool) *types.Config {
+	if !debug {
+		log.SetLogLevel(log.LevelInfo)
+	} else {
+		// open caller report
+		log.SetCallerReporter(true)
+		log.SetLogLevel(log.LevelDebug)
+	}
+
 	log.
 		WithFields(log.Fields{
 			"confPath": confPath,
 			"debug":    debug,
 		}).
-		Debugf("getFlow called")
+		Debugf("setEnviron called")
 
-	return internal.NewDash(confPath, debug)
-}
-
-// setDebugEnviron set global environment of debug mode.
-func setDebugEnviron(debug bool) {
-	log.SetLogLevel(log.LevelInfo)
-	if !debug {
-		return
+	cfg, err := conf.Load(confPath, nil)
+	if err != nil {
+		log.
+			Fatalf("could not load config file from %s", confPath)
+		panic("could not reach")
+	}
+	if err = cfg.Debug(debug).Valid(); err != nil {
+		log.
+			WithField("config", cfg).
+			Fatalf("config is invalid: %s", confPath)
+		panic("could not reach")
 	}
 
-	// open caller report
-	log.SetCallerReporter(true)
-	// open debug log
-	log.SetLogLevel(log.LevelDebug)
+	return cfg
 }
