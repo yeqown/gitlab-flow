@@ -2,6 +2,7 @@ package gitop
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -42,6 +43,10 @@ func (c operatorBasedCmd) run(dir string, cmd string, keyval ...string) error {
 func (c operatorBasedCmd) run1(dir string, cmdline string, keyval []string, verbose bool) ([]byte, error) {
 	m := make(map[string]string)
 	for i := 0; i < len(keyval); i += 2 {
+		// FIXED: ignore empty val
+		if keyval[i] == "" {
+			continue
+		}
 		m[keyval[i]] = keyval[i+1]
 	}
 	args := strings.Fields(cmdline)
@@ -69,8 +74,13 @@ func (c operatorBasedCmd) run1(dir string, cmdline string, keyval []string, verb
 	out := buf.Bytes()
 	if err != nil {
 		if verbose {
-			log.Errorf("# cd %s; %s %s", dir, c.Cmd, strings.Join(args, " "))
-			log.Errorf("%s", out)
+			log.
+				WithFields(log.Fields{
+					"dir": dir,
+					"cmd": fmt.Sprintf("%s %s", c.Cmd, strings.Join(args, " ")),
+					"out": out,
+				}).
+				Errorf("command execute failed: %v", err)
 		}
 		return nil, err
 	}
