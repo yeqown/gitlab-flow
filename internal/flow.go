@@ -81,12 +81,14 @@ func parseIssueIIDFromMergeRequestIssue(desc string) (issueIID int) {
 	return d
 }
 
+// notBuiltinBranch judge whether branchName is builtin or not.
+// true means not builtin name, false is instead.
 func notBuiltinBranch(branchName string) bool {
 	switch branchName {
 	case types.DevBranch.String(), types.TestBranch.String(), types.MasterBranch.String():
-		return true
+		return false
 	}
-	return false
+	return true
 }
 
 const (

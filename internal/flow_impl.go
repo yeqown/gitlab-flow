@@ -387,6 +387,12 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 	ctx := context.Background()
 	projectId := f.ctx.Project.ID
 
+	// parameter checking
+	if milestoneID == 0 && !interact {
+		return errors.New("milestoneID could not be zero")
+	}
+
+	// interact mode
 	if interact && milestoneID == 0 {
 		// if interact to choose milestone, and milestoneID is empty.
 		result, err := f.gitlabOperator.ListMilestones(ctx, &gitlabop.ListMilestoneRequest{
@@ -400,14 +406,14 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 
 		milestoneOptions := make([]string, len(result.Data))
 		for idx, v := range result.Data {
-			milestoneOptions[idx] = fmt.Sprintf("%s >> %d >> %d", v.Name, v.ID, v.IID)
+			milestoneOptions[idx] = fmt.Sprintf("%s::%d", v.Name, v.ID)
 		}
 
 		qs := []*survey.Question{
 			{
 				Name: "milestones",
 				Prompt: &survey.Select{
-					Message: "choosing one by moving your arrow up and down",
+					Message: "choose one milestone",
 					Options: milestoneOptions,
 				},
 			},
@@ -419,9 +425,10 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 			return errors.Wrap(err, "survey.Ask failed")
 		}
 
-		milestoneID, _ = strconv.Atoi(strings.Split(r.Milestone, ">>")[1])
+		milestoneID, _ = strconv.Atoi(strings.Split(r.Milestone, "::")[1])
 	}
 
+	log.Info("Querying remote repository data")
 	milestoneResult, err := f.gitlabOperator.GetMilestone(ctx, &gitlabop.GetMilestoneRequest{
 		ProjectID:   projectId,
 		MilestoneID: milestoneID,
@@ -448,16 +455,18 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 		return errors.Wrap(err, "get milestone issues failed")
 	}
 
-	// format data
-	i, mr, b, branchName := f.syncFormatResultIntoDO(milestoneResult, milestoneMRsResult.Data, milestoneIssuesResult.Data)
-	_ = branchName
+	// format data into DO
+	i, mr, b, branchName := f.
+		syncFormatResultIntoDO(milestoneResult, milestoneMRsResult.Data, milestoneIssuesResult.Data)
 	log.WithFields(log.Fields{
 		"milestoneResult":       milestoneResult,
 		"milestoneMRsResult":    milestoneMRsResult,
 		"milestoneIssuesResult": milestoneIssuesResult,
+		"featureBranchName":     branchName,
 	}).Debugf("syncFormatResultIntoDO calling")
 
 	// save data models
+	log.Info("Saving remote repository data into local database...")
 	tx := f.repo.StartTransaction()
 	err = f.repo.SaveMilestone(&repository.MilestoneDO{
 		ProjectID:   projectId,
@@ -485,6 +494,7 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 		return errors.Wrap(err, "CommitTransaction failed")
 	}
 
+	log.Info("Fetching remote branches...")
 	_ = f.gitOperator.FetchOrigin()
 
 	return nil
@@ -498,9 +508,10 @@ func (f flowImpl) syncFormatResultIntoDO(
 	issues []gitlabop.IssueShort,
 ) ([]*repository.IssueDO, []*repository.MergeRequestDO, []*repository.BranchDO, string) {
 	var (
-		issueDO  = make([]*repository.IssueDO, 0, 10)
-		mrDO     = make([]*repository.MergeRequestDO, 0, 10)
-		branchDO = make([]*repository.BranchDO, 0, 10)
+		issueDO    = make([]*repository.IssueDO, 0, 10)
+		mrDO       = make([]*repository.MergeRequestDO, 0, 10)
+		branchDO   = make([]*repository.BranchDO, 0, 10)
+		branchUniq = make(map[string]struct{})
 
 		c                 = make(map[int]*repository.IssueDO)
 		featureBranchName string
@@ -523,12 +534,12 @@ func (f flowImpl) syncFormatResultIntoDO(
 
 	for _, mr := range mrs {
 		issueIID := parseIssueIIDFromMergeRequestIssue(mr.Description)
-
-		log.WithFields(log.Fields{
-			"id":       mr.ID,
-			"desc":     mr.Description,
-			"issueIID": issueIID,
-		}).
+		log.
+			WithFields(log.Fields{
+				"id":       mr.ID,
+				"desc":     mr.Description,
+				"issueIID": issueIID,
+			}).
 			Debug("sync handle merge request")
 
 		if issueIID != 0 {
@@ -566,7 +577,7 @@ func (f flowImpl) syncFormatResultIntoDO(
 			WebURL:         mr.WebURL,
 		})
 
-		// 打印迭代分支
+		// featureBranchName
 		if featureBranchName == "" && strings.HasPrefix(mr.SourceBranch, types.FeatureBranchPrefix) {
 			featureBranchName = mr.SourceBranch
 		}
@@ -574,21 +585,24 @@ func (f flowImpl) syncFormatResultIntoDO(
 			featureBranchName = mr.TargetBranch
 		}
 
-		branchDO = append(branchDO, &repository.BranchDO{
-			ProjectID:   projectID,
-			MilestoneID: milestoneID,
-			IssueIID:    issueIID,
-			BranchName:  mr.SourceBranch,
-		})
-
-		// 需要把 targetBranch 也同步
-		if notBuiltinBranch(mr.TargetBranch) {
+		if _, ok := branchUniq[mr.SourceBranch]; !ok {
+			branchDO = append(branchDO, &repository.BranchDO{
+				ProjectID:   projectID,
+				MilestoneID: milestoneID,
+				IssueIID:    issueIID,
+				BranchName:  mr.SourceBranch,
+			})
+			branchUniq[mr.SourceBranch] = struct{}{}
+		}
+		// targetBranch should synchronize too.
+		if _, ok := branchUniq[mr.TargetBranch]; !ok && notBuiltinBranch(mr.TargetBranch) {
 			branchDO = append(branchDO, &repository.BranchDO{
 				ProjectID:   projectID,
 				MilestoneID: milestoneID,
 				IssueIID:    issueIID,
 				BranchName:  mr.TargetBranch,
 			})
+			branchUniq[mr.TargetBranch] = struct{}{}
 		}
 	}
 
@@ -830,8 +844,8 @@ func (f flowImpl) featureProcessMR(featureBranchName string, targetBranchName ty
 }
 
 const _printTpl = `
-	😬 Title: %s
-	😬 URL	: %s
+	😺 Title: %s
+	👽 URL	: %s
 `
 
 // printAndOpenBrowser print WebURL into stdout and open web browser.

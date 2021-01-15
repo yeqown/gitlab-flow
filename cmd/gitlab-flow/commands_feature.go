@@ -58,7 +58,7 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
 				Aliases:  []string{"fb"},
-				Usage:    "-fb, --feature_branch_name",
+				Usage:    "input the target branch name",
 				Value:    "",
 				Required: false,
 			},
@@ -91,7 +91,7 @@ func getFeatureFinishIssueSubCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
 				Aliases:  []string{"fb"},
-				Usage:    "-fb, --feature_branch_name",
+				Usage:    "input the target branch name",
 				Value:    "",
 				Required: false,
 			},
@@ -124,7 +124,7 @@ func getFeatureDebugSubCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
 				Aliases:  []string{"-fb"},
-				Usage:    "-fb, --feature_branch_name",
+				Usage:    "input the target branch name",
 				Required: false,
 			},
 		},
@@ -148,7 +148,7 @@ func getFeatureTestSubCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
 				Aliases:  []string{"-fb"},
-				Usage:    "-fb, --feature_branch_name",
+				Usage:    "input the target branch name",
 				Required: false,
 			},
 		},
@@ -172,7 +172,7 @@ func getFeatureReleaseSubCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
 				Aliases:  []string{"-fb"},
-				Usage:    "-fb, --feature_branch_name",
+				Usage:    "input the target branch name",
 				Required: false,
 			},
 		},
@@ -190,19 +190,20 @@ func getSyncMilestoneSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "sync",
 		Usage:     "rebuild local data from remote gitlab repository",
-		ArgsUsage: "sync -m --milestoneID @id",
+		ArgsUsage: "",
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:     "milestone_id",
 				Aliases:  []string{"m"},
-				Usage:    "-m, --milestone_id",
+				Usage:    "choose milestone manually",
 				Required: false,
 			},
 			&cli.BoolFlag{
 				Name:    "interact",
 				Aliases: []string{"i"},
-				Usage:   "-i, --interact",
+				Usage:   "choose milestone in the list load from remote repository",
+				Value:   false,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -210,9 +211,7 @@ func getSyncMilestoneSubCommand() *cli.Command {
 			milestoneID := c.Int("milestoneID")
 			debug := c.Bool("debug")
 			interact := c.Bool("interact")
-
-			f := getFlow(confPath, debug)
-			return f.SyncMilestone(milestoneID, interact)
+			return getFlow(confPath, debug).SyncMilestone(milestoneID, interact)
 		},
 	}
 }
