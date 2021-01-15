@@ -3,9 +3,12 @@ package internal
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/yeqown/gitlab-flow/pkg"
 
 	"github.com/AlecAivazis/survey/v2"
 
@@ -220,31 +223,46 @@ func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string
 	return nil
 }
 
-func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) error {
-	featureBranchName = genFeatureBranchName(featureBranchName)
-	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
-		ProjectID:  f.ctx.Project.ID,
-		BranchName: featureBranchName,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "locate feature branch(%s) failed", featureBranchName)
-	}
+func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) (err error) {
+	var milestoneID = 0
 
 	// DONE(@yeqown): if issueBranchName is empty, make current branch name as default.
 	if issueBranchName == "" {
 		issueBranchName, _ = f.gitOperator.CurrentBranch()
-		if _, err = f.repo.QueryBranch(&repository.BranchDO{
-			ProjectID:  f.ctx.Project.ID,
-			BranchName: issueBranchName,
-		}); err != nil {
-			return errors.Wrapf(err, "locate issue branch(%s) failed", issueBranchName)
-		}
+	}
+	if issueBranchName == "" {
+		return errors.New("issue branch could not be empty")
+	}
+	if b, err := f.repo.QueryBranch(&repository.BranchDO{
+		ProjectID:  f.ctx.Project.ID,
+		BranchName: issueBranchName,
+	}); err != nil {
+		return errors.Wrapf(err, "locate issue branch(%s) failed", issueBranchName)
+	} else {
+		milestoneID = b.MilestoneID
+	}
+
+	// DONE(@yeqown) get feature branch name from issueBranchName
+	if featureBranchName == "" {
+		featureBranchName = parseFeaturenameFromIssueName(issueBranchName)
+	}
+	if featureBranchName == "" {
+		return errors.New("feature branch could not be empty")
+	}
+	featureBranchName = genFeatureBranchName(featureBranchName)
+
+	if _, err = f.repo.QueryBranch(&repository.BranchDO{
+		ProjectID:   f.ctx.Project.ID,
+		BranchName:  featureBranchName,
+		MilestoneID: milestoneID,
+	}); err != nil {
+		return errors.Wrapf(err, "locate feature branch(%s) failed", featureBranchName)
 	}
 
 	// locate MR
 	mr, err := f.repo.QueryMergeRequest(&repository.MergeRequestDO{
 		ProjectID:    f.ctx.Project.ID,
-		MilestoneID:  featureBranch.MilestoneID,
+		MilestoneID:  milestoneID,
 		SourceBranch: issueBranchName,
 		TargetBranch: featureBranchName,
 	})
@@ -252,7 +270,7 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 		log.
 			WithFields(log.Fields{
 				"projectID":   f.ctx.Project.ID,
-				"milestoneID": featureBranch.MilestoneID,
+				"milestoneID": milestoneID,
 				"error":       err,
 			}).
 			Error("locate MR failed")
@@ -261,12 +279,14 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 
 	log.
 		WithFields(log.Fields{
-			"feature_branch":    featureBranch.BranchName,
+			"feature_branch":    featureBranchName,
 			"issue_branch":      issueBranchName,
 			"project_name":      f.ctx.Project.Name,
 			"merge_request_url": mr.WebURL,
 		}).
 		Debug("issue info")
+
+	f.printAndOpenBrowser("Issue Merge Request", mr.WebURL)
 
 	return nil
 }
@@ -765,4 +785,34 @@ func (f flowImpl) featureProcessMR(featureBranchName string, target types.Branch
 	}
 
 	return nil
+}
+
+const _printTpl = `
+	😬 Title: %s
+	😬 URL	: %s
+`
+
+// printAndOpenBrowser print WebURL into stdout and open web browser.
+func (f flowImpl) printAndOpenBrowser(title, url string) {
+	if len(title) == 0 && len(url) == 0 {
+		log.Warn("could not execute printAndOpenBrowser with empty title and url")
+		return
+	}
+	if !strings.HasPrefix(url, "http") {
+		log.Warnf("invalid url format: %s", url)
+		return
+	}
+
+	var (
+		err1, err2 error
+	)
+
+	_, err1 = fmt.Fprint(os.Stdout, fmt.Sprintf(_printTpl, title, url))
+	if f.ctx.Conf.OpenBrowser {
+		err2 = pkg.OpenBrowser(url)
+	}
+	log.WithFields(log.Fields{
+		"err1": err1,
+		"err2": err2,
+	}).Debugf("printAndOpenBrowser")
 }

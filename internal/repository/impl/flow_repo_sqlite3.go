@@ -42,10 +42,9 @@ type sqliteFlowRepositoryImpl struct {
 func ConnectDB(path string, debug bool) func() *gorm2.DB {
 	dbName := "gitlab-flow.db"
 	init := false
-
-	if debug {
-		dbName = "gitlab-flow.debug.db"
-	}
+	//if debug {
+	//	dbName = "gitlab-flow.debug.db"
+	//}
 	path = filepath.Join(path, dbName)
 
 	if _, err := os.Stat(path); err != nil {

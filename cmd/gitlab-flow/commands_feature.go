@@ -100,7 +100,7 @@ func getFeatureFinishIssueSubCommand() *cli.Command {
 				Aliases:  []string{"ib"},
 				Value:    "",                         // default current branch
 				Usage:    "-ib, --issue_branch_name", // be be overwritten
-				Required: true,
+				Required: false,
 			},
 		},
 		Action: func(c *cli.Context) error {

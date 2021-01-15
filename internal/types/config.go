@@ -20,6 +20,7 @@ type Config struct {
 	AccessToken  string `toml:"access_token"`
 	DebugMode    bool   `toml:"debug"`
 	GitlabAPIURL string `toml:"gitlab_api_url"`
+	OpenBrowser  bool   `toml:"open_browser"`
 }
 
 // Debug open debug in Config if debug is true, otherwise do nothing.

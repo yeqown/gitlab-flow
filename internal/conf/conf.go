@@ -63,6 +63,7 @@ var (
 		AccessToken:  "",
 		DebugMode:    false,
 		GitlabAPIURL: "https://YOUR_HOSTNAME/api/v4",
+		OpenBrowser:  true,
 	}
 )
 

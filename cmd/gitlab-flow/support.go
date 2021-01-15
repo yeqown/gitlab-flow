@@ -51,7 +51,9 @@ func getDash(confPath string, debug bool) internal.IDash {
 	return internal.NewDash(confPath, debug)
 }
 
+// setDebugEnviron set global environment of debug mode.
 func setDebugEnviron(debug bool) {
+	log.SetLogLevel(log.LevelInfo)
 	if !debug {
 		return
 	}

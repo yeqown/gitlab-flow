@@ -78,7 +78,7 @@ func (c operatorBasedCmd) run1(dir string, cmdline string, keyval []string, verb
 				WithFields(log.Fields{
 					"dir": dir,
 					"cmd": fmt.Sprintf("%s %s", c.Cmd, strings.Join(args, " ")),
-					"out": out,
+					"out": string(out),
 				}).
 				Errorf("command execute failed: %v", err)
 		}

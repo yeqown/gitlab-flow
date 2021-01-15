@@ -127,3 +127,13 @@ func genIssueBranchName(name string, issueIID int) string {
 
 	return fmt.Sprintf("%d-%s", issueIID, name)
 }
+
+func parseFeaturenameFromIssueName(issueName string) string {
+	idx := strings.Index(issueName, "-")
+	if idx == -1 {
+		//	not errCouldNotFound
+		return ""
+	}
+
+	return issueName[idx+1:]
+}
