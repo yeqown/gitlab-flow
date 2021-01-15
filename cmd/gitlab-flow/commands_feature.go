@@ -25,9 +25,9 @@ func getFeatureSubCommands() cli.Commands {
 // @desc will be used as milestone information
 func getFeatureBeginSubCommand() *cli.Command {
 	return &cli.Command{
-		Name:        "begin",
-		Usage:       "create a milestone and branch name, feature name would be same to milestone",
-		ArgsUsage:   "begin @title @desc",
+		Name:        "open",
+		Usage:       "open a milestone and branch name, feature name would be same to milestone",
+		ArgsUsage:   "open @title @desc",
 		Description: "@title title of milestone \n\t @desc description of milestone",
 		Category:    "feature",
 		Action: func(c *cli.Context) error {
@@ -118,14 +118,14 @@ func getFeatureDebugSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "debug",
 		Usage:     "open a merge request from feature branch into DevBranch",
-		ArgsUsage: "close-issue @issueBranchName",
+		ArgsUsage: "-fb, --feature_branch_name `BranchName`",
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
 				Aliases:  []string{"-fb"},
 				Usage:    "-fb, --feature_branch_name",
-				Required: true,
+				Required: false,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -142,14 +142,14 @@ func getFeatureTestSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "test",
 		Usage:     "open a merge request from feature branch into TestBranch",
-		ArgsUsage: "close-issue @issueBranchName",
+		ArgsUsage: "-fb, --feature_branch_name `BranchName`",
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
 				Aliases:  []string{"-fb"},
 				Usage:    "-fb, --feature_branch_name",
-				Required: true,
+				Required: false,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -166,14 +166,14 @@ func getFeatureReleaseSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "release",
 		Usage:     "open a merge request from feature branch into MasterBranch",
-		ArgsUsage: "close-issue @issueBranchName",
+		ArgsUsage: "-fb, --feature_branch_name `BranchName`",
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
 				Aliases:  []string{"-fb"},
 				Usage:    "-fb, --feature_branch_name",
-				Required: true,
+				Required: false,
 			},
 		},
 		Action: func(c *cli.Context) error {

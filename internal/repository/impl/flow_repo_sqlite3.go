@@ -140,10 +140,11 @@ func (repo *sqliteFlowRepositoryImpl) SaveProject(m *repository.ProjectDO, txs .
 
 func (repo *sqliteFlowRepositoryImpl) QueryProject(filter *repository.ProjectDO) (*repository.ProjectDO, error) {
 	out := new(repository.ProjectDO)
-	if err := repo.db.
+	err := repo.db.
 		Model(out).
 		Where(filter).
-		First(out).Error; err != nil {
+		First(out).Error
+	if err != nil {
 		return nil, err
 	}
 
@@ -160,6 +161,9 @@ func (repo *sqliteFlowRepositoryImpl) QueryMilestone(filter *repository.Mileston
 		Model(filter).
 		Where(filter).
 		First(out).Error
+	if err != nil {
+		return nil, err
+	}
 
 	return out, err
 }
@@ -172,7 +176,11 @@ func (repo *sqliteFlowRepositoryImpl) QueryMilestones(
 		Model(filter).
 		Where(filter).
 		Find(&out).Error
-	return out, err
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 func (repo *sqliteFlowRepositoryImpl) SaveBranch(m *repository.BranchDO, txs ...*gorm2.DB) (err error) {
@@ -249,6 +257,9 @@ func (repo *sqliteFlowRepositoryImpl) QueryIssue(filter *repository.IssueDO) (*r
 		Model(filter).
 		Where(filter).
 		First(out).Error
+	if err != nil {
+		return nil, err
+	}
 
 	return out, err
 }
@@ -259,6 +270,9 @@ func (repo *sqliteFlowRepositoryImpl) QueryIssues(filter *repository.IssueDO) ([
 		Model(filter).
 		Where(filter).
 		Find(&out).Error
+	if err != nil {
+		return nil, err
+	}
 
 	return out, err
 }
@@ -299,8 +313,11 @@ func (repo *sqliteFlowRepositoryImpl) QueryMergeRequest(
 		Model(filter).
 		Where(filter).
 		First(out).Error
+	if err != nil {
+		return nil, err
+	}
 
-	return out, err
+	return out, nil
 }
 
 func (repo *sqliteFlowRepositoryImpl) QueryMergeRequests(
@@ -311,8 +328,11 @@ func (repo *sqliteFlowRepositoryImpl) QueryMergeRequests(
 		Model(filter).
 		Where(filter).
 		Find(&out).Error
+	if err != nil {
+		return nil, err
+	}
 
-	return out, err
+	return out, nil
 }
 
 // insertRecordWithCheck would insert data and checking data is exists or not.

@@ -2,7 +2,6 @@ package gitlabop
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -151,14 +150,6 @@ func (g gitlabOperator) CreateIssue(ctx context.Context, req *CreateIssueRequest
 }
 
 func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMergeRequest) (*CreateMergeResult, error) {
-	// MergeRequest is still Work in progress
-	req.Title = "WIP: " + req.Title
-
-	// Closes related issue
-	if req.IssueIID != 0 {
-		req.Desc = fmt.Sprintf("Closes #%d\n", req.IssueIID) + req.Desc
-	}
-
 	opt5 := &gogitlab.CreateMergeRequestOptions{
 		Title:        &req.Title,
 		Description:  &req.Desc,

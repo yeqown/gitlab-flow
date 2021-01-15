@@ -776,12 +776,15 @@ func (f flowImpl) createMergeRequest(
 }
 
 // featureProcessMR is a process for creating a merge request for feature branch to target branch
-func (f flowImpl) featureProcessMR(featureBranchName string, target types.BranchTyp) error {
+func (f flowImpl) featureProcessMR(featureBranchName string, targetBranchName types.BranchTyp) error {
 	if featureBranchName == "" {
 		featureBranchName, _ = f.gitOperator.CurrentBranch()
 	}
-
+	if featureBranchName == "" {
+		return errors.New("feature branch could not be empty")
+	}
 	featureBranchName = genFeatureBranchName(featureBranchName)
+
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
 		BranchName: featureBranchName,
@@ -790,19 +793,38 @@ func (f flowImpl) featureProcessMR(featureBranchName string, target types.Branch
 		return errors.Wrap(err, "locate feature branch failed")
 	}
 
+	// query feature MR first
+	mr, err := f.repo.QueryMergeRequest(&repository.MergeRequestDO{
+		ProjectID:    f.ctx.Project.ID,
+		MilestoneID:  featureBranch.MilestoneID,
+		IssueIID:     featureBranch.IssueIID,
+		SourceBranch: featureBranchName,
+		TargetBranch: targetBranchName.String(),
+	})
+	if err != nil && !repository.IsErrNotFound(err) {
+		return errors.Wrap(err, "query merge request failed")
+	}
+	if mr != nil {
+		f.printAndOpenBrowser("Feature Merge Request", mr.WebURL)
+		return nil
+	}
+
 	milestone, err := f.repo.QueryMilestone(&repository.MilestoneDO{
-		MilestoneID: featureBranch.MilestoneID})
+		MilestoneID: featureBranch.MilestoneID,
+	})
 	if err != nil {
 		return errors.Wrap(err, "locate milestone failed")
 	}
-
 	// create MR
-	targetBranch := target.String()
+	targetBranch := targetBranchName.String()
 	title := genMRTitle(featureBranchName, targetBranch)
-	if _, err = f.createMergeRequest(
-		title, milestone.Desc, milestone.MilestoneID, 0, featureBranch.BranchName, targetBranch); err != nil {
+	result, err := f.createMergeRequest(
+		title, milestone.Desc, milestone.MilestoneID, 0, featureBranch.BranchName, targetBranch)
+	if err != nil {
 		return errors.Wrapf(err, "featureProcessMR failed to create merge request")
 	}
+
+	f.printAndOpenBrowser("Feature Merge Request", result.WebURL)
 
 	return nil
 }
