@@ -16,7 +16,7 @@ type flowRepoTestSuite struct {
 
 func (s *flowRepoTestSuite) SetupTest() {
 	s.T().Log("called")
-	s.repo = impl.NewBasedSqlite3(impl.ConnectDB("./testdata", true))
+	s.repo = impl.NewBasedSqlite3(impl.ConnectDB("./secret", true))
 	s.T().Logf("%+v", s.repo)
 }
 

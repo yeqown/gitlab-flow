@@ -634,9 +634,9 @@ func (f flowImpl) createBranch(
 	req := gitlabop.CreateBranchRequest{
 		TargetBranch: targetBranchName,
 		SrcBranch:    srcBranch,
-		MilestoneID:  milestoneID,
-		IssueID:      issueIID,
 		ProjectID:    f.ctx.Project.ID,
+		//MilestoneID:  milestoneID,
+		//IssueID:      issueIID,
 	}
 
 	result, err := f.gitlabOperator.CreateBranch(ctx, &req)
