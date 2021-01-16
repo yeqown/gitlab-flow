@@ -846,8 +846,8 @@ func (f flowImpl) featureProcessMR(featureBranchName string, targetBranchName ty
 }
 
 const _printTpl = `
-	🛳 Title: %s
-	👽 URL	: %s
+	👽 Title: %s
+	🤡 URL	: %s
 `
 
 // printAndOpenBrowser print WebURL into stdout and open web browser.
