@@ -39,9 +39,7 @@ func getFeatureBeginSubCommand() *cli.Command {
 			if desc == "" {
 				return errors.New("'Description' could not be empty")
 			}
-			debug := c.Bool("debug")
-			confPath := c.String("conf_path")
-			return getFlow(confPath, debug).FeatureBegin(title, desc)
+			return getFlow(c).FeatureBegin(title, desc)
 		},
 	}
 }
@@ -72,11 +70,8 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 
 			issueTitle := c.Args().Get(0)
 			issueDesc := c.Args().Get(1)
-
-			confPath := c.String("conf_path")
 			featureBranchName := c.String("feature_branch_name")
-			debug := c.Bool("debug")
-			return getFlow(confPath, debug).FeatureBeginIssue(featureBranchName, issueTitle, issueDesc)
+			return getFlow(c).FeatureBeginIssue(featureBranchName, issueTitle, issueDesc)
 		},
 	}
 }
@@ -108,9 +103,7 @@ func getFeatureFinishIssueSubCommand() *cli.Command {
 		Action: func(c *cli.Context) error {
 			featureBranchName := c.String("feature_branch_name")
 			issueBranchName := c.String("issue_branch_name")
-			confPath := c.String("conf_path")
-			debug := c.Bool("debug")
-			return getFlow(confPath, debug).FeatureFinishIssue(featureBranchName, issueBranchName)
+			return getFlow(c).FeatureFinishIssue(featureBranchName, issueBranchName)
 		},
 	}
 }
@@ -132,9 +125,7 @@ func getFeatureDebugSubCommand() *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			featureBranchName := c.String("feature_branch_name")
-			confPath := c.String("conf_path")
-			debug := c.Bool("debug")
-			return getFlow(confPath, debug).FeatureDebugging(featureBranchName)
+			return getFlow(c).FeatureDebugging(featureBranchName)
 		},
 	}
 }
@@ -155,10 +146,8 @@ func getFeatureTestSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			confPath := c.String("conf_path")
 			featureBranchName := c.String("feature_branch_name")
-			debug := c.Bool("debug")
-			return getFlow(confPath, debug).FeatureTest(featureBranchName)
+			return getFlow(c).FeatureTest(featureBranchName)
 		},
 	}
 }
@@ -179,10 +168,8 @@ func getFeatureReleaseSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			confPath := c.String("conf_path")
 			featureBranchName := c.String("feature_branch_name")
-			debug := c.Bool("debug")
-			return getFlow(confPath, debug).FeatureRelease(featureBranchName)
+			return getFlow(c).FeatureRelease(featureBranchName)
 		},
 	}
 }
@@ -209,11 +196,9 @@ func getSyncMilestoneSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			confPath := c.String("conf_path")
 			milestoneID := c.Int("milestoneID")
-			debug := c.Bool("debug")
 			interact := c.Bool("interact")
-			return getFlow(confPath, debug).SyncMilestone(milestoneID, interact)
+			return getFlow(c).SyncMilestone(milestoneID, interact)
 		},
 	}
 }

@@ -3,8 +3,6 @@ package main
 import (
 	"os"
 
-	"github.com/yeqown/gitlab-flow/internal/conf"
-
 	"github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
 )
@@ -22,7 +20,7 @@ func main() {
 	}
 	app.Version = "v1.5.1"
 	app.Description = `A tool for managing gitlab Feature/Milestone/Issue/MergeRequest as gitlab-flow.`
-	app.Flags = _globalFlags
+	app.Flags = _cliGlobalFlags
 
 	mountCommands(app)
 
@@ -38,24 +36,4 @@ func mountCommands(app *cli.App) {
 		getHotfixCommand(),
 		getDashCommand(),
 	}
-}
-
-// _globalFlags should be used like this:
-// flow --debug -c path/to/config SUB-COMMAND [...options]
-var _globalFlags = []cli.Flag{
-	&cli.StringFlag{
-		Name:        "conf_path",
-		Aliases:     []string{"c"},
-		Value:       conf.DefaultConfPath(),
-		DefaultText: "~/.gitlab-flow",
-		Usage:       "choose which `path/to/file` to load",
-		Required:    false,
-	},
-	&cli.BoolFlag{
-		Name:        "debug",
-		Value:       false,
-		Usage:       "--debug",
-		DefaultText: "false",
-		Required:    false,
-	},
 }

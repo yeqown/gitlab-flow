@@ -37,9 +37,7 @@ func getHotfixStartSubCommand() *cli.Command {
 			if desc == "" {
 				return errors.New("desc could not be empty")
 			}
-			confPath := c.String("conf_path")
-			debug := c.Bool("debug")
-			return getFlow(confPath, debug).HotfixBegin(title, desc)
+			return getFlow(c).HotfixBegin(title, desc)
 		},
 	}
 }
@@ -68,11 +66,8 @@ func getHotfixFinishSubCommand() *cli.Command {
 					WithFields(log.Fields{"args": c.Args().Slice()}).
 					Debug("finish hotfix")
 			}()
-
 			hotfixBranchName := c.String("hotfix_branch_name")
-			confPath := c.String("conf_path")
-			debug := c.Bool("debug")
-			return getFlow(confPath, debug).HotfixFinish(hotfixBranchName)
+			return getFlow(c).HotfixFinish(hotfixBranchName)
 		},
 	}
 }

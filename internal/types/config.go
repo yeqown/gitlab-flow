@@ -7,14 +7,6 @@ var (
 	ErrEmptyGitlabAPI   = errors.New("empty gitlab API URL")
 )
 
-//// GitlabUser contains necessary information of current gitlab user.
-//type GitlabUser struct {
-//	ID        int    `toml:"id"`
-//	UserName  string `toml:"user_name"`
-//	Email     string `toml:"email"`
-//	AvatarURL string `toml:"avatar_url"`
-//}
-
 // Config contains all fields can be specified by user.
 type Config struct {
 	AccessToken  string `toml:"access_token"`
@@ -23,15 +15,20 @@ type Config struct {
 	OpenBrowser  bool   `toml:"open_browser"`
 }
 
-// Debug open debug in Config if debug is true, otherwise do nothing.
-func (cfg *Config) Debug(debug bool) *Config {
+// Apply open debug in Config if debug is true, otherwise do nothing.
+func (cfg *Config) Apply(debug, openBrowser bool) *Config {
 	if debug {
 		cfg.DebugMode = debug
+	}
+
+	if openBrowser {
+		cfg.OpenBrowser = openBrowser
 	}
 
 	return cfg
 }
 
+// Valid validates config is valid to use.
 func (cfg Config) Valid() error {
 	if cfg.AccessToken == "" {
 		return ErrEmptyAccessToken

@@ -8,16 +8,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/yeqown/gitlab-flow/pkg"
-
-	"github.com/AlecAivazis/survey/v2"
-
 	gitop "github.com/yeqown/gitlab-flow/internal/git-operator"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 	"github.com/yeqown/gitlab-flow/internal/repository"
 	"github.com/yeqown/gitlab-flow/internal/repository/impl"
 	"github.com/yeqown/gitlab-flow/internal/types"
+	"github.com/yeqown/gitlab-flow/pkg"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 )
@@ -49,12 +47,13 @@ func NewFlow(ctx *types.FlowContext) IFlow {
 		ctx:            ctx,
 		gitlabOperator: gitlabop.NewGitlabOperator(ctx.Conf.AccessToken, ctx.Conf.GitlabAPIURL),
 		gitOperator:    gitop.NewBasedCmd(ctx.CWD),
-		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath, ctx.Conf.DebugMode)),
+		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.Conf.DebugMode)),
 	}
 
 	// flowContext with null project information, so we need to fill it.
 	if err := flow.fillContextWithProject(); err != nil {
-		panic(err)
+		log.
+			Fatalf("could not locate project(%s): %v", ctx.ProjectName(), err)
 	}
 
 	return flow
@@ -64,8 +63,8 @@ func NewFlow(ctx *types.FlowContext) IFlow {
 // FlowContext with null project information, so we need to fill it.
 func (f flowImpl) fillContextWithProject() error {
 	// DONE(@yeqown): fill project information from local repository or remote gitlab repository.
-	// FIXME(@yeqown): projectName would be different from project path, use git repository name as project name.
-	projectName := extractProjectNameFromCWD(f.ctx.CWD)
+	// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
+	projectName := f.ctx.ProjectName()
 	project := new(types.ProjectBasics)
 	project.Name = projectName
 
@@ -88,10 +87,8 @@ func (f flowImpl) fillContextWithProject() error {
 		ProjectName: projectName,
 	})
 
-	// could not hit stage 1
-	errCouldNotFound := errors.Wrapf(err, "could not match project(%s) neither local nor remote", projectName)
 	if err != nil {
-		return errCouldNotFound
+		return errors.Wrap(err, "requests remote repository failed")
 	}
 
 	// found and match
@@ -124,7 +121,8 @@ func (f flowImpl) fillContextWithProject() error {
 		}
 	}
 
-	return errCouldNotFound
+	// could not match
+	return fmt.Errorf("could not match project(%s) from remote", projectName)
 }
 
 func (f flowImpl) FeatureBegin(title, desc string) error {

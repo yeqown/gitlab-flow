@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -45,12 +44,6 @@ type IFlow interface {
 	// SyncMilestone synchronize remote repository milestone and
 	// related issues / merge requests to local.
 	SyncMilestone(milestoneID int, interact bool) error
-}
-
-// extractProjectNameFromCWD get project name from current working directory.
-func extractProjectNameFromCWD(cwd string) string {
-	splited := strings.Split(cwd, string(filepath.Separator))
-	return splited[len(splited)-1]
 }
 
 var (

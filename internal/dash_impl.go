@@ -37,7 +37,7 @@ func NewDash(ctx *types.FlowContext) IDash {
 
 	dash := dashImpl{
 		ctx:         ctx,
-		repo:        impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath, ctx.Conf.DebugMode)),
+		repo:        impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.Conf.DebugMode)),
 		gitOperator: gitop.NewBasedCmd(ctx.CWD),
 	}
 
@@ -68,8 +68,8 @@ func init() {
 
 func (d dashImpl) fillContextWithProject() {
 	// DONE(@yeqown): fill project information from local repository or remote gitlab repository.
-	// FIXME(@yeqown): projectName would be different from project path, use git repository name as project name.
-	projectName := extractProjectNameFromCWD(d.ctx.CWD)
+	// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
+	projectName := d.ctx.ProjectName()
 	project := new(types.ProjectBasics)
 	project.Name = projectName
 

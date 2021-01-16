@@ -35,10 +35,8 @@ func getDashFeatureDetailSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			confPath := c.String("conf_path")
-			debug := c.Bool("debug")
 			featureBranchName := c.String("branch_name")
-			data, err := getDash(confPath, debug).FeatureDetail(featureBranchName)
+			data, err := getDash(c).FeatureDetail(featureBranchName)
 			if err != nil {
 				return err
 			}
@@ -73,9 +71,7 @@ func getDashMilestoneOverviewSubCommand() *cli.Command {
 		Action: func(c *cli.Context) error {
 			milestoneName := c.String("milestone_name")
 			filterBranchName := c.String("branch_name")
-			confPath := c.String("conf_path")
-			debug := c.Bool("debug")
-			data, err := getDash(confPath, debug).MilestoneOverview(milestoneName, filterBranchName)
+			data, err := getDash(c).MilestoneOverview(milestoneName, filterBranchName)
 			if err != nil {
 				return err
 			}
@@ -94,9 +90,7 @@ func getDashProjectDetailSubCommand() *cli.Command {
 		Category: "dash",
 		//Flags:    []cli.Flag{},
 		Action: func(c *cli.Context) error {
-			confPath := c.String("conf_path")
-			debug := c.Bool("debug")
-			data, err := getDash(confPath, debug).ProjectDetail()
+			data, err := getDash(c).ProjectDetail()
 			if err != nil {
 				return err
 			}

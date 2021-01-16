@@ -3,39 +3,77 @@ package types
 import (
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/yeqown/log"
 )
+
+// ProjectBasics contains basic attributes of project.
+type ProjectBasics struct {
+	ID     int
+	Name   string
+	WebURL string
+}
 
 // FlowContext contains all necessary parameters of flow command to execute.
 type FlowContext struct {
 	// Conf of flow CLI.
 	Conf *Config
+
 	// CWD current working directory.
 	CWD string
-	// project of current working directory, normally, get from current working directory.
+
+	// Project of current working directory, normally,
+	// get from current working directory.
 	Project *ProjectBasics
 
-	//// Branch current branch name.
-	//ProjectBranch string
+	// projectName the actual name of project.
+	projectName string
 
-	ConfPath string
+	// confPath of configuration file path.
+	confPath string
 }
 
 // NewContext be generated with non project information.
 // Do not use Project directly!!!
-func NewContext(cwd, confPath string, c *Config) *FlowContext {
+func NewContext(cwd, confPath, projectName string, c *Config) *FlowContext {
+	if cwd == "" {
+		panic("cwd could not be empty")
+	}
+
 	ctx := &FlowContext{
 		Conf:    c,
 		CWD:     cwd,
 		Project: nil,
 	}
 
-	ctx.calcConfPath(confPath)
+	ctx.applyConfPath(confPath)
+	ctx.applyProjectName(projectName)
+
 	return ctx
 }
 
-func (c *FlowContext) calcConfPath(confPath string) {
+// ProjectName return project name.
+func (c *FlowContext) ProjectName() string {
+	if c == nil {
+		return ""
+	}
+
+	return c.projectName
+}
+
+// ConfPath return configuration path
+func (c *FlowContext) ConfPath() string {
+	if c == nil {
+		return ""
+	}
+
+	return c.confPath
+}
+
+// applyConfPath to get configuration directory path rather than file path.
+func (c *FlowContext) applyConfPath(confPath string) {
 	fi, err := os.Stat(confPath)
 	if err != nil {
 		log.Errorf("could not stat confPath=%s", confPath)
@@ -43,17 +81,30 @@ func (c *FlowContext) calcConfPath(confPath string) {
 	}
 
 	if fi.IsDir() {
-		c.ConfPath = confPath
+		c.confPath = confPath
 		return
 	}
 
-	c.ConfPath = path.Dir(confPath)
+	c.confPath = path.Dir(confPath)
 	return
 }
 
-// ProjectBasics contains basic attributes of project.
-type ProjectBasics struct {
-	ID     int
-	Name   string
-	WebURL string
+// applyProjectName to judge which project name should be took.
+func (c *FlowContext) applyProjectName(projectName string) {
+	if projectName != "" {
+		c.projectName = projectName
+		return
+	}
+
+	c.projectName = extractProjectNameFromCWD(c.CWD)
+
+	return
+}
+
+// extractProjectNameFromCWD get project name from current working directory.
+// input:  /path/to/project
+// output: 'project'
+func extractProjectNameFromCWD(cwd string) string {
+	arr := strings.Split(cwd, string(filepath.Separator))
+	return arr[len(arr)-1]
 }
