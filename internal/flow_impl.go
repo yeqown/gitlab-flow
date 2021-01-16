@@ -200,33 +200,18 @@ func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string
 
 	// create issue branch
 	issueBranchName := genIssueBranchName(milestone.Title, issue.IID)
-	issueBranch, err := f.createBranch(issueBranchName, featureBranch.BranchName, milestone.MilestoneID, issue.IID)
+	_, err = f.createBranch(issueBranchName, featureBranch.BranchName, milestone.MilestoneID, issue.IID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "create branch failed")
 	}
-
-	// create mr
-	targetBranch := featureBranch.BranchName
-	mrTitle := genMRTitle(issueBranchName, targetBranch)
-	mr, err := f.createMergeRequest(mrTitle, desc, milestone.MilestoneID, issue.IID, issueBranchName, targetBranch)
-	if err != nil {
-		return nil
-	}
-	log.
-		WithFields(log.Fields{
-			"issue_branch":  issueBranch.WebURL,
-			"merge_request": mr.WebURL,
-		}).
-		Debug("create issue finished")
 
 	f.printAndOpenBrowser("Open Issue", issue.WebURL)
 
 	return nil
 }
 
-// TODO(@yeqown): issue merge request should be called here, rather than FeatureBeginIssue
-func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) (err error) {
-	var milestoneID = 0
+// DONE(@yeqown): issue merge request should be called here, rather than FeatureBeginIssue
+func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) error {
 
 	// DONE(@yeqown): if issueBranchName is empty, make current branch name as default.
 	if issueBranchName == "" {
@@ -235,6 +220,12 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 	if issueBranchName == "" {
 		return errors.New("issue branch could not be empty")
 	}
+
+	var (
+		milestoneID = 0
+		issueIID    = 0
+	)
+	// locate issue branch.
 	if b, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
 		BranchName: issueBranchName,
@@ -242,6 +233,7 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 		return errors.Wrapf(err, "locate issue branch(%s) failed", issueBranchName)
 	} else {
 		milestoneID = b.MilestoneID
+		issueIID = b.IssueIID
 	}
 
 	// DONE(@yeqown) get feature branch name from issueBranchName
@@ -252,43 +244,66 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 		return errors.New("feature branch could not be empty")
 	}
 	featureBranchName = genFeatureBranchName(featureBranchName)
-
-	if _, err = f.repo.QueryBranch(&repository.BranchDO{
-		ProjectID:   f.ctx.Project.ID,
-		BranchName:  featureBranchName,
-		MilestoneID: milestoneID,
-	}); err != nil {
-		return errors.Wrapf(err, "locate feature branch(%s) failed", featureBranchName)
-	}
+	//if _, err := f.repo.QueryBranch(&repository.BranchDO{
+	//	ProjectID:   f.ctx.Project.ID,
+	//	BranchName:  featureBranchName,
+	//	MilestoneID: milestoneID,
+	//}); err != nil {
+	//	return errors.Wrapf(err, "locate feature branch(%s) failed", featureBranchName)
+	//}
 
 	// locate MR
 	mr, err := f.repo.QueryMergeRequest(&repository.MergeRequestDO{
 		ProjectID:    f.ctx.Project.ID,
+		IssueIID:     issueIID,
 		MilestoneID:  milestoneID,
 		SourceBranch: issueBranchName,
 		TargetBranch: featureBranchName,
 	})
-	if err != nil {
+	if err != nil && !repository.IsErrNotFound(err) {
 		log.
 			WithFields(log.Fields{
-				"projectID":   f.ctx.Project.ID,
-				"milestoneID": milestoneID,
-				"error":       err,
+				"projectID":    f.ctx.Project.ID,
+				"issueIID":     issueIID,
+				"milestoneID":  milestoneID,
+				"sourceBranch": issueBranchName,
+				"targetBranch": featureBranchName,
 			}).
-			Error("locate MR failed")
+			Errorf("locate MR failed: %v", err)
 		return errors.Wrap(err, "locate MR failed")
+	}
+
+	// got merge request from local
+	if mr != nil {
+		log.
+			WithFields(log.Fields{
+				"featureBranch":   featureBranchName,
+				"issueBranch":     issueBranchName,
+				"mergeRequestURL": mr.WebURL,
+			}).
+			Debug("issue info")
+
+		f.printAndOpenBrowser("Issue Merge Request", mr.WebURL)
+		return nil
+	}
+
+	// not hit, so create one
+	title := genMRTitle(issueBranchName, featureBranchName)
+	desc := ""
+	result, err := f.createMergeRequest(title, desc, milestoneID, issueIID, issueBranchName, featureBranchName)
+	if err != nil {
+		return errors.Wrap(err, "create issue merge request failed")
 	}
 
 	log.
 		WithFields(log.Fields{
-			"feature_branch":    featureBranchName,
-			"issue_branch":      issueBranchName,
-			"project_name":      f.ctx.Project.Name,
-			"merge_request_url": mr.WebURL,
+			"issueBranchName":   issueBranchName,
+			"featureBranchName": featureBranchName,
+			"mergeRequestURL":   result.WebURL,
 		}).
-		Debug("issue info")
+		Debug("create issue merge request finished")
 
-	f.printAndOpenBrowser("Issue Merge Request", mr.WebURL)
+	f.printAndOpenBrowser("Issue Merge Request", result.WebURL)
 
 	return nil
 }
