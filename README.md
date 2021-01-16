@@ -79,4 +79,6 @@ GLOBAL OPTIONS:
 
 ### Documents
 
+<img align="center" src="./docs/gitlab-flow-branch.svg">
+
 More help information is [HERE](./docs/README.md).

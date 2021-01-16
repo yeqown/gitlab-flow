@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" viewBox="-37.88 138.67592 740.1456 250.13956" width="740.1456" height="250.13956">
+  <defs>
+    <font-face font-family="STHeiti" font-size="16" panose-1="2 1 6 0 4 1 1 1 1 1" units-per-em="1000" underline-position="-133" underline-thickness="20" slope="0" x-height="598" cap-height="787" ascent="860.0006" descent="-139.99939" font-weight="700">
+      <font-face-src>
+        <font-face-name name="STHeiti"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="Arrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="black">
+      <g>
+        <path d="M 8 0 L 0 -3 L 0 3 Z" fill="none" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <font-face font-family="STHeiti" font-size="10" panose-1="2 1 6 0 4 1 1 1 1 1" units-per-em="1000" underline-position="-133" underline-thickness="20" slope="0" x-height="598" cap-height="787" ascent="860.0006" descent="-139.99939" font-weight="700">
+      <font-face-src>
+        <font-face-name name="STHeiti"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.15.2 
+    <dc:date>2021-01-16 03:33:09 +0000</dc:date>
+  </metadata>
+  <g id="flow" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1" stroke="none">
+    <title>flow</title>
+    <g id="flow: hotfix">
+      <title>hotfix</title>
+      <g id="Group_12">
+        <title>master</title>
+        <g id="Line_4">
+          <path d="M 80.84954 236.9995 L 700.2656 237.2742 M 81.3497 236.13322 L 698.1756 236.44822" stroke="#ff2600" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+        </g>
+        <g id="Graphic_7">
+          <text transform="translate(-32.88 232.5)" fill="black">
+            <tspan font-family="STHeiti" font-size="16" font-weight="700" fill="black" x="0" y="14">Master</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Group_16">
+        <title>feature-1</title>
+        <g id="Line_18">
+          <path d="M 187.37612 302.59174 L 452.60627 302.38686 M 187.75105 302.12305 L 451.4106 301.76062" stroke="#00a8aa" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+        </g>
+        <g id="Graphic_17">
+          <text transform="translate(100.832 295.37216)" fill="black">
+            <tspan font-family="STHeiti" font-size="16" font-weight="700" fill="black" x="8526513e-19" y="14">Feature/1</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Line_21">
+        <path d="M 184.74574 236.48895 C 184.44444 237 163.48181 255.41883 184.01151 294.043 M 184.74574 236.48895 C 184.69444 236.75 163.73181 255.16883 184.26151 293.793" marker-end="url(#Arrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4.0,4.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_22">
+        <rect x="146.5587" y="261.22315" width="58.24" height="20" fill="white"/>
+        <text transform="translate(151.5587 266.22315)" fill="black">
+          <tspan font-family="STHeiti" font-size="10" font-weight="700" fill="black" x="7993606e-19" y="9">Checkout</tspan>
+        </text>
+      </g>
+      <g id="Line_24">
+        <path d="M 231.15136 238.68989 C 231 238.4279 198.52025 204.30072 224.28963 161.7523 M 231.15136 238.68989 C 231.25 238.1779 198.77025 204.05072 224.53963 161.5023" marker-end="url(#Arrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4.0,4.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_23">
+        <rect x="184.74692" y="188.86987" width="58.24" height="20" fill="white"/>
+        <text transform="translate(189.74693 193.86987)" fill="black">
+          <tspan font-family="STHeiti" font-size="10" font-weight="700" fill="black" x="7993606e-19" y="9">Checkout</tspan>
+        </text>
+      </g>
+      <g id="Line_26">
+        <path d="M 449.39543 303.20038 C 450 302.5905 458.06496 298.26465 459.44444 270.55556 C 460.1367 257.71882 457.0907 250.46026 455.31097 245.35338 M 449.39543 303.20038 C 450.25 302.3405 458.31496 298.01465 459.69444 270.30556 C 460.3867 257.46882 457.3407 250.21026 455.56097 245.10338" marker-end="url(#Arrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4.0,4.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_27">
+        <rect x="438.30885" y="257.14585" width="41.93" height="20" fill="white"/>
+        <text transform="translate(443.30885 262.14585)" fill="black">
+          <tspan font-family="STHeiti" font-size="10" font-weight="700" fill="black" x="14566126e-20" y="9">Merge</tspan>
+        </text>
+      </g>
+      <g id="Line_29">
+        <path d="M 392.31273 156.50798 C 392.8 156.8 411.12146 160.31248 412.95547 195.54656 C 412.1625 215.6497 402.6792 226.6723 396.16653 232.60894 M 392.31273 156.50798 C 393.05 156.55 411.37146 160.06248 413.20547 195.29656 C 412.4125 215.3997 402.9292 226.4223 396.41653 232.35894" marker-end="url(#Arrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4.0,4.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_28">
+        <rect x="391.91945" y="180.92194" width="41.93" height="20" fill="white"/>
+        <text transform="translate(396.91945 185.92194)" fill="black">
+          <tspan font-family="STHeiti" font-size="10" font-weight="700" fill="black" x="14566126e-20" y="9">Merge</tspan>
+        </text>
+      </g>
+      <g id="Group_31">
+        <title>feature-1</title>
+        <g id="Line_33">
+          <path d="M 228.6514 153.98568 L 395.1936 155.3135 M 229.0271 153.52344 L 394.39964 154.5869" stroke="#00a8aa" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+        </g>
+        <g id="Graphic_32">
+          <text transform="translate(143 143.67592)" fill="black">
+            <tspan font-family="STHeiti" font-size="16" font-weight="700" fill="black" x="8526513e-19" y="14">Feature/2</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Group_47">
+        <title>issue-1-1</title>
+        <g id="Line_41">
+          <path d="M 185.91158 357.49134 L 264.4648 357.91956 M 186.28854 356.75754 L 263.88205 357.29916" stroke="#ab56ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+        </g>
+        <g id="Graphic_45">
+          <text transform="translate(129.5 353)" fill="black">
+            <tspan font-family="STHeiti" font-size="10" font-weight="700" fill="black" x="0" y="9">Issue-1-1</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Group_48">
+        <title>issue-1-2</title>
+        <g id="Line_43">
+          <path d="M 301.057 378.37716 L 363.20937 376.93636 M 301.42427 377.6693 L 362.67807 376.5552" stroke="#ab56ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+        </g>
+        <g id="Graphic_46">
+          <text transform="translate(249 373.81548)" fill="black">
+            <tspan font-family="STHeiti" font-size="10" font-weight="700" fill="black" x="0" y="9">Issue-1-2</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Line_51">
+        <path d="M 189.4703 302.50016 C 189 303 173.44993 315.65156 177.20588 332 C 179.09176 339.4309 181.5097 344.77808 183.24728 348.55935 M 189.4703 302.50016 C 189.25 302.75 173.69993 315.40156 177.45588 331.75 C 179.34176 339.1809 181.7597 344.52808 183.49728 348.30935" marker-end="url(#Arrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4.0,4.0" stroke-width="1"/>
+      </g>
+      <g id="Line_52">
+        <path d="M 298.4956 302.0397 C 298.2857 302.5905 290.59145 313.6888 291.61402 342.2857 C 290.6712 356.79684 294.2723 364.511 297.94803 370.2738 M 298.4956 302.0397 C 298.5357 302.3405 290.84145 313.4388 291.86402 342.0357 C 290.9212 356.54684 294.5223 364.261 298.19803 370.0238" marker-end="url(#Arrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4.0,4.0" stroke-width="1"/>
+      </g>
+      <g id="Line_54">
+        <path d="M 262.12482 357.7984 C 262.38457 357.5 273.69007 356.76337 270.85714 325.14286 C 269.90453 318.79244 269.92165 313.2237 269.1551 309.81154 M 262.12482 357.7984 C 262.63457 357.25 273.94007 356.51337 271.10714 324.89286 C 270.15453 318.54244 270.17165 312.9737 269.4051 309.56154" marker-end="url(#Arrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4.0,4.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_53">
+        <rect x="249.68402" y="327.18452" width="41.93" height="20" fill="white"/>
+        <text transform="translate(254.68402 332.18452)" fill="black">
+          <tspan font-family="STHeiti" font-size="10" font-weight="700" fill="black" x="15258789e-14" y="9">Merge</tspan>
+        </text>
+      </g>
+      <g id="Line_56">
+        <path d="M 361.28575 379.53125 C 361.9577 378.85714 369.7025 376.59587 370.2857 348 C 371.09644 332.99344 366.72827 319.1257 363.14196 311.56187 M 361.28575 379.53125 C 362.2077 378.60714 369.9525 376.34587 370.5357 347.75 C 371.34644 332.74344 366.97827 318.8757 363.39196 311.31187" marker-end="url(#Arrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4.0,4.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_55">
+        <rect x="349.11965" y="334.21213" width="41.93" height="20" fill="white"/>
+        <text transform="translate(354.11965 339.21213)" fill="black">
+          <tspan font-family="STHeiti" font-size="10" font-weight="700" fill="black" x="15258789e-14" y="9">Merge</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>
