@@ -50,13 +50,13 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "open-issue",
 		Usage:     "open an issue then create issue branch from feature branch, also merge request",
-		ArgsUsage: "open-issue -fb @featureBranchName @title @desc",
+		ArgsUsage: "open-issue -f @featureBranchName @title @desc",
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
-				Aliases:  []string{"fb"},
-				Usage:    "input the target branch name",
+				Aliases:  []string{"f"},
+				Usage:    "input the `featureBranchName`",
 				Value:    "",
 				Required: false,
 			},
@@ -82,21 +82,21 @@ func getFeatureFinishIssueSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "close-issue",
 		Usage:     "close an issue it's merge request.",
-		ArgsUsage: "close-issue -ib @issueBranchName -fb @featureBranchName",
+		ArgsUsage: "close-issue -i @issueBranchName -f @featureBranchName",
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
-				Aliases:  []string{"fb"},
-				Usage:    "input the target branch name",
+				Aliases:  []string{"f"},
+				Usage:    "input the `featureBranchName`",
 				Value:    "",
 				Required: false,
 			},
 			&cli.StringFlag{
 				Name:     "issue_branch_name",
-				Aliases:  []string{"ib"},
-				Value:    "",                         // default current branch
-				Usage:    "-ib, --issue_branch_name", // be be overwritten
+				Aliases:  []string{"i"},
+				Value:    "",                            // default current branch
+				Usage:    "input the `issueBranchName`", // be be overwritten
 				Required: false,
 			},
 		},
@@ -113,13 +113,13 @@ func getFeatureDebugSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "debug",
 		Usage:     "open a merge request from feature branch into DevBranch",
-		ArgsUsage: "-fb, --feature_branch_name `BranchName`",
+		ArgsUsage: "-f, --feature_branch_name `featureBranchName`",
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
-				Aliases:  []string{"-fb"},
-				Usage:    "input the target branch name",
+				Aliases:  []string{"-f"},
+				Usage:    "input the `featureBranchName`",
 				Required: false,
 			},
 		},
@@ -135,13 +135,13 @@ func getFeatureTestSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "test",
 		Usage:     "open a merge request from feature branch into TestBranch",
-		ArgsUsage: "-fb, --feature_branch_name `BranchName`",
+		ArgsUsage: "-f, --feature_branch_name `featureBranchName`",
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
-				Aliases:  []string{"-fb"},
-				Usage:    "input the target branch name",
+				Aliases:  []string{"-f"},
+				Usage:    "input the `featureBranchName`",
 				Required: false,
 			},
 		},
@@ -157,13 +157,13 @@ func getFeatureReleaseSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "release",
 		Usage:     "open a merge request from feature branch into MasterBranch",
-		ArgsUsage: "-fb, --feature_branch_name `BranchName`",
+		ArgsUsage: "-f, --feature_branch_name `featureBranchName`",
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "feature_branch_name",
-				Aliases:  []string{"-fb"},
-				Usage:    "input the target branch name",
+				Aliases:  []string{"-f"},
+				Usage:    "input the `featureBranchName`",
 				Required: false,
 			},
 		},

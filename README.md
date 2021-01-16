@@ -72,7 +72,9 @@ COMMANDS:
 
 GLOBAL OPTIONS:
    --conf_path path/to/file, -c path/to/file  choose which path/to/file to load (default: ~/.gitlab-flow)
-   --debug                                    --debug (default: false)
+   --debug                                    verbose mode (default: false)
+   --project projectName, -p projectName      input projectName to locate which project should be operate. (default: extract working directory)
+   --web                                      open web browser automatically or not (default: false)
    --help, -h                                 show help (default: false)
    --version, -v                              print the version (default: false)
 ```

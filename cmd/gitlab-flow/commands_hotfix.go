@@ -6,7 +6,7 @@ import (
 	"github.com/yeqown/log"
 )
 
-// hotfix 管理下的子命令
+// hotfix subcommands
 func getHotfixSubCommands() cli.Commands {
 	return cli.Commands{
 		getHotfixStartSubCommand(),
@@ -47,16 +47,16 @@ func getHotfixStartSubCommand() *cli.Command {
 func getHotfixFinishSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "close",
-		Usage:       "close [-hb, --hotfix_branch_name `hotfixBranchName`]",
-		ArgsUsage:   "[-hb, --hotfix_branch_name `hotfixBranchName`]",
+		Usage:       "close [-b, --hotfix_branch_name `hotfixBranchName`]",
+		ArgsUsage:   "[-b, --hotfix_branch_name `hotfixBranchName`]",
 		Description: "close a hotfix development, then create a merge request into master",
 		Category:    "hotfix",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "hotfix_branch_name",
-				Aliases:  []string{"hb"},
-				Value:    "",                          // default current branch
-				Usage:    "-hb, --hotfix_branch_name", // be be overwritten
+				Aliases:  []string{"b"},
+				Value:    "",                   // default current branch
+				Usage:    "`hotfixBranchName`", // be be overwritten
 				Required: false,
 			},
 		},
