@@ -1,4 +1,4 @@
-## examples
+## Examples
 
 ### 1. Start a milestone feature.
 
