@@ -48,17 +48,17 @@ func NewDash(ctx *types.FlowContext) IDash {
 }
 
 var (
-	detailTpl *template.Template
-
+	detailTpl        *template.Template
 	detailTplPattern = `
-Project's Name	:		{{.projectTitle}} (ID:{{.projectID}})
-Project's URL	:		{{.projectURL}}
-Milestone Title	:		{{.milestoneTitle}} (ID:{{.milestoneID}})
-Milestone Desc	:		{{.milestoneDesc}}
-Feature Branch	:		{{.featureBranch}}
-Milestone URL	:		{{.milestoneWebURL}}
-Merge Requests	:
+🚗 Project's Name	:		{{.projectTitle}} (ID:{{.projectID}})
+🚕 Project's URL	:		{{.projectURL}}
+🚌 Milestone Title	:		{{.milestoneTitle}} (ID:{{.milestoneID}})
+🎯 Milestone Desc	:		{{.milestoneDesc}}
+🤡 Feature Branch	:		{{.featureBranch}}
+👽 Milestone URL	:		{{.milestoneWebURL}}
+🎠 Merge Requests	:
 `
+	_featureDetailTblHeader = []string{"🎠MR#Flow", "✈️MR#WebURL", "🎯Issue#Title", "✈️Issue#URL"}
 )
 
 func init() {
@@ -103,7 +103,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 		BranchName: featureBranchName,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "dashImpl.FeatureDetail query branch")
+		return nil, errors.Wrap(err, "could not locate branch")
 	}
 
 	// query milestone
@@ -153,7 +153,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 
 		tblData[idx] = []string{
 			//strconv.Itoa(mr.MergeRequestID), // MR-ID
-			fmt.Sprintf("%s => %s", mr.SourceBranch, mr.TargetBranch), // mr action
+			fmt.Sprintf("%s🇨🇳 %s", mr.SourceBranch, mr.TargetBranch), // mr action
 			mr.WebURL,    // MR-URL
 			issue.Title,  // issue.Name
 			issue.WebURL, // issue.IssueURL
@@ -180,12 +180,16 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	}
 
 	w := tablewriter.NewWriter(buf)
-	w.SetHeader([]string{"MR#Flow", "MR#WebURL", "Issue#Title", "Issue#URL"})
+	w.SetHeader(_featureDetailTblHeader)
 	w.AppendBulk(tblData)
 	w.Render()
 
 	return buf.Bytes(), nil
 }
+
+var (
+	_milestoneOverviewTblHeader = []string{"🏝Project🏖", "🎠MergeRequests🏕"}
+)
 
 func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte, error) {
 	log.
@@ -270,7 +274,7 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 
 	buf := bytes.NewBuffer(nil)
 	w := tablewriter.NewWriter(buf)
-	w.SetHeader([]string{"Project", "MergeRequests"})
+	w.SetHeader(_milestoneOverviewTblHeader)
 	w.AppendBulk(tblData)
 	w.Render()
 

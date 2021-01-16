@@ -12,22 +12,22 @@ func getInitCommand() *cli.Command {
 		Name: "init",
 		Usage: "initialize gitlab-flow, generate default config file and sqlite DB " +
 			"related to the path",
-		Category: "tools",
+		Category: "init",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "access_token",
 				Aliases:  []string{"s"},
 				Required: true,
-				Usage:    "access_token is secret for user to access gitlab API.",
+				Usage:    "access_token is `secret` for user to access gitlab API.",
 			},
 			&cli.StringFlag{
 				Name:     "gitlab_host",
-				Aliases:  []string{"hh"},
+				Aliases:  []string{"d"},
 				Required: true,
-				Usage:    "gitlab_host is the domain of YOUR gitlab server.",
+				Usage:    "gitlab_host is the `domain` of YOUR gitlab server.",
 			},
 		},
-		ArgsUsage: "-s ACCESS_TOKEN -h GITLAB_HOST [-c, --conf_path CONF_PATH]",
+		ArgsUsage: "-s ACCESS_TOKEN -h GITLAB_HOST",
 		Action: func(c *cli.Context) error {
 			accessToken := c.String("access_token")
 			host := c.String("gitlab_host")
@@ -54,7 +54,7 @@ func getFeatureCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "feature",
 		Usage:       "managing the works in developing.",
-		Category:    "feature",
+		Category:    "flow",
 		Subcommands: getFeatureSubCommands(),
 	}
 }
@@ -64,7 +64,7 @@ func getHotfixCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "hotfix",
 		Usage:       "managing the works in hotfix.",
-		Category:    "hotfix",
+		Category:    "flow",
 		Subcommands: getHotfixSubCommands(),
 	}
 }

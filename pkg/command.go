@@ -41,7 +41,6 @@ func run(s string, rw io.ReadWriter) error {
 	}
 	cmd := exec.Command(commands[0], commands[1:]...)
 
-	// 指定输出
 	r, err := cmd.StdoutPipe()
 	if err != nil {
 		return errors.Wrap(err, "get cmd stdout pipe failed")
@@ -49,14 +48,11 @@ func run(s string, rw io.ReadWriter) error {
 	defer r.Close()
 	cmd.Stderr = cmd.Stdout
 
-	// 启动
 	if err := cmd.Start(); err != nil {
 		return errors.Wrap(err, "start command failed")
 	}
 
-	// 获取输出
 	scanner := bufio.NewScanner(r)
-
 	for scanner.Scan() {
 		_, _ = rw.Write(scanner.Bytes())
 		_, _ = rw.Write([]byte{'\n'})
@@ -65,9 +61,7 @@ func run(s string, rw io.ReadWriter) error {
 		return errors.Wrap(err, "scanner failed")
 	}
 
-	// 等待退出
 	err = cmd.Wait()
-
 	if err2, ok := err.(*exec.ExitError); ok {
 		// The program has exited with an exit code != 0
 		if status, ok := err2.Sys().(syscall.WaitStatus); ok {

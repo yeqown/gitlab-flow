@@ -40,6 +40,8 @@ func mountCommands(app *cli.App) {
 	}
 }
 
+// _globalFlags should be used like this:
+// flow --debug -c path/to/config SUB-COMMAND [...options]
 var _globalFlags = []cli.Flag{
 	&cli.StringFlag{
 		Name:        "conf_path",
