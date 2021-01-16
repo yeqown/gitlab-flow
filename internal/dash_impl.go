@@ -200,6 +200,7 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 		Debug("MilestoneOverview called")
 
 	if milestoneName == "" {
+		// get milestoneName from feature branchName
 		// query milestone name automatically when no milestone name provided.
 		// TODO(@yeqown): optimize this logic, using repo method.
 		featureBranchName, _ := d.gitOperator.CurrentBranch()

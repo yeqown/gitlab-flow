@@ -32,6 +32,7 @@ type IFlowRepository interface {
 	QueryMergeRequests(filter *MergeRequestDO) ([]*MergeRequestDO, error)
 }
 
+// IsErrNotFound judge the error is gorm2.ErrRecordNotFound or not.
 func IsErrNotFound(err error) bool {
 	return errors.Is(err, gorm2.ErrRecordNotFound)
 }
