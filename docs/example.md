@@ -5,7 +5,7 @@ development resources.
 
 ### 0. Global flags
 
-```shell
+```sh
 flow [-c, --conf_path] [--debug] [--web] [-p, --project] SUB_COMMAND [options]
 # (OPTIONAL) -c, --conf_path path/to/config_file.
 # (OPTIONAL) --debug verbose mode.
@@ -20,7 +20,7 @@ flow -c ~/.gitlab-flow --debug init ...
 
 ### 1. Start a milestone feature.
 
-```shell
+```sh
 flow feature open name description
 # (REQUIRED) feature-name will be used to create milestone as title too.
 # (REQUIRED) feature-description will be to create milestone as description too.
@@ -31,7 +31,7 @@ flow feature open name description
 
 ### 2. Finish a milestone feature.
 
-```shell
+```sh
 flow feature release [-f, --feature_branch_name featureBranchName]
 # (OPTIONAL) -f, --feature_branch_name featureBranchName, if it is not set,
 # current branch name will be used.
@@ -39,7 +39,7 @@ flow feature release [-f, --feature_branch_name featureBranchName]
 
 ### 3. Start an issue from a feature.
 
-```shell
+```sh
 flow feature open-issue [-f, --feature_branch_name featureBranchName] issue-title issue-description
 # (OPTIONAL) -f, --feature_branch_name featureBranchName, if it is not set,
 # will find feature branch name relative to issue branch name.
@@ -49,7 +49,7 @@ flow feature open-issue [-f, --feature_branch_name featureBranchName] issue-titl
 
 ### 4. Finish an issue from a feature.
 
-```shell
+```sh
 flow feature close-issue [-i, --issue_branch_name issueBranchName] [-f, --feature_branch_name featureBranchName] 
 # (OPTIONAL) -i, --issue_branch_name issueBranchName, if it is not set,
 # current branch name will be used.
@@ -59,7 +59,7 @@ flow feature close-issue [-i, --issue_branch_name issueBranchName] [-f, --featur
 
 ### 5. Start a hotfix.
 
-```shell
+```sh
 flow hotfix open hotfix-name hotfix-description
 # (REQUIRED) hotfix-name will be used to create issue as title too.
 # (REQUIRED) hotfix-description will be to create issue as description too.
@@ -69,8 +69,21 @@ flow hotfix open hotfix-name hotfix-description
 ```
 ### 6. Finish a hotfix.
 
-```shell
+```sh
 flow hotfix close [-b, --branch_name hotfixBranchName]
 # (OPTIONAL) -b, --branch_name hotfixBranchName, if it is not set,
 # current branch name will be used.
+```
+
+### 7. Synchronize development
+
+```sh
+flow feature sync [-m, --milestone_id milestoneId] [-i, --interact]
+# (OPTIONAL) -m, --milestone_id milestoneId input milestoneId 
+# which you want to synchronize.
+# (OPTIONAL) -i, --interact, if you don't know milestoneId, 
+# then choose one milestone reciprocally.
+#
+# NOTE: at least one way should be chosen. if both of them are valued, 
+# milestoneId has higher priority.
 ```
