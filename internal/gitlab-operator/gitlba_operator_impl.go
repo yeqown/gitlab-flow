@@ -2,6 +2,8 @@ package gitlabop
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -37,7 +39,12 @@ func (g gitlabOperator) CreateBranch(ctx context.Context, req *CreateBranchReque
 	}
 	branch, _, err := g.gitlab.Branches.CreateBranch(req.ProjectID, opt)
 	if err != nil {
-		return nil, errors.Wrap(err, "create branch failed")
+		// if create failed then query from remote, if got then return
+		var err2 error
+		branch, _, err2 = g.gitlab.Branches.GetBranch(req.ProjectID, req.TargetBranch)
+		if err2 != nil {
+			return nil, fmt.Errorf("create branch failed: %v, query failed: %v", err, err2)
+		}
 	}
 
 	return &CreateBranchResult{
@@ -54,8 +61,34 @@ func (g gitlabOperator) CreateMilestone(ctx context.Context, req *CreateMileston
 		DueDate:     nil,
 	}
 	milestone, _, err := g.gitlab.Milestones.CreateMilestone(req.ProjectID, opt)
-	if err != nil {
-		return nil, errors.Wrap(err, "CreateMilestone failed")
+	if err != nil || milestone == nil {
+		// if create failed then query from remote, if got then return
+		opt := gogitlab.ListMilestonesOptions{
+			ListOptions: gogitlab.ListOptions{
+				Page:    1,
+				PerPage: 20,
+			},
+			Title:  &req.Title,
+			Search: &req.Title,
+		}
+		milestones, _, err2 := g.gitlab.Milestones.ListMilestones(req.ProjectID, &opt)
+		if err2 != nil {
+			return nil, fmt.Errorf("create milestone failed: %v, query failed: %v", err, err2)
+		}
+
+		matched := false
+		for idx, v := range milestones {
+			if strings.Compare(req.Title, v.Title) == 0 &&
+				strings.Compare(req.Desc, v.Description) == 0 {
+				//	matched
+				milestone = milestones[idx]
+				matched = true
+			}
+		}
+
+		if !matched || milestone == nil {
+			return nil, fmt.Errorf("[matched: %v] create milestone failed: %v", matched, err)
+		}
 	}
 
 	return &CreateMilestoneResult{
@@ -138,8 +171,34 @@ func (g gitlabOperator) CreateIssue(ctx context.Context, req *CreateIssueRequest
 		CreatedAt:   &now,
 	}
 	issue, _, err := g.gitlab.Issues.CreateIssue(req.ProjectID, opt3)
-	if err != nil {
-		return nil, errors.Wrap(err, "create Issue failed")
+	if err != nil || issue == nil {
+		// if create failed then query from remote, if got then return
+		opt := gogitlab.ListProjectIssuesOptions{
+			ListOptions: gogitlab.ListOptions{
+				Page:    1,
+				PerPage: 20,
+			},
+			Search: &req.Title,
+		}
+		issues, _, err2 := g.gitlab.Issues.ListProjectIssues(req.ProjectID, &opt)
+		if err2 != nil {
+			return nil, fmt.Errorf("create issue failed: %v, query failed: %v", err, err2)
+		}
+
+		matched := false
+		for idx, v := range issues {
+			if strings.Compare(req.Title, v.Title) == 0 &&
+				strings.Compare(req.Desc, v.Description) == 0 {
+				//	matched
+				issue = issues[idx]
+				matched = true
+			}
+		}
+
+		if !matched || issue == nil {
+			return nil, fmt.Errorf("[matched: %v] create issue failed: %v", matched, err)
+		}
+
 	}
 
 	return &CreateIssueResult{
@@ -162,8 +221,36 @@ func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMerge
 		// RemoveSourceBranch: true,
 	}
 	mr, _, err := g.gitlab.MergeRequests.CreateMergeRequest(req.ProjectID, opt5)
-	if err != nil {
-		return nil, errors.Wrap(err, "create merge request failed")
+	if err != nil || mr == nil {
+		// if create failed then query from remote, if got then return
+		opt := gogitlab.ListProjectMergeRequestsOptions{
+			ListOptions: gogitlab.ListOptions{
+				Page:    1,
+				PerPage: 20,
+			},
+			Search:       &req.Title,
+			TargetBranch: &req.TargetBranch,
+			SourceBranch: &req.SrcBranch,
+			//IIDs:         []int{req.IssueIID},
+		}
+		mergeRequests, _, err2 := g.gitlab.MergeRequests.ListProjectMergeRequests(req.ProjectID, &opt)
+		if err2 != nil {
+			return nil, fmt.Errorf("create merge request failed: %v, query failed: %v", err, err2)
+		}
+
+		matched := false
+		for idx, v := range mergeRequests {
+			if strings.Compare(req.Title, v.Title) == 0 &&
+				strings.Compare(req.Desc, v.Description) == 0 {
+				//	matched
+				mr = mergeRequests[idx]
+				matched = true
+			}
+		}
+
+		if !matched || mr == nil {
+			return nil, fmt.Errorf("[matched: %v] create merge request failed: %v", matched, err)
+		}
 	}
 
 	return &CreateMergeResult{

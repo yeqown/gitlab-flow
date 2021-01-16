@@ -5,15 +5,23 @@ import "context"
 // IGitlabOperator contains all operations those manage repository,
 // milestones, branch, issue and merge requests.
 type IGitlabOperator interface {
+	// CreateBranch create a branch on remote gitlab repository, but this would check remote
+	// resource if create failed.
 	CreateBranch(ctx context.Context, req *CreateBranchRequest) (*CreateBranchResult, error)
 
+	// CreateMilestone create a milestone on remote gitlab repository, but this would check remote
+	// resource if create failed.
 	CreateMilestone(ctx context.Context, req *CreateMilestoneRequest) (*CreateMilestoneResult, error)
 	GetMilestone(ctx context.Context, req *GetMilestoneRequest) (*GetMilestoneResult, error)
 	GetMilestoneMergeRequests(
 		ctx context.Context, req *GetMilestoneMergeRequestsRequest) (*GetMilestoneMergeRequestsResult, error)
 	GetMilestoneIssues(ctx context.Context, req *GetMilestoneIssuesRequest) (*GetMilestoneIssuesResult, error)
 
+	// CreateIssue create an issue on remote repository, but this would check remote
+	// resource if create failed.
 	CreateIssue(ctx context.Context, req *CreateIssueRequest) (*CreateIssueResult, error)
+	// CreateMergeRequest create an merge request on remote repository, but this would check remote
+	// resource if create failed.
 	CreateMergeRequest(ctx context.Context, req *CreateMergeRequest) (*CreateMergeResult, error)
 
 	ListMilestones(ctx context.Context, req *ListMilestoneRequest) (*ListMilestoneResult, error)
@@ -24,9 +32,9 @@ type IGitlabOperator interface {
 type CreateBranchRequest struct {
 	TargetBranch string
 	SrcBranch    string
-	MilestoneID  int
-	IssueID      int
 	ProjectID    int
+	//MilestoneID  int
+	//IssueID      int
 }
 
 type CreateBranchResult struct {
