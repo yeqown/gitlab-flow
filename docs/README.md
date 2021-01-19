@@ -15,3 +15,6 @@
 * #### [CLI Autocomplete](./autocomplete.md)
 
   Introduces how to enable autocomplete of `gitlab-flow` CLI.  
+
+
+<img src="./gitlab-flow-arch.png" width="100%"/>
