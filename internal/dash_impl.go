@@ -7,14 +7,13 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/yeqown/gitlab-flow/pkg"
-
-	"github.com/olekukonko/tablewriter"
 	gitop "github.com/yeqown/gitlab-flow/internal/git-operator"
 	"github.com/yeqown/gitlab-flow/internal/repository"
 	"github.com/yeqown/gitlab-flow/internal/repository/impl"
 	"github.com/yeqown/gitlab-flow/internal/types"
+	"github.com/yeqown/gitlab-flow/pkg"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 )
@@ -42,7 +41,10 @@ func NewDash(ctx *types.FlowContext) IDash {
 	}
 
 	// DONE(@yeqown): need load project info from local database.
-	dash.fillContextWithProject()
+	if err := dash.fillContextWithProject(); err != nil {
+		log.
+			Fatalf("could not locate project(%s): %v", ctx.ProjectName(), err)
+	}
 
 	return dash
 }
@@ -66,25 +68,30 @@ func init() {
 		template.New("detail").Parse(detailTplPattern))
 }
 
-func (d dashImpl) fillContextWithProject() {
+func (d dashImpl) fillContextWithProject() error {
 	// DONE(@yeqown): fill project information from local repository or remote gitlab repository.
 	// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
 	projectName := d.ctx.ProjectName()
-	project := new(types.ProjectBasics)
-	project.Name = projectName
 
 	// get from local
-	out, err := d.repo.QueryProject(&repository.ProjectDO{ProjectName: projectName})
-	if err == nil {
-		project.ID = out.ProjectID
-		project.WebURL = out.WebURL
-		d.ctx.Project = project
-		return
+	projects, err := d.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
+	if err == nil && len(projects) != 0 {
+		// should let user to choose one
+		matched, err := chooseOneProjectInteractively(projects)
+		if err == nil {
+			d.ctx.Project = &types.ProjectBasics{
+				ID:     matched.ProjectID,
+				Name:   matched.ProjectName,
+				WebURL: matched.WebURL,
+			}
+			return nil
+		}
 	}
 
 	log.
 		WithFields(log.Fields{"project": projectName}).
 		Fatal("could not found from local")
+	return fmt.Errorf("could not match project(%s) from remote", projectName)
 }
 
 // FeatureDetail get feature detail of current project

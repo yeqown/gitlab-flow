@@ -33,19 +33,23 @@ type FlowContext struct {
 
 	// confPath of configuration file path.
 	confPath string
+
+	// forceRemote force choose load project from remote(gitlab) rather than local.
+	forceRemote bool
 }
 
 // NewContext be generated with non project information.
 // Do not use Project directly!!!
-func NewContext(cwd, confPath, projectName string, c *Config) *FlowContext {
+func NewContext(cwd, confPath, projectName string, c *Config, forceRemote bool) *FlowContext {
 	if cwd == "" {
 		panic("cwd could not be empty")
 	}
 
 	ctx := &FlowContext{
-		Conf:    c,
-		CWD:     cwd,
-		Project: nil,
+		Conf:        c,
+		CWD:         cwd,
+		Project:     nil,
+		forceRemote: forceRemote,
 	}
 
 	ctx.applyConfPath(confPath)
@@ -70,6 +74,17 @@ func (c *FlowContext) ConfPath() string {
 	}
 
 	return c.confPath
+}
+
+// ForceRemote return should module need to locate project by projectName from remote.
+// true means locate project from remote, false means do not jump the process of
+// locating project from local.
+func (c *FlowContext) ForceRemote() bool {
+	if c == nil {
+		return false
+	}
+
+	return c.forceRemote
 }
 
 // applyConfPath to get configuration directory path rather than file path.

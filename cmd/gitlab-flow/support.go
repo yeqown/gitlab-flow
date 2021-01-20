@@ -39,6 +39,14 @@ var _cliGlobalFlags = []cli.Flag{
 		Required:    false,
 	},
 	&cli.BoolFlag{
+		Name:        "force-remote",
+		Value:       false,
+		DefaultText: "false",
+		Usage: "query project from remote not from local. This should be used when project " +
+			"name is duplicated, and could not found from local.",
+		Required: false,
+	},
+	&cli.BoolFlag{
 		Name:        "web",
 		Value:       false,
 		Usage:       "open web browser automatically or not",
@@ -52,6 +60,7 @@ type globalFlags struct {
 	DebugMode   bool
 	ProjectName string
 	OpenBrowser bool
+	ForceRemote bool
 }
 
 func parseGlobalFlags(c *cli.Context) globalFlags {
@@ -60,6 +69,7 @@ func parseGlobalFlags(c *cli.Context) globalFlags {
 		DebugMode:   c.Bool("debug"),
 		ProjectName: c.String("project"),
 		OpenBrowser: c.Bool("web"),
+		ForceRemote: c.Bool("force-remote"),
 	}
 }
 
@@ -109,5 +119,5 @@ func setEnviron(flags globalFlags) *types.FlowContext {
 
 	// generate a FlowContext
 	cwd, _ := os.Getwd()
-	return types.NewContext(cwd, flags.ConfPath, flags.ProjectName, cfg)
+	return types.NewContext(cwd, flags.ConfPath, flags.ProjectName, cfg, flags.ForceRemote)
 }

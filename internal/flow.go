@@ -6,6 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/pkg/errors"
+	"github.com/yeqown/gitlab-flow/internal/repository"
+
 	"github.com/yeqown/gitlab-flow/internal/types"
 
 	"github.com/yeqown/log"
@@ -131,4 +135,38 @@ func parseFeaturenameFromIssueName(issueName string) string {
 	}
 
 	return issueName[idx+1:]
+}
+
+// chooseOneProjectInteractively if there are not only one project matched from local or remote,
+// then let user know and do the choice.
+func chooseOneProjectInteractively(projects []*repository.ProjectDO) (*repository.ProjectDO, error) {
+	if len(projects) == 1 {
+		// if only one project found, then use this as target project
+		return projects[0], nil
+
+	}
+
+	projectOptions := make([]string, len(projects))
+	for idx, v := range projects {
+		projectOptions[idx] = fmt.Sprintf("%d::%s::%d::%s", idx, v.ProjectName, v.ProjectID, v.WebURL)
+	}
+
+	qs := []*survey.Question{
+		{
+			Name: "projects",
+			Prompt: &survey.Select{
+				Message: "choose one project",
+				Options: projectOptions,
+			},
+		},
+	}
+	r := struct {
+		Project string `survey:"projects"`
+	}{}
+	if err := survey.Ask(qs, &r); err != nil {
+		return nil, errors.Wrap(err, "survey.Ask failed")
+	}
+
+	idx, _ := strconv.Atoi(strings.Split(r.Project, "::")[0])
+	return projects[idx], nil
 }
