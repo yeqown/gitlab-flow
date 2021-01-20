@@ -3,8 +3,6 @@ package types
 import (
 	"os"
 	"path"
-	"path/filepath"
-	"strings"
 
 	"github.com/yeqown/log"
 )
@@ -111,15 +109,6 @@ func (c *FlowContext) applyProjectName(projectName string) {
 		return
 	}
 
-	c.projectName = extractProjectNameFromCWD(c.CWD)
-
+	c.projectName = path.Base(c.CWD)
 	return
-}
-
-// extractProjectNameFromCWD get project name from current working directory.
-// input:  /path/to/project
-// output: 'project'
-func extractProjectNameFromCWD(cwd string) string {
-	arr := strings.Split(cwd, string(filepath.Separator))
-	return arr[len(arr)-1]
 }

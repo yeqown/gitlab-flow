@@ -1,7 +1,8 @@
 package main
 
 import (
-	"os"
+	"path"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 
@@ -23,6 +24,13 @@ var _cliGlobalFlags = []cli.Flag{
 		Usage:       "choose which `path/to/file` to load",
 		Required:    false,
 	},
+	&cli.StringFlag{
+		Name:        "cwd",
+		Value:       conf.DefaultCWD(),
+		DefaultText: conf.DefaultCWD(),
+		Usage:       "choose which `path/to/file` to load",
+		Required:    false,
+	},
 	&cli.BoolFlag{
 		Name:        "debug",
 		Value:       false,
@@ -34,7 +42,7 @@ var _cliGlobalFlags = []cli.Flag{
 		Name:        "project",
 		Aliases:     []string{"p"},
 		Value:       "",
-		DefaultText: "extract working directory",
+		DefaultText: path.Base(conf.DefaultCWD()),
 		Usage:       "input `projectName` to locate which project should be operate.",
 		Required:    false,
 	},
@@ -61,6 +69,7 @@ type globalFlags struct {
 	ProjectName string
 	OpenBrowser bool
 	ForceRemote bool
+	CWD         string
 }
 
 func parseGlobalFlags(c *cli.Context) globalFlags {
@@ -70,6 +79,7 @@ func parseGlobalFlags(c *cli.Context) globalFlags {
 		ProjectName: c.String("project"),
 		OpenBrowser: c.Bool("web"),
 		ForceRemote: c.Bool("force-remote"),
+		CWD:         c.String("cwd"),
 	}
 }
 
@@ -87,7 +97,7 @@ func getDash(c *cli.Context) internal.IDash {
 
 // setEnviron set global environment of debug mode.
 // DONE(@yeqown): apply project name from CLI and CWD.
-// TODO(@yeqown): CWD could be configured from CLI.
+// DONE(@yeqown): CWD could be configured from CLI.
 func setEnviron(flags globalFlags) *types.FlowContext {
 	if !flags.DebugMode {
 		log.SetLogLevel(log.LevelInfo)
@@ -96,6 +106,9 @@ func setEnviron(flags globalFlags) *types.FlowContext {
 		log.SetCallerReporter(true)
 		log.SetLogLevel(log.LevelDebug)
 	}
+
+	// TODO(@yeqown) handle error
+	(&flags).CWD, _ = filepath.Abs(flags.CWD)
 	log.
 		WithField("flags", flags).
 		Debugf("setEnviron called")
@@ -117,7 +130,5 @@ func setEnviron(flags globalFlags) *types.FlowContext {
 		panic("could not reach")
 	}
 
-	// generate a FlowContext
-	cwd, _ := os.Getwd()
-	return types.NewContext(cwd, flags.ConfPath, flags.ProjectName, cfg, flags.ForceRemote)
+	return types.NewContext(flags.CWD, flags.ConfPath, flags.ProjectName, cfg, flags.ForceRemote)
 }

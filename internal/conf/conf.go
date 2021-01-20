@@ -96,6 +96,11 @@ func DefaultConfPath() string {
 	return configDirectory
 }
 
+func DefaultCWD() string {
+	cwd, _ := os.Getwd()
+	return cwd
+}
+
 const (
 	_defaultConfigDirectory = ".gitlab-flow" // under user home path.
 	_configFilename         = "config.toml"
