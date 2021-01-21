@@ -64,34 +64,50 @@ func NewFlow(ctx *types.FlowContext) IFlow {
 func (f flowImpl) fillContextWithProject() error {
 	// DONE(@yeqown): fill project information from local repository or remote gitlab repository.
 	// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
-	projectName := f.ctx.ProjectName()
-	project := new(types.ProjectBasics)
-	project.Name = projectName
+	var (
+		projectName = f.ctx.ProjectName()
+		projects    []*repository.ProjectDO
+		err         error
+	)
+
+	// if user specify locating project from remote directly, so skip the step of getting from local.
+	if f.ctx.ForceRemote() {
+		goto locateFromRemote
+	}
 
 	// get from local
-	out, err := f.repo.QueryProject(&repository.ProjectDO{ProjectName: projectName})
-	if err == nil {
-		project.ID = out.ProjectID
-		project.WebURL = out.WebURL
-		f.ctx.Project = project
-		return nil
+	projects, err = f.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
+	if err == nil && len(projects) != 0 {
+		// should let user to choose one
+		matched, err := chooseOneProjectInteractively(projects)
+		if err == nil {
+			f.ctx.Project = &types.ProjectBasics{
+				ID:     matched.ProjectID,
+				Name:   matched.ProjectName,
+				WebURL: matched.WebURL,
+			}
+			return nil
+		}
 	}
+
 	log.
 		WithFields(log.Fields{"project": projectName}).
 		Warn("could not found from local")
 
+locateFromRemote:
 	// query from remote repository.
 	result, err := f.gitlabOperator.ListProjects(context.Background(), &gitlabop.ListProjectRequest{
 		Page:        1,
 		PerPage:     20,
 		ProjectName: projectName,
 	})
-
 	if err != nil {
 		return errors.Wrap(err, "requests remote repository failed")
 	}
 
 	// found and match
+	// DONE(@yeqown): if remote(gitlab) has not only one project with projectName, then choose one as target.
+	remoteMatched := make([]*repository.ProjectDO, 0, 5)
 	for _, v := range result.Data {
 		if strings.Compare(projectName, v.Name) == 0 {
 			// matched
@@ -102,23 +118,33 @@ func (f flowImpl) fillContextWithProject() error {
 					"webURL":    v.WebURL,
 				}).
 				Debug("hit project in remote")
-			project.ID = v.ID
-			project.WebURL = v.WebURL
+
 			// DONE(@yeqown): save into local database
 			projectDO := repository.ProjectDO{
-				ProjectName: project.Name,
-				ProjectID:   project.ID,
+				ProjectName: projectName,
+				ProjectID:   v.ID,
 				LocalDir:    f.ctx.CWD,
-				WebURL:      project.WebURL,
+				WebURL:      v.WebURL,
 			}
-			if err = f.repo.SaveProject(&projectDO); err != nil {
-				log.
-					WithField("project", projectDO).
-					Warn("could not save project")
-			}
-			f.ctx.Project = project
-			return nil
+			remoteMatched = append(remoteMatched, &projectDO)
+			continue
 		}
+	}
+
+	matched, err := chooseOneProjectInteractively(remoteMatched)
+	if err == nil {
+		if err = f.repo.SaveProject(matched); err != nil {
+			log.
+				WithField("project", matched).
+				Warn("could not save project")
+		}
+
+		f.ctx.Project = &types.ProjectBasics{
+			ID:     matched.ProjectID,
+			Name:   matched.ProjectName,
+			WebURL: matched.WebURL,
+		}
+		return nil
 	}
 
 	// could not match

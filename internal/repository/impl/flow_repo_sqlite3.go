@@ -154,6 +154,19 @@ func (repo *sqliteFlowRepositoryImpl) QueryProject(filter *repository.ProjectDO)
 	return out, nil
 }
 
+func (repo *sqliteFlowRepositoryImpl) QueryProjects(filter *repository.ProjectDO) ([]*repository.ProjectDO, error) {
+	out := make([]*repository.ProjectDO, 0, 10)
+	err := repo.db.
+		Model(filter).
+		Where(filter).
+		Find(&out).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
 func (repo *sqliteFlowRepositoryImpl) SaveMilestone(m *repository.MilestoneDO, txs ...*gorm2.DB) (err error) {
 	return repo.insertRecordWithCheck(repo.txIn(txs...), m)
 }

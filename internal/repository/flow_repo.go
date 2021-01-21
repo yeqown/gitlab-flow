@@ -12,6 +12,7 @@ type IFlowRepository interface {
 
 	SaveProject(m *ProjectDO, txs ...*gorm2.DB) error
 	QueryProject(filter *ProjectDO) (*ProjectDO, error)
+	QueryProjects(filter *ProjectDO) ([]*ProjectDO, error)
 
 	SaveMilestone(m *MilestoneDO, txs ...*gorm2.DB) error
 	QueryMilestone(filter *MilestoneDO) (*MilestoneDO, error)

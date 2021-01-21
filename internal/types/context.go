@@ -3,8 +3,6 @@ package types
 import (
 	"os"
 	"path"
-	"path/filepath"
-	"strings"
 
 	"github.com/yeqown/log"
 )
@@ -33,19 +31,23 @@ type FlowContext struct {
 
 	// confPath of configuration file path.
 	confPath string
+
+	// forceRemote force choose load project from remote(gitlab) rather than local.
+	forceRemote bool
 }
 
 // NewContext be generated with non project information.
 // Do not use Project directly!!!
-func NewContext(cwd, confPath, projectName string, c *Config) *FlowContext {
+func NewContext(cwd, confPath, projectName string, c *Config, forceRemote bool) *FlowContext {
 	if cwd == "" {
 		panic("cwd could not be empty")
 	}
 
 	ctx := &FlowContext{
-		Conf:    c,
-		CWD:     cwd,
-		Project: nil,
+		Conf:        c,
+		CWD:         cwd,
+		Project:     nil,
+		forceRemote: forceRemote,
 	}
 
 	ctx.applyConfPath(confPath)
@@ -72,6 +74,17 @@ func (c *FlowContext) ConfPath() string {
 	return c.confPath
 }
 
+// ForceRemote return should module need to locate project by projectName from remote.
+// true means locate project from remote, false means do not jump the process of
+// locating project from local.
+func (c *FlowContext) ForceRemote() bool {
+	if c == nil {
+		return false
+	}
+
+	return c.forceRemote
+}
+
 // applyConfPath to get configuration directory path rather than file path.
 func (c *FlowContext) applyConfPath(confPath string) {
 	fi, err := os.Stat(confPath)
@@ -96,15 +109,6 @@ func (c *FlowContext) applyProjectName(projectName string) {
 		return
 	}
 
-	c.projectName = extractProjectNameFromCWD(c.CWD)
-
+	c.projectName = path.Base(c.CWD)
 	return
-}
-
-// extractProjectNameFromCWD get project name from current working directory.
-// input:  /path/to/project
-// output: 'project'
-func extractProjectNameFromCWD(cwd string) string {
-	arr := strings.Split(cwd, string(filepath.Separator))
-	return arr[len(arr)-1]
 }
