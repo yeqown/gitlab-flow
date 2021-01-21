@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/gitlab-flow/pkg"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 )
@@ -78,7 +76,7 @@ func (f flowImpl) fillContextWithProject() error {
 	// get from local
 	projects, err = f.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
 	if err == nil && len(projects) != 0 {
-		// should let user to choose one
+		// locate project from local, and there are maybe more than one project.
 		matched, err := chooseOneProjectInteractively(projects)
 		if err == nil {
 			f.ctx.Project = &types.ProjectBasics{
@@ -92,7 +90,7 @@ func (f flowImpl) fillContextWithProject() error {
 
 	log.
 		WithFields(log.Fields{"project": projectName}).
-		Warn("could not found from local")
+		Warnf("could not found from local: %v", err)
 
 locateFromRemote:
 	// query from remote repository.
@@ -148,7 +146,7 @@ locateFromRemote:
 	}
 
 	// could not match
-	return fmt.Errorf("could not match project(%s) from remote", projectName)
+	return fmt.Errorf("could not match project(%s) from remote: %v", projectName, err)
 }
 
 func (f flowImpl) FeatureBegin(title, desc string) error {
@@ -447,28 +445,22 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 			return errors.Wrap(err, "list milestones failed")
 		}
 
-		milestoneOptions := make([]string, len(result.Data))
+		milestones := make([]*repository.MilestoneDO, len(result.Data))
 		for idx, v := range result.Data {
-			milestoneOptions[idx] = fmt.Sprintf("%s::%d", v.Name, v.ID)
+			milestones[idx] = &repository.MilestoneDO{
+				ProjectID:   projectId,
+				MilestoneID: v.ID,
+				Title:       v.Name,
+				Desc:        v.Description,
+				WebURL:      v.WebURL,
+			}
 		}
 
-		qs := []*survey.Question{
-			{
-				Name: "milestones",
-				Prompt: &survey.Select{
-					Message: "choose one milestone",
-					Options: milestoneOptions,
-				},
-			},
+		milestone, err := chooseOneMilestoneInteractively(milestones)
+		if err != nil {
+			return errors.Wrap(err, "chooseOneMilestoneInteractively failed")
 		}
-		r := struct {
-			Milestone string `survey:"milestones"`
-		}{}
-		if err = survey.Ask(qs, &r); err != nil {
-			return errors.Wrap(err, "survey.Ask failed")
-		}
-
-		milestoneID, _ = strconv.Atoi(strings.Split(r.Milestone, "::")[1])
+		milestoneID = milestone.MilestoneID
 	}
 
 	log.Info("Querying remote repository data")

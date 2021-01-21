@@ -90,8 +90,8 @@ func (d dashImpl) fillContextWithProject() error {
 
 	log.
 		WithFields(log.Fields{"project": projectName}).
-		Fatal("could not found from local")
-	return fmt.Errorf("could not match project(%s) from remote", projectName)
+		Fatalf("could not found from local: %v", err)
+	return fmt.Errorf("could not match project(%s) from remote: %v", projectName, err)
 }
 
 // FeatureDetail get feature detail of current project

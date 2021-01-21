@@ -140,10 +140,13 @@ func parseFeaturenameFromIssueName(issueName string) string {
 // chooseOneProjectInteractively if there are not only one project matched from local or remote,
 // then let user know and do the choice.
 func chooseOneProjectInteractively(projects []*repository.ProjectDO) (*repository.ProjectDO, error) {
+	if len(projects) == 0 {
+		return nil, errors.New("no project to choose")
+	}
+
 	if len(projects) == 1 {
 		// if only one project found, then use this as target project
 		return projects[0], nil
-
 	}
 
 	projectOptions := make([]string, len(projects))
@@ -161,12 +164,48 @@ func chooseOneProjectInteractively(projects []*repository.ProjectDO) (*repositor
 		},
 	}
 	r := struct {
-		Project string `survey:"projects"`
+		Idx int `survey:"projects"`
 	}{}
 	if err := survey.Ask(qs, &r); err != nil {
 		return nil, errors.Wrap(err, "survey.Ask failed")
 	}
 
-	idx, _ := strconv.Atoi(strings.Split(r.Project, "::")[0])
-	return projects[idx], nil
+	return projects[r.Idx], nil
+}
+
+// chooseOneMilestoneInteractively if there are not only one milestone matched from local or remote,
+// then let user know and make a decision.
+func chooseOneMilestoneInteractively(milestones []*repository.MilestoneDO) (*repository.MilestoneDO, error) {
+	if len(milestones) == 0 {
+		return nil, errors.New("no milestone to choose")
+	}
+
+	if len(milestones) == 1 {
+		// if only one project found, then use this as target project
+		return milestones[0], nil
+
+	}
+
+	milestoneOptions := make([]string, len(milestones))
+	for idx, v := range milestones {
+		milestoneOptions[idx] = v.Title
+	}
+
+	qs := []*survey.Question{
+		{
+			Name: "milestones",
+			Prompt: &survey.Select{
+				Message: "choose one milestone",
+				Options: milestoneOptions,
+			},
+		},
+	}
+	r := struct {
+		Idx int `survey:"milestones"`
+	}{}
+	if err := survey.Ask(qs, &r); err != nil {
+		return nil, errors.Wrap(err, "survey.Ask failed")
+	}
+
+	return milestones[r.Idx], nil
 }
