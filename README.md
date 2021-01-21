@@ -52,10 +52,10 @@ NAME:
    gitlab-flow - CLI tool
 
 USAGE:
-   gitlab-flow [global options] command [command options] [arguments...]
+   flow2 [global options] command [command options] [arguments...]
 
 VERSION:
-   v1.5.1
+   v1.6.2
 
 DESCRIPTION:
    A tool for managing gitlab Feature/Milestone/Issue/MergeRequest as gitlab-flow.
@@ -75,8 +75,10 @@ COMMANDS:
 
 GLOBAL OPTIONS:
    --conf_path path/to/file, -c path/to/file  choose which path/to/file to load (default: ~/.gitlab-flow)
+   --cwd path/to/file                         choose which path/to/file to load (default: /Users/med/projects/opensource/gitlab-flow)
    --debug                                    verbose mode (default: false)
-   --project projectName, -p projectName      input projectName to locate which project should be operate. (default: extract working directory)
+   --project projectName, -p projectName      input projectName to locate which project should be operate. (default: gitlab-flow)
+   --force-remote                             query project from remote not from local. This should be used when project name is duplicated, and could not found from local. (default: false)
    --web                                      open web browser automatically or not (default: false)
    --help, -h                                 show help (default: false)
    --version, -v                              print the version (default: false)

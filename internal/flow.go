@@ -6,12 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/pkg/errors"
 	"github.com/yeqown/gitlab-flow/internal/repository"
-
 	"github.com/yeqown/gitlab-flow/internal/types"
 
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 )
 
