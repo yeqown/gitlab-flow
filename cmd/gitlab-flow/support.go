@@ -4,12 +4,11 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/urfave/cli/v2"
-
 	"github.com/yeqown/gitlab-flow/internal"
 	"github.com/yeqown/gitlab-flow/internal/conf"
 	"github.com/yeqown/gitlab-flow/internal/types"
 
+	"github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
 )
 
