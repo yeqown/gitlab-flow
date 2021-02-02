@@ -26,11 +26,11 @@ type IFlow interface {
 	FeatureTest(featureBranchName string) error
 	// FeatureRelease open a MergeRequest of feature branch and types.MasterBranch branch.
 	FeatureRelease(featureBranchName string) error
-	// TODO(@yeqown) this would be useful while you merge feature into master but there is conflict.
+	// DONE(@yeqown) this would be useful while you merge feature into master but there is conflict.
 	// FeatureResolveConflict will checkout a new branch from target branch,
 	// then create a merge request from current feature branch to the new branch.
 	// newBranch = "resolve-conflict/featureBranchName-to-master"
-	// FeatureResolveConflict(featureBranchName string) error
+	FeatureResolveConflict(featureBranchName string, targetBranch types.BranchTyp) error
 
 	// FeatureBeginIssue checkout a issue branch from feature branch, also open a merge request
 	// which is from issue branch to feature branch.
@@ -88,8 +88,9 @@ func notBuiltinBranch(branchName string) bool {
 }
 
 const (
-	FeatureBranchPrefix = "feature/"
-	HotfixBranchPrefix  = "hotfix/"
+	FeatureBranchPrefix         = "feature/"
+	HotfixBranchPrefix          = "hotfix/"
+	ConflictResolveBranchPrefix = "conflict-resolve/"
 )
 
 // genFeatureBranchName

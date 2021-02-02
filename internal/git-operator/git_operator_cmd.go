@@ -21,6 +21,7 @@ type operatorBasedCmd struct {
 	fetchCmd         string // fetch command
 	checkoutCmd      string // checkout command
 	currentBranchCmd string
+	mergeCmd         string
 }
 
 // NewBasedCmd generate a git operator based command line.
@@ -31,6 +32,7 @@ func NewBasedCmd(dir string) IGitOperator {
 		fetchCmd:         "fetch {arg}",
 		checkoutCmd:      "checkout {createFlag}{branch}",
 		currentBranchCmd: "rev-parse --abbrev-ref HEAD",
+		mergeCmd:         "merge --no-ff {branch}",
 	}
 }
 
@@ -98,7 +100,7 @@ func (c operatorBasedCmd) FetchOrigin() error {
 	return c.run(c.Dir, c.fetchCmd, "arg", "--all")
 }
 
-// Current get current repository info, includes:
+// CurrentBranch get current repository info, includes:
 // * current branch name
 // * repository name ?
 func (c operatorBasedCmd) CurrentBranch() (string, error) {
@@ -108,6 +110,30 @@ func (c operatorBasedCmd) CurrentBranch() (string, error) {
 	}
 
 	return strings.TrimSpace(string(branchName)), nil
+}
+
+// Merge would merge source into target with --no-ff flag.
+// if current branch is not target branch, it checkouts to target automatically.
+func (c operatorBasedCmd) Merge(source, target string) error {
+	if source == "" || target == "" {
+		return errors.New("invalid branch parameter of Merge")
+	}
+
+	b, err := c.CurrentBranch()
+	if err != nil {
+		return errors.Wrapf(err, "Merge => c.CurrentBranch() failed")
+	}
+	if b == "" {
+		return errors.New("Merge => c.CurrentBranch() failed: empty branch got")
+	}
+
+	if strings.Compare(b, target) != 0 {
+		if err = c.Checkout(target, false); err != nil {
+			return errors.Wrap(err, "automatic checkout failed")
+		}
+	}
+
+	return c.run(c.Dir, c.mergeCmd, "branch", source)
 }
 
 // expand rewrites s to replace {k} with match[k] for each key k in match.

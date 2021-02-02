@@ -39,3 +39,10 @@ func Test_gitOp_CurrentBranch(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, b, cb)
 }
+
+func Test_gitOp_Merge(t *testing.T) {
+	op := NewBasedCmd(repoPath)
+	src, target := "hotfix/hotfix-1", "master"
+	err := op.Merge(src, target)
+	assert.Nil(t, err)
+}

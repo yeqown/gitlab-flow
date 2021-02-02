@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
+	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/log"
 )
 
@@ -15,6 +16,7 @@ func getFeatureSubCommands() cli.Commands {
 		getFeatureDebugSubCommand(),
 		getFeatureTestSubCommand(),
 		getFeatureReleaseSubCommand(),
+		getFeatureResolveConflictCommand(),
 		getSyncMilestoneSubCommand(),
 	}
 }
@@ -170,6 +172,36 @@ func getFeatureReleaseSubCommand() *cli.Command {
 		Action: func(c *cli.Context) error {
 			featureBranchName := c.String("feature_branch_name")
 			return getFlow(c).FeatureRelease(featureBranchName)
+		},
+	}
+}
+
+func getFeatureResolveConflictCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "resolve-conflict",
+		Usage:     "if there is a conflict of your merge request indicates conflicts(feature => target branch)",
+		ArgsUsage: "-f, --feature_branch_name `featureBranchName`, -t, --target_branch `targetBranch`",
+		Category:  "feature",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "feature_branch_name",
+				Aliases:  []string{"-f"},
+				Usage:    "input the `featureBranchName`",
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:        "target_branch",
+				Aliases:     []string{"-t"},
+				Usage:       "input the `targetBranch`",
+				Value:       "master",
+				DefaultText: "master",
+				Required:    false,
+			},
+		},
+		Action: func(c *cli.Context) error {
+			featureBranchName := c.String("feature_branch_name")
+			targetBranchName := c.String("target_branch")
+			return getFlow(c).FeatureResolveConflict(featureBranchName, types.BranchTyp(targetBranchName))
 		},
 	}
 }

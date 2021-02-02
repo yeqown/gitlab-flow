@@ -173,16 +173,70 @@ func (f flowImpl) FeatureBegin(title, desc string) error {
 	return nil
 }
 
-func (f flowImpl) FeatureDebugging(featureBranchName string) error {
+func (f flowImpl) extractFeatureBranchName(featureBranchName string) (string, error) {
+	if featureBranchName == "" {
+		featureBranchName, _ = f.gitOperator.CurrentBranch()
+	}
+	if featureBranchName == "" {
+		return "", errors.New("feature branch could not be empty")
+	}
+	featureBranchName = genFeatureBranchName(featureBranchName)
+	return featureBranchName, nil
+}
+
+func (f flowImpl) FeatureDebugging(featureBranchName string) (err error) {
+	if featureBranchName, err = f.extractFeatureBranchName(featureBranchName); err != nil {
+		return err
+	}
 	return f.featureProcessMR(featureBranchName, types.DevBranch)
 }
 
-func (f flowImpl) FeatureTest(featureBranchName string) error {
+func (f flowImpl) FeatureTest(featureBranchName string) (err error) {
+	if featureBranchName, err = f.extractFeatureBranchName(featureBranchName); err != nil {
+		return err
+	}
 	return f.featureProcessMR(featureBranchName, types.TestBranch)
 }
 
-func (f flowImpl) FeatureRelease(featureBranchName string) error {
+func (f flowImpl) FeatureRelease(featureBranchName string) (err error) {
+	if featureBranchName, err = f.extractFeatureBranchName(featureBranchName); err != nil {
+		return err
+	}
 	return f.featureProcessMR(featureBranchName, types.MasterBranch)
+}
+
+func (f flowImpl) FeatureResolveConflict(featureBranchName string, targetBranch types.BranchTyp) (err error) {
+	if featureBranchName, err = f.extractFeatureBranchName(featureBranchName); err != nil {
+		return err
+	}
+
+	// feature/branch-1 => conflict-resolve/branch-1
+	resolveConflictBranch := strings.Replace(featureBranchName, FeatureBranchPrefix, ConflictResolveBranchPrefix, 1)
+
+	// locate feature branch
+	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
+		ProjectID:  f.ctx.Project.ID,
+		BranchName: featureBranchName,
+	})
+	if err != nil {
+		return errors.Wrap(err, "locate feature branch failed")
+	}
+
+	// create resolve conflict branch.
+	// Notice: createBranch would create branch which checkout to new branch automatically.
+	if _, err = f.createBranch(
+		resolveConflictBranch, targetBranch.String(), featureBranch.MilestoneID, 0); err != nil {
+		return err
+	}
+
+	// check out one branch from target branch, and open a MergeRequest.
+	if err = f.featureProcessMR(resolveConflictBranch, targetBranch); err != nil {
+		return err
+	}
+
+	// then local git command to use git merge
+	// git merge --no-ff `featureBranchName`
+	return f.gitOperator.Merge(featureBranchName, resolveConflictBranch)
 }
 
 func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string) error {
@@ -613,10 +667,10 @@ func (f flowImpl) syncFormatResultIntoDO(
 		})
 
 		// featureBranchName
-		if featureBranchName == "" && strings.HasPrefix(mr.SourceBranch, types.FeatureBranchPrefix) {
+		if featureBranchName == "" && strings.HasPrefix(mr.SourceBranch, FeatureBranchPrefix) {
 			featureBranchName = mr.SourceBranch
 		}
-		if featureBranchName == "" && strings.HasPrefix(mr.TargetBranch, types.FeatureBranchPrefix) {
+		if featureBranchName == "" && strings.HasPrefix(mr.TargetBranch, FeatureBranchPrefix) {
 			featureBranchName = mr.TargetBranch
 		}
 
@@ -826,14 +880,6 @@ func (f flowImpl) createMergeRequest(
 
 // featureProcessMR is a process for creating a merge request for feature branch to target branch
 func (f flowImpl) featureProcessMR(featureBranchName string, targetBranchName types.BranchTyp) error {
-	if featureBranchName == "" {
-		featureBranchName, _ = f.gitOperator.CurrentBranch()
-	}
-	if featureBranchName == "" {
-		return errors.New("feature branch could not be empty")
-	}
-	featureBranchName = genFeatureBranchName(featureBranchName)
-
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
 		BranchName: featureBranchName,

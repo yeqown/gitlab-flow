@@ -7,12 +7,9 @@ func (b BranchTyp) String() string {
 	return string(b)
 }
 
-const (
+// TODO(@yeqown) MasterBranch, DevBranch and TestBranch could be customized.
+var (
 	MasterBranch BranchTyp = "master"
 	DevBranch    BranchTyp = "develop"
 	TestBranch   BranchTyp = "test"
-)
-
-const (
-	FeatureBranchPrefix = "feature/"
 )

@@ -106,8 +106,14 @@ func setEnviron(flags globalFlags) *types.FlowContext {
 		log.SetLogLevel(log.LevelDebug)
 	}
 
-	// TODO(@yeqown) handle error
-	(&flags).CWD, _ = filepath.Abs(flags.CWD)
+	var err error
+	(&flags).CWD, err = filepath.Abs(flags.CWD)
+	if err != nil {
+		log.
+			WithField("cwd", flags.CWD).
+			Fatalf("get ABS of cwd failed: %v", err)
+		panic("could not reach")
+	}
 	log.
 		WithField("flags", flags).
 		Debugf("setEnviron called")
@@ -117,7 +123,7 @@ func setEnviron(flags globalFlags) *types.FlowContext {
 	if err != nil {
 		log.
 			WithField("path", flags.ConfPath).
-			Fatalf("could not load config file")
+			Fatalf("could not load config file: %v", err)
 		panic("could not reach")
 	}
 	if err = cfg.
