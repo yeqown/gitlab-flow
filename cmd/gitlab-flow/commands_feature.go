@@ -55,15 +55,7 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 		Usage:     "open an issue then create issue branch from feature branch, also merge request",
 		ArgsUsage: "open-issue -f @featureBranchName @title @desc",
 		Category:  "feature",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "feature_branch_name",
-				Aliases:  []string{"f"},
-				Usage:    "input the `featureBranchName`",
-				Value:    "",
-				Required: false,
-			},
-		},
+		Flags:     []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			defer func() {
 				log.
@@ -73,9 +65,8 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 
 			issueTitle := c.Args().Get(0)
 			issueDesc := c.Args().Get(1)
-			featureBranchName := c.String("feature_branch_name")
 			opc := getOpFeatureContext(c)
-			return getFlow(c).FeatureBeginIssue(opc, featureBranchName, issueTitle, issueDesc)
+			return getFlow(c).FeatureBeginIssue(opc, issueTitle, issueDesc)
 		},
 	}
 }
@@ -90,13 +81,6 @@ func getFeatureFinishIssueSubCommand() *cli.Command {
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "feature_branch_name",
-				Aliases:  []string{"f"},
-				Usage:    "input the `featureBranchName`",
-				Value:    "",
-				Required: false,
-			},
-			&cli.StringFlag{
 				Name:     "issue_branch_name",
 				Aliases:  []string{"i"},
 				Value:    "",                            // default current branch
@@ -105,10 +89,9 @@ func getFeatureFinishIssueSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			featureBranchName := c.String("feature_branch_name")
 			issueBranchName := c.String("issue_branch_name")
 			opc := getOpFeatureContext(c)
-			return getFlow(c).FeatureFinishIssue(opc, featureBranchName, issueBranchName)
+			return getFlow(c).FeatureFinishIssue(opc, issueBranchName)
 		},
 	}
 }
@@ -120,14 +103,7 @@ func getFeatureDebugSubCommand() *cli.Command {
 		Usage:     "open a merge request from feature branch into DevBranch",
 		ArgsUsage: "-f, --feature_branch_name `featureBranchName`",
 		Category:  "feature",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "feature_branch_name",
-				Aliases:  []string{"-f"},
-				Usage:    "input the `featureBranchName`",
-				Required: false,
-			},
-		},
+		Flags:     []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			opc := getOpFeatureContext(c)
 			return getFlow(c).FeatureDebugging(opc)
@@ -142,14 +118,7 @@ func getFeatureTestSubCommand() *cli.Command {
 		Usage:     "open a merge request from feature branch into TestBranch",
 		ArgsUsage: "-f, --feature_branch_name `featureBranchName`",
 		Category:  "feature",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "feature_branch_name",
-				Aliases:  []string{"-f"},
-				Usage:    "input the `featureBranchName`",
-				Required: false,
-			},
-		},
+		Flags:     []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			opc := getOpFeatureContext(c)
 			return getFlow(c).FeatureTest(opc)
@@ -164,14 +133,7 @@ func getFeatureReleaseSubCommand() *cli.Command {
 		Usage:     "open a merge request from feature branch into MasterBranch",
 		ArgsUsage: "-f, --feature_branch_name `featureBranchName`",
 		Category:  "feature",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "feature_branch_name",
-				Aliases:  []string{"-f"},
-				Usage:    "input the `featureBranchName`",
-				Required: false,
-			},
-		},
+		Flags:     []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			opc := getOpFeatureContext(c)
 			return getFlow(c).FeatureRelease(opc)
@@ -188,7 +150,7 @@ func getFeatureResolveConflictCommand() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "target_branch",
-				Aliases:     []string{"-t"},
+				Aliases:     []string{"t"},
 				Usage:       "input the `targetBranch`",
 				Value:       "master",
 				DefaultText: "master",

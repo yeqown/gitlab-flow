@@ -65,7 +65,7 @@ func getFeatureCommand() *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:     "feature-branch-name",
-				Aliases:  []string{"-f"},
+				Aliases:  []string{"f"},
 				Usage:    "input the `featureBranchName`",
 				Required: false,
 			},
