@@ -19,6 +19,20 @@ flow -c ~/.gitlab-flow --debug init ...
 # directory `~/.gitlab-flow` and logs will be verbose
 ```
 
+### 0.1 Feature flags
+
+```sh
+flow [global options] feature [feature options] SUB_COMMAND [options]
+# (OPTIONAL) -f, --feature-branch-name feature branch name.
+# (OPTIONAL) --force-create-mr force to create merge request in remote not query from local firstly.
+
+# example:
+flow --web feature -f featureBranchName --force-create-mr debug
+# means flow would create merge request directly not query from local firstly 
+# with specified branch name `featureBranchName`.
+```
+
+
 ### 1. Start a milestone feature.
 
 ```sh
