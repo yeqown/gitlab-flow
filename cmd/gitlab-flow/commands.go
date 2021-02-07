@@ -52,9 +52,24 @@ func getInitCommand() *cli.Command {
 // gitlab-flow feature [command options] -c --conf_path
 func getFeatureCommand() *cli.Command {
 	return &cli.Command{
-		Name:        "feature",
-		Usage:       "managing the works in developing.",
-		Category:    "flow",
+		Name:     "feature",
+		Usage:    "managing the works in developing.",
+		Category: "flow",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "force-create-mr",
+				Value:       false,
+				Usage:       "force to create Merge Request",
+				DefaultText: "false",
+				Required:    false,
+			},
+			&cli.StringFlag{
+				Name:     "feature-branch-name",
+				Aliases:  []string{"-f"},
+				Usage:    "input the `featureBranchName`",
+				Required: false,
+			},
+		},
 		Subcommands: getFeatureSubCommands(),
 	}
 }

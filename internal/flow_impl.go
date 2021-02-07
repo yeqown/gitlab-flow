@@ -31,6 +31,10 @@ type flowImpl struct {
 	repo repository.IFlowRepository
 }
 
+var (
+	errInvalidFeatureName = errors.New("feature branch could not be empty")
+)
+
 func NewFlow(ctx *types.FlowContext) IFlow {
 	if ctx == nil {
 		log.Fatal("empty FlowContext initialized")
@@ -149,7 +153,7 @@ locateFromRemote:
 	return fmt.Errorf("could not match project(%s) from remote: %v", projectName, err)
 }
 
-func (f flowImpl) FeatureBegin(title, desc string) error {
+func (f flowImpl) FeatureBegin(opc *types.OpFeatureContext, title, desc string) error {
 	log.
 		WithFields(log.Fields{
 			"title": title,
@@ -163,8 +167,11 @@ func (f flowImpl) FeatureBegin(title, desc string) error {
 		return errors.Wrap(err, "CreateMilestone failed")
 	}
 
-	// create feature branch
+	// create feature branch, branchName is generated from title "feature/title" as default
 	featureBranchName := genFeatureBranchName(title)
+	if len(opc.FeatureBranchName) != 0 {
+		featureBranchName = genFeatureBranchName(opc.FeatureBranchName)
+	}
 	_, err = f.createBranch(featureBranchName, types.MasterBranch.String(), result.ID, 0)
 	if err != nil {
 		return err
@@ -173,50 +180,55 @@ func (f flowImpl) FeatureBegin(title, desc string) error {
 	return nil
 }
 
-func (f flowImpl) extractFeatureBranchName(featureBranchName string) (string, error) {
-	if featureBranchName == "" {
-		featureBranchName, _ = f.gitOperator.CurrentBranch()
+// extractFeatureBranchName return feature branch name with rule and input.
+// input:	opc.FeatureBranchName = "aaaa"
+// output	"feature/aaaa"
+// if input is empty string, flowImpl would use the project's current git branch name,
+// error would be returned when no feature branch is found.
+func (f flowImpl) extractFeatureBranchName(opc *types.OpFeatureContext) (string, error) {
+	if opc.FeatureBranchName == "" {
+		opc.FeatureBranchName, _ = f.gitOperator.CurrentBranch()
 	}
-	if featureBranchName == "" {
-		return "", errors.New("feature branch could not be empty")
+	if opc.FeatureBranchName == "" {
+		return "", errInvalidFeatureName
 	}
-	featureBranchName = genFeatureBranchName(featureBranchName)
-	return featureBranchName, nil
+	opc.FeatureBranchName = genFeatureBranchName(opc.FeatureBranchName)
+	return opc.FeatureBranchName, nil
 }
 
-func (f flowImpl) FeatureDebugging(featureBranchName string) (err error) {
-	if featureBranchName, err = f.extractFeatureBranchName(featureBranchName); err != nil {
+func (f flowImpl) FeatureDebugging(opc *types.OpFeatureContext) (err error) {
+	if opc.FeatureBranchName, err = f.extractFeatureBranchName(opc); err != nil {
 		return err
 	}
-	return f.featureProcessMR(featureBranchName, types.DevBranch)
+	return f.featureProcessMR(opc.FeatureBranchName, types.DevBranch, opc.ForceCreateMergeRequest)
 }
 
-func (f flowImpl) FeatureTest(featureBranchName string) (err error) {
-	if featureBranchName, err = f.extractFeatureBranchName(featureBranchName); err != nil {
+func (f flowImpl) FeatureTest(opc *types.OpFeatureContext) (err error) {
+	if opc.FeatureBranchName, err = f.extractFeatureBranchName(opc); err != nil {
 		return err
 	}
-	return f.featureProcessMR(featureBranchName, types.TestBranch)
+	return f.featureProcessMR(opc.FeatureBranchName, types.TestBranch, opc.ForceCreateMergeRequest)
 }
 
-func (f flowImpl) FeatureRelease(featureBranchName string) (err error) {
-	if featureBranchName, err = f.extractFeatureBranchName(featureBranchName); err != nil {
+func (f flowImpl) FeatureRelease(opc *types.OpFeatureContext) (err error) {
+	if opc.FeatureBranchName, err = f.extractFeatureBranchName(opc); err != nil {
 		return err
 	}
-	return f.featureProcessMR(featureBranchName, types.MasterBranch)
+	return f.featureProcessMR(opc.FeatureBranchName, types.MasterBranch, opc.ForceCreateMergeRequest)
 }
 
-func (f flowImpl) FeatureResolveConflict(featureBranchName string, targetBranch types.BranchTyp) (err error) {
-	if featureBranchName, err = f.extractFeatureBranchName(featureBranchName); err != nil {
+func (f flowImpl) FeatureResolveConflict(opc *types.OpFeatureContext, targetBranch types.BranchTyp) (err error) {
+	if opc.FeatureBranchName, err = f.extractFeatureBranchName(opc); err != nil {
 		return err
 	}
 
 	// feature/branch-1 => conflict-resolve/branch-1
-	resolveConflictBranch := strings.Replace(featureBranchName, FeatureBranchPrefix, ConflictResolveBranchPrefix, 1)
+	resolveConflictBranch := strings.Replace(opc.FeatureBranchName, FeatureBranchPrefix, ConflictResolveBranchPrefix, 1)
 
 	// locate feature branch
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
-		BranchName: featureBranchName,
+		BranchName: opc.FeatureBranchName,
 	})
 	if err != nil {
 		return errors.Wrap(err, "locate feature branch failed")
@@ -230,25 +242,28 @@ func (f flowImpl) FeatureResolveConflict(featureBranchName string, targetBranch 
 	}
 
 	// check out one branch from target branch, and open a MergeRequest.
-	if err = f.featureProcessMR(resolveConflictBranch, targetBranch); err != nil {
+	if err = f.featureProcessMR(resolveConflictBranch, targetBranch, opc.ForceCreateMergeRequest); err != nil {
 		return err
 	}
 
 	// then local git command to use git merge
 	// git merge --no-ff `featureBranchName`
-	return f.gitOperator.Merge(featureBranchName, resolveConflictBranch)
+	return f.gitOperator.Merge(opc.FeatureBranchName, resolveConflictBranch)
 }
 
-func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string) error {
+func (f flowImpl) FeatureBeginIssue(opc *types.OpFeatureContext, title, desc string) error {
 	// DONE(@yeqown): is featureBranchName is empty, use current branch name.
-	if featureBranchName == "" {
-		featureBranchName, _ = f.gitOperator.CurrentBranch()
+	if opc.FeatureBranchName == "" {
+		opc.FeatureBranchName, _ = f.gitOperator.CurrentBranch()
 	}
+	if opc.FeatureBranchName == "" {
+		return errInvalidFeatureName
+	}
+	opc.FeatureBranchName = genFeatureBranchName(opc.FeatureBranchName)
 
-	featureBranchName = genFeatureBranchName(featureBranchName)
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
-		BranchName: featureBranchName,
+		BranchName: opc.FeatureBranchName,
 	})
 	if err != nil {
 		return errors.Wrap(err, "locate feature branch from local failed")
@@ -289,8 +304,7 @@ func (f flowImpl) FeatureBeginIssue(featureBranchName string, title, desc string
 }
 
 // DONE(@yeqown): issue merge request should be called here, rather than FeatureBeginIssue
-func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) error {
-
+func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchName string) (err error) {
 	// DONE(@yeqown): if issueBranchName is empty, make current branch name as default.
 	if issueBranchName == "" {
 		issueBranchName, _ = f.gitOperator.CurrentBranch()
@@ -315,13 +329,13 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 	}
 
 	// DONE(@yeqown) get feature branch name from issueBranchName
-	if featureBranchName == "" {
-		featureBranchName = parseFeaturenameFromIssueName(issueBranchName)
+	if opc.FeatureBranchName == "" {
+		opc.FeatureBranchName = parseFeaturenameFromIssueName(issueBranchName)
 	}
-	if featureBranchName == "" {
-		return errors.New("feature branch could not be empty")
+	if opc.FeatureBranchName == "" {
+		return errInvalidFeatureName
 	}
-	featureBranchName = genFeatureBranchName(featureBranchName)
+	opc.FeatureBranchName = genFeatureBranchName(opc.FeatureBranchName)
 	//if _, err := f.repo.QueryBranch(&repository.BranchDO{
 	//	ProjectID:   f.ctx.Project.ID,
 	//	BranchName:  featureBranchName,
@@ -330,13 +344,18 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 	//	return errors.Wrapf(err, "locate feature branch(%s) failed", featureBranchName)
 	//}
 
+	var mr *repository.MergeRequestDO
+	if opc.ForceCreateMergeRequest {
+		goto issueCreateMR
+	}
+
 	// locate MR
-	mr, err := f.repo.QueryMergeRequest(&repository.MergeRequestDO{
+	mr, err = f.repo.QueryMergeRequest(&repository.MergeRequestDO{
 		ProjectID:    f.ctx.Project.ID,
 		IssueIID:     issueIID,
 		MilestoneID:  milestoneID,
 		SourceBranch: issueBranchName,
-		TargetBranch: featureBranchName,
+		TargetBranch: opc.FeatureBranchName,
 	})
 	if err != nil && !repository.IsErrNotFound(err) {
 		log.
@@ -345,7 +364,7 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 				"issueIID":     issueIID,
 				"milestoneID":  milestoneID,
 				"sourceBranch": issueBranchName,
-				"targetBranch": featureBranchName,
+				"targetBranch": opc.FeatureBranchName,
 			}).
 			Errorf("locate MR failed: %v", err)
 		return errors.Wrap(err, "locate MR failed")
@@ -355,7 +374,7 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 	if mr != nil {
 		log.
 			WithFields(log.Fields{
-				"featureBranch":   featureBranchName,
+				"featureBranch":   opc.FeatureBranchName,
 				"issueBranch":     issueBranchName,
 				"mergeRequestURL": mr.WebURL,
 			}).
@@ -364,11 +383,11 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 		f.printAndOpenBrowser("Issue Merge Request", mr.WebURL)
 		return nil
 	}
-
+issueCreateMR:
 	// not hit, so create one
-	title := genMRTitle(issueBranchName, featureBranchName)
+	title := genMRTitle(issueBranchName, opc.FeatureBranchName)
 	desc := ""
-	result, err := f.createMergeRequest(title, desc, milestoneID, issueIID, issueBranchName, featureBranchName)
+	result, err := f.createMergeRequest(title, desc, milestoneID, issueIID, issueBranchName, opc.FeatureBranchName)
 	if err != nil {
 		return errors.Wrap(err, "create issue merge request failed")
 	}
@@ -376,7 +395,7 @@ func (f flowImpl) FeatureFinishIssue(featureBranchName, issueBranchName string) 
 	log.
 		WithFields(log.Fields{
 			"issueBranchName":   issueBranchName,
-			"featureBranchName": featureBranchName,
+			"featureBranchName": opc.FeatureBranchName,
 			"mergeRequestURL":   result.WebURL,
 		}).
 		Debug("create issue merge request finished")
@@ -878,8 +897,10 @@ func (f flowImpl) createMergeRequest(
 	return result, nil
 }
 
-// featureProcessMR is a process for creating a merge request for feature branch to target branch
-func (f flowImpl) featureProcessMR(featureBranchName string, targetBranchName types.BranchTyp) error {
+// featureProcessMR is a process for creating a merge request for feature branch to target branch. If
+// forceCreateMR is true means skipping the logic which would query MergeRequest from local.
+func (f flowImpl) featureProcessMR(
+	featureBranchName string, targetBranchName types.BranchTyp, forceCreateMR bool) error {
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project.ID,
 		BranchName: featureBranchName,
@@ -888,8 +909,13 @@ func (f flowImpl) featureProcessMR(featureBranchName string, targetBranchName ty
 		return errors.Wrap(err, "locate feature branch failed")
 	}
 
+	var mr *repository.MergeRequestDO
+
+	if forceCreateMR {
+		goto featureCreateMR
+	}
 	// query feature MR first
-	mr, err := f.repo.QueryMergeRequest(&repository.MergeRequestDO{
+	mr, err = f.repo.QueryMergeRequest(&repository.MergeRequestDO{
 		ProjectID:    f.ctx.Project.ID,
 		MilestoneID:  featureBranch.MilestoneID,
 		IssueIID:     featureBranch.IssueIID,
@@ -904,6 +930,7 @@ func (f flowImpl) featureProcessMR(featureBranchName string, targetBranchName ty
 		return nil
 	}
 
+featureCreateMR:
 	milestone, err := f.repo.QueryMilestone(&repository.MilestoneDO{
 		MilestoneID: featureBranch.MilestoneID,
 	})

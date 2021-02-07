@@ -19,24 +19,24 @@ type IFlow interface {
 	// FeatureBegin open a milestone and related to a feature branch,
 	// then CLI would automate fetch origin branches and pull them to local.
 	// Of course, flow would save data in local storage.
-	FeatureBegin(title, desc string) error
+	FeatureBegin(opc *types.OpFeatureContext, title, desc string) error
 	// FeatureDebugging open a MergeRequest of feature branch and types.DevBranch branch.
-	FeatureDebugging(featureBranchName string) error
+	FeatureDebugging(opc *types.OpFeatureContext) error
 	// FeatureTest open a MergeRequest of feature branch and types.TestBranch branch.
-	FeatureTest(featureBranchName string) error
+	FeatureTest(opc *types.OpFeatureContext) error
 	// FeatureRelease open a MergeRequest of feature branch and types.MasterBranch branch.
-	FeatureRelease(featureBranchName string) error
+	FeatureRelease(opc *types.OpFeatureContext) error
 	// DONE(@yeqown) this would be useful while you merge feature into master but there is conflict.
 	// FeatureResolveConflict will checkout a new branch from target branch,
 	// then create a merge request from current feature branch to the new branch.
 	// newBranch = "resolve-conflict/featureBranchName-to-master"
-	FeatureResolveConflict(featureBranchName string, targetBranch types.BranchTyp) error
+	FeatureResolveConflict(opc *types.OpFeatureContext, targetBranch types.BranchTyp) error
 
 	// FeatureBeginIssue checkout a issue branch from feature branch, also open a merge request
 	// which is from issue branch to feature branch.
-	FeatureBeginIssue(featureBranchName string, title, desc string) error
+	FeatureBeginIssue(opc *types.OpFeatureContext, title, desc string) error
 	// FeatureFinishIssue open the WebURL of merge request which is from issue branch to feature branch.
-	FeatureFinishIssue(featureBranchName, issueBranchName string) error
+	FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchName string) error
 
 	// HotfixStart checkout a hotfix branch from types.MasterBranch, also open a merge request
 	// which is from hotfix branch to types.MasterBranch.
@@ -113,7 +113,7 @@ func genHotfixBranchName(name string) string {
 
 // genMRTitle
 func genMRTitle(srcBranch, targetBranch string) string {
-	return fmt.Sprintf("Merge %s to %s", srcBranch, targetBranch)
+	return fmt.Sprintf("Merge %s into %s", srcBranch, targetBranch)
 }
 
 // genIssueBranchName .

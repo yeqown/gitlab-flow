@@ -6,11 +6,12 @@ development resources.
 ### 0. Global flags
 
 ```sh
-flow [-c, --conf_path] [--debug] [--web] [-p, --project] SUB_COMMAND [options]
+flow [-c, --conf_path] [--debug] [--web] [-p, --project] [--force-remote] SUB_COMMAND [options]
 # (OPTIONAL) -c, --conf_path path/to/config_file.
 # (OPTIONAL) --debug verbose mode.
 # (OPTIONAL) --web open web browser of resource url automatically.
 # (OPTIONAL) -p, --project projectName of current working directory.
+# (OPTIONAL) --force-remote use project from remote not from local DB.
 
 # example:
 flow -c ~/.gitlab-flow --debug init ...

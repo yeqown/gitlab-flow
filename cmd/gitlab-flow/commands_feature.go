@@ -41,7 +41,8 @@ func getFeatureBeginSubCommand() *cli.Command {
 			if desc == "" {
 				return errors.New("'Description' could not be empty")
 			}
-			return getFlow(c).FeatureBegin(title, desc)
+			opc := getOpFeatureContext(c)
+			return getFlow(c).FeatureBegin(opc, title, desc)
 		},
 	}
 }
@@ -73,7 +74,8 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 			issueTitle := c.Args().Get(0)
 			issueDesc := c.Args().Get(1)
 			featureBranchName := c.String("feature_branch_name")
-			return getFlow(c).FeatureBeginIssue(featureBranchName, issueTitle, issueDesc)
+			opc := getOpFeatureContext(c)
+			return getFlow(c).FeatureBeginIssue(opc, featureBranchName, issueTitle, issueDesc)
 		},
 	}
 }
@@ -105,7 +107,8 @@ func getFeatureFinishIssueSubCommand() *cli.Command {
 		Action: func(c *cli.Context) error {
 			featureBranchName := c.String("feature_branch_name")
 			issueBranchName := c.String("issue_branch_name")
-			return getFlow(c).FeatureFinishIssue(featureBranchName, issueBranchName)
+			opc := getOpFeatureContext(c)
+			return getFlow(c).FeatureFinishIssue(opc, featureBranchName, issueBranchName)
 		},
 	}
 }
@@ -126,8 +129,8 @@ func getFeatureDebugSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			featureBranchName := c.String("feature_branch_name")
-			return getFlow(c).FeatureDebugging(featureBranchName)
+			opc := getOpFeatureContext(c)
+			return getFlow(c).FeatureDebugging(opc)
 		},
 	}
 }
@@ -148,8 +151,8 @@ func getFeatureTestSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			featureBranchName := c.String("feature_branch_name")
-			return getFlow(c).FeatureTest(featureBranchName)
+			opc := getOpFeatureContext(c)
+			return getFlow(c).FeatureTest(opc)
 		},
 	}
 }
@@ -170,8 +173,8 @@ func getFeatureReleaseSubCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			featureBranchName := c.String("feature_branch_name")
-			return getFlow(c).FeatureRelease(featureBranchName)
+			opc := getOpFeatureContext(c)
+			return getFlow(c).FeatureRelease(opc)
 		},
 	}
 }
@@ -184,12 +187,6 @@ func getFeatureResolveConflictCommand() *cli.Command {
 		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "feature_branch_name",
-				Aliases:  []string{"-f"},
-				Usage:    "input the `featureBranchName`",
-				Required: false,
-			},
-			&cli.StringFlag{
 				Name:        "target_branch",
 				Aliases:     []string{"-t"},
 				Usage:       "input the `targetBranch`",
@@ -199,9 +196,9 @@ func getFeatureResolveConflictCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			featureBranchName := c.String("feature_branch_name")
 			targetBranchName := c.String("target_branch")
-			return getFlow(c).FeatureResolveConflict(featureBranchName, types.BranchTyp(targetBranchName))
+			opc := getOpFeatureContext(c)
+			return getFlow(c).FeatureResolveConflict(opc, types.BranchTyp(targetBranchName))
 		},
 	}
 }

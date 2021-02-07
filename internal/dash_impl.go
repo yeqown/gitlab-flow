@@ -100,7 +100,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 		featureBranchName, _ = d.gitOperator.CurrentBranch()
 	}
 	if featureBranchName == "" {
-		return nil, errors.New("feature branch could not be empty")
+		return nil, errInvalidFeatureName
 	}
 	featureBranchName = genFeatureBranchName(featureBranchName)
 
