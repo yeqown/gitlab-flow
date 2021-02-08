@@ -784,6 +784,9 @@ func (f flowImpl) createBranch(
 
 // createMilestone create Milestone
 func (f flowImpl) createMilestone(title, desc string) (*gitlabop.CreateMilestoneResult, error) {
+	title = strings.TrimSpace(title)
+	desc = strings.TrimSpace(desc)
+
 	ctx := context.Background()
 	result, err := f.gitlabOperator.CreateMilestone(ctx, &gitlabop.CreateMilestoneRequest{
 		Title:     title,
@@ -812,6 +815,9 @@ func (f flowImpl) createMilestone(title, desc string) (*gitlabop.CreateMilestone
 
 // createIssue .
 func (f flowImpl) createIssue(title, desc, relatedBranch string, milestoneID int) (*gitlabop.CreateIssueResult, error) {
+	title = strings.TrimSpace(title)
+	desc = strings.TrimSpace(desc)
+
 	ctx := context.Background()
 	result, err := f.gitlabOperator.CreateIssue(ctx, &gitlabop.CreateIssueRequest{
 		Title:         title,
