@@ -14,10 +14,16 @@ import (
 
 var _ IGitOperator = &operatorBasedCmd{}
 
-// 使用本地的 git 客户端完成操作
+// operatorBasedCmd implements IGitOperator based local `git` executable file.
 type operatorBasedCmd struct {
-	Cmd              string // git command
-	Dir              string // repo dir
+	// cmd indicates which executable command to use.
+	cmd string
+	// dir is the directory of git repository in local filesystem.
+	dir string
+	// verbose mode indicates print more information into os.Stdout
+	verbose bool
+
+	// commands
 	fetchCmd         string // fetch command
 	checkoutCmd      string // checkout command
 	currentBranchCmd string
@@ -27,8 +33,9 @@ type operatorBasedCmd struct {
 // NewBasedCmd generate a git operator based command line.
 func NewBasedCmd(dir string) IGitOperator {
 	return operatorBasedCmd{
-		Cmd:              "git",
-		Dir:              dir,
+		cmd:              "git",
+		dir:              dir,
+		verbose:          true,
 		fetchCmd:         "fetch {arg}",
 		checkoutCmd:      "checkout {createFlag}{branch}",
 		currentBranchCmd: "rev-parse --abbrev-ref HEAD",
@@ -38,32 +45,32 @@ func NewBasedCmd(dir string) IGitOperator {
 
 // reference to https://golang.org/x/tools/go/vcs
 func (c operatorBasedCmd) run(dir string, cmd string, keyval ...string) error {
-	_, err := c.run1(dir, cmd, keyval, true)
+	_, err := c.run1(dir, cmd, keyval)
 	return err
 }
 
-func (c operatorBasedCmd) run1(dir string, cmdline string, keyval []string, verbose bool) ([]byte, error) {
+func (c operatorBasedCmd) run1(dir string, cmdline string, keyvalPairs []string) ([]byte, error) {
 	m := make(map[string]string)
-	for i := 0; i < len(keyval); i += 2 {
-		m[keyval[i]] = keyval[i+1]
+	for i := 0; i < len(keyvalPairs); i += 2 {
+		m[keyvalPairs[i]] = keyvalPairs[i+1]
 	}
 	args := strings.Fields(cmdline)
 	for i, arg := range args {
 		args[i] = expand(m, arg)
 	}
 
-	_, err := exec.LookPath(c.Cmd)
+	_, err := exec.LookPath(c.cmd)
 	if err != nil {
-		log.Errorf("go: missing %s command.", c.Cmd)
+		log.Errorf("go: missing %s command.", c.cmd)
 		return nil, err
 	}
 
-	cmd := exec.Command(c.Cmd, args...)
+	cmd := exec.Command(c.cmd, args...)
 	cmd.Dir = dir
 	cmd.Env = envForDir(cmd.Dir)
 
 	log.Debugf("cd %s", dir)
-	log.Debugf("%s %s", c.Cmd, strings.Join(args, " "))
+	log.Debugf("%s %s", c.cmd, strings.Join(args, " "))
 
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
@@ -71,17 +78,18 @@ func (c operatorBasedCmd) run1(dir string, cmdline string, keyval []string, verb
 	err = cmd.Run()
 	out := buf.Bytes()
 	if err != nil {
-		if verbose {
-			log.
-				WithFields(log.Fields{
-					"dir": dir,
-					"cmd": fmt.Sprintf("%s %s", c.Cmd, strings.Join(args, " ")),
-					"out": string(out),
-				}).
-				Errorf("command execute failed: %v", err)
-		}
-		return nil, err
+		log.
+			WithFields(log.Fields{
+				"dir":   dir,
+				"cmd":   fmt.Sprintf("%s %s", c.cmd, strings.Join(args, " ")),
+				"out":   string(out),
+				"error": err,
+			}).
+			Error("command execute failed")
+
+		return out, err
 	}
+
 	return out, nil
 }
 
@@ -92,19 +100,19 @@ func (c operatorBasedCmd) Checkout(branchName string, b bool) error {
 	if b {
 		createFlag = "-b"
 	}
-	return c.run(c.Dir, c.checkoutCmd, "createFlag", createFlag, "branch", branchName)
+	return c.run(c.dir, c.checkoutCmd, "createFlag", createFlag, "branch", branchName)
 }
 
 // FetchOrigin fetch origin branched.
 func (c operatorBasedCmd) FetchOrigin() error {
-	return c.run(c.Dir, c.fetchCmd, "arg", "--all")
+	return c.run(c.dir, c.fetchCmd, "arg", "--all")
 }
 
 // CurrentBranch get current repository info, includes:
 // * current branch name
 // * repository name ?
 func (c operatorBasedCmd) CurrentBranch() (string, error) {
-	branchName, err := c.run1(c.Dir, c.currentBranchCmd, nil, false)
+	branchName, err := c.run1(c.dir, c.currentBranchCmd, nil)
 	if err != nil {
 		return "", errors.Wrapf(err, "get current branch name failed")
 	}
@@ -114,6 +122,7 @@ func (c operatorBasedCmd) CurrentBranch() (string, error) {
 
 // Merge would merge source into target with --no-ff flag.
 // if current branch is not target branch, it checkouts to target automatically.
+// FIXED(@yeqown): conflict output should be formatted.
 func (c operatorBasedCmd) Merge(source, target string) error {
 	if source == "" || target == "" {
 		return errors.New("invalid branch parameter of Merge")
@@ -133,7 +142,14 @@ func (c operatorBasedCmd) Merge(source, target string) error {
 		}
 	}
 
-	return c.run(c.Dir, c.mergeCmd, "branch", source)
+	pairs := []string{"branch", source}
+	output, err := c.run1(c.dir, c.mergeCmd, pairs)
+	if len(output) != 0 {
+		title := fmt.Sprintf("\nMerge Output (%s => %s):\n", source, target)
+		_, _ = fmt.Fprintf(os.Stdout, title+string(output))
+	}
+
+	return err
 }
 
 // expand rewrites s to replace {k} with match[k] for each key k in match.
