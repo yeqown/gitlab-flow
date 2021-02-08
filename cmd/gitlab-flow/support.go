@@ -82,6 +82,13 @@ func parseGlobalFlags(c *cli.Context) globalFlags {
 	}
 }
 
+func getOpFeatureContext(c *cli.Context) *types.OpFeatureContext {
+	return &types.OpFeatureContext{
+		ForceCreateMergeRequest: c.Bool("force-create-mr"),
+		FeatureBranchName:       c.String("feature-branch-name"),
+	}
+}
+
 func getFlow(c *cli.Context) internal.IFlow {
 	flags := parseGlobalFlags(c)
 	ctx := setEnviron(flags)

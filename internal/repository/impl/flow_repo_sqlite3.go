@@ -145,6 +145,7 @@ func (repo *sqliteFlowRepositoryImpl) QueryProject(filter *repository.ProjectDO)
 	out := new(repository.ProjectDO)
 	err := repo.db.
 		Model(out).
+		Order("created_at DESC").
 		Where(filter).
 		First(out).Error
 	if err != nil {
@@ -158,6 +159,7 @@ func (repo *sqliteFlowRepositoryImpl) QueryProjects(filter *repository.ProjectDO
 	out := make([]*repository.ProjectDO, 0, 10)
 	err := repo.db.
 		Model(filter).
+		Order("created_at DESC").
 		Where(filter).
 		Find(&out).Error
 	if err != nil {
@@ -175,6 +177,7 @@ func (repo *sqliteFlowRepositoryImpl) QueryMilestone(filter *repository.Mileston
 	out := new(repository.MilestoneDO)
 	err := repo.db.
 		Model(filter).
+		Order("created_at DESC").
 		Where(filter).
 		First(out).Error
 	if err != nil {
@@ -190,6 +193,7 @@ func (repo *sqliteFlowRepositoryImpl) QueryMilestones(
 	out := make([]*repository.MilestoneDO, 0, 10)
 	err := repo.db.
 		Model(filter).
+		Order("created_at DESC").
 		Where(filter).
 		Find(&out).Error
 	if err != nil {
@@ -232,6 +236,7 @@ func (repo *sqliteFlowRepositoryImpl) QueryBranch(filter *repository.BranchDO) (
 	out := new(repository.BranchDO)
 	err := repo.db.
 		Model(filter).
+		Order("created_at DESC").
 		Where(filter).
 		First(out).Error
 
@@ -271,6 +276,7 @@ func (repo *sqliteFlowRepositoryImpl) QueryIssue(filter *repository.IssueDO) (*r
 	out := new(repository.IssueDO)
 	err := repo.db.
 		Model(filter).
+		Order("created_at DESC").
 		Where(filter).
 		First(out).Error
 	if err != nil {
@@ -284,6 +290,7 @@ func (repo *sqliteFlowRepositoryImpl) QueryIssues(filter *repository.IssueDO) ([
 	out := make([]*repository.IssueDO, 0, 10)
 	err := repo.db.
 		Model(filter).
+		Order("created_at DESC").
 		Where(filter).
 		Find(&out).Error
 	if err != nil {
@@ -327,6 +334,7 @@ func (repo *sqliteFlowRepositoryImpl) QueryMergeRequest(
 	out := new(repository.MergeRequestDO)
 	err := repo.db.
 		Model(filter).
+		Order("created_at DESC").
 		Where(filter).
 		First(out).Error
 	if err != nil {
@@ -342,6 +350,7 @@ func (repo *sqliteFlowRepositoryImpl) QueryMergeRequests(
 	out := make([]*repository.MergeRequestDO, 0, 10)
 	err := repo.db.
 		Model(filter).
+		Order("created_at DESC").
 		Where(filter).
 		Find(&out).Error
 	if err != nil {

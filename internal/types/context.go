@@ -112,3 +112,12 @@ func (c *FlowContext) applyProjectName(projectName string) {
 	c.projectName = path.Base(c.CWD)
 	return
 }
+
+// OpFeatureContext contains all parameters of features' operations in common.
+type OpFeatureContext struct {
+	// ForceCreateMergeRequest if this is true, means merge request would be create no matter whether
+	// merge request has been created or merged.
+	ForceCreateMergeRequest bool
+	// FeatureBranchName specify which branch name to use in the lifecycle of feature operations.
+	FeatureBranchName string
+}
