@@ -17,4 +17,4 @@
   Introduces how to enable autocomplete of `gitlab-flow` CLI.  
 
 
-<img src="./gitlab-flow-arch.png" width="50%" align="center"/>
+<img src="../assets/gitlab-flow-arch.png" width="50%" align="center"/>

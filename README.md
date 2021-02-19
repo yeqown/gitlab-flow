@@ -8,6 +8,8 @@ A CLI tool to help manage the flow of developing on gitlab. The difference betwe
 if your team using `gitlab-flow` together, `gitlab-flow` could help you to synchronize others development data by
 using `milestoneId` or interactive mode. 
 
+<img src="../assets/intro.svg" width="100%"/>
+
 ### Installation
 
 There is no precompiled binary to install directly, so you need to install by yourself.
@@ -88,4 +90,4 @@ GLOBAL OPTIONS:
 
 <img align="center" src="./docs/gitlab-flow-branch.svg">
 
-More help information is [HERE](./docs/README.md).
+More help information is [HERE](./assets/README.md).
