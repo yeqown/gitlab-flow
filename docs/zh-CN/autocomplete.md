@@ -1,15 +1,15 @@
-## Autocomplete
+## 自动补全
 
-> All paragraph of following is from https://github.com/urfave/cli/blob/master/docs/v2/manual.md#default-auto-completion
+> 下面的文本主要来源于 https://github.com/urfave/cli/blob/master/docs/v2/manual.md#default-auto-completion
 
 
-### Bash auto-completion
+### 配置 Bash 自动补全
 
-> 🤣 I did not test this, any issue you got may need to resolve it by yourself.
+> 🤣 这部分我没有测试，所以遇到问题请先尝试自己解决（结合上述的链接）
 
-1. Copy following shell into a file `zsh_auto_completion`.
-2. Then modify your `.bashrc` to add `source path/to/zsh_autocomplete`.
-3. `source ~/.zshrc` to take it effect.
+1. 将下面的代码复制到一个文件中，如：`bash_auto_completion`。
+2. 然后修改你的 `.bashrc` 文件：增加一行：`source path/to/bash_autocomplete`。
+3. 在命令行中输入 `source ~/.bashrc` 使得刚刚的配置生效。
 
 ```sh
 #! /bin/bash
@@ -35,11 +35,11 @@ complete -o bashdefault -o default -o nospace -F _cli_bash_autocomplete $PROG
 unset PROG
 ```
 
-### Zsh auto-completion
+### 配置 Zsh 自动补全
 
-1. Copy following shell into a file `zsh_auto_completion`.
-2. Then modify your `.zshrc` to add `source path/to/zsh_autocomplete`.
-3. `source ~/.zshrc` to take it effect.
+1. 将下面的代码复制到一个文件中，如：`zsh_auto_completion`.
+2. 然后修改你的 `.zshrc` 文件：增加一行：`source path/to/zsh_autocomplete`.
+3. 在命令行中输入 `source ~/.bashrc` 使得刚刚的配置生效。
 
 ```sh
 # you can changes to your actual program name.

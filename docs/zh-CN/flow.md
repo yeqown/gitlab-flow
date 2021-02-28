@@ -1,3 +1,3 @@
 ## flow
 
-<img align="center" src="../assets/gitlab-flow-branch.svg">
+<img align="center" src="../../assets/gitlab-flow-branch.svg">

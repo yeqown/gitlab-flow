@@ -1,117 +1,109 @@
-## Examples
+## 示范
 
-There are some examples of how to using `gitlab-flow` to help manage 
-development resources.
+此节提供了一些示例来说明，如何使用`gitlab-flow`来管理开发中的分支和相关资源。
 
-### 0. Global flags
+### 0. 全局参数
 
 ```sh
 flow [-c, --conf_path] [--debug] [--web] [-p, --project] [--force-remote] SUB_COMMAND [options]
-# (OPTIONAL) -c, --conf_path path/to/config_file.
-# (OPTIONAL) --debug verbose mode.
-# (OPTIONAL) --web open web browser of resource url automatically.
-# (OPTIONAL) -p, --project projectName of current working directory.
-# (OPTIONAL) --force-remote use project from remote not from local DB.
+# (可选) -c, --conf_path 配置文件路径。
+# (可选) --debug 调试模式。
+# (可选) --web 是否自动打开浏览器，来访问某些资源（MR/ISSUE的网络地址）。
+# (可选) -p, --project 项目名，默认使用当前目录名。
+# (可选) --force-remote 是否强制从远程匹配项目，而不是仅从本地数据库（用于项目重名时，更新本地项目列表）。
 
-# example:
+# 举例:
 flow -c ~/.gitlab-flow --debug init ...
-# means initialize gitlab-flow config_file in specified 
-# directory `~/.gitlab-flow` and logs will be verbose
+# 上述命令的含义是：指定了 `~/.gitlab-flow` 作为gitlab-flow配置路径，并在调试模式下初始化。
 ```
 
 ### 0.1 Feature flags
 
 ```sh
 flow [global options] feature [feature options] SUB_COMMAND [options]
-# (OPTIONAL) -f, --feature-branch-name feature branch name.
-# (OPTIONAL) --force-create-mr force to create merge request in remote not query from local firstly.
+# (可选) -f, --feature-branch-name 指定迭代分支名，默认当分支名
+# (可选) --force-create-mr 强制从远程创建MR，而不是先从本地查询（用于某一个分支再次合并到特定分支）.
 
-# example:
+# 举例:
 flow --web feature -f featureBranchName --force-create-mr debug
-# means flow would create merge request directly not query from local firstly 
-# with specified branch name `featureBranchName`.
+# 上述命令的含义是：强制创建一个 featureBranchName 分支合并到开发分支的 MR，并自动打开浏览器。
 ```
 
 
-### 1. Start a feature development.
+### 1. 开启一个迭代分支
 
 ```sh
 flow feature [-f, --feature_branch_name featureBranchName] open name description
-# (REQUIRED) feature-name will be used to create milestone as title too.
-# (REQUIRED) feature-description will be to create milestone as description too.
+# (必填) feature-name 用于迭代分支名和里程碑名.
+# (必填) feature-description 用于里程碑的描述信息.
 #
-# RESULT:
-# feature/feature-name is your feature branch name.
+# 执行结果:
+# feature/feature-name 分支会被创建；里程碑 featureBranchName 会被创建.
 ```
 
-### 2. Finish a milestone feature.
+### 2. 完成一次迭代
 
 ```sh
 flow feature [-f, --feature_branch_name featureBranchName] release
-# (OPTIONAL) -f, --feature_branch_name featureBranchName, if it is not set,
-# current branch name will be used.
+# (可选) -f, --feature_branch_name 指定featureBranchName迭代已经完成，创建该迭代分支到master的MR，
+# 如果没有设置，gitlab-flow 会使用当前分支，作为迭代分支。
 ```
 
-### 3. Start an issue from a feature.
+### 3. 开启一次迭代中的小特性（issue分支）
 
 ```sh
 flow feature [-f, --feature_branch_name featureBranchName] open-issue issue-title issue-description
-# (OPTIONAL) -f, --feature_branch_name featureBranchName, if it is not set,
-# will find feature branch name relative to issue branch name.
-# (REQUIRED) issue-name will be used to create issue as title too.
-# (REQUIRED) issue-description will be to create issue as description too.
+# (可选) -f, --feature_branch_name featureBranchName 指明此特性属于哪一次迭代，
+# 如果没有设置，gitlab-flow 会使用当前分支，作为迭代分支。
+# (必填) issue-name 指明issue的名字
+# (必填) issue-description 指明issue的描述信息.
 ```
 
-### 4. Finish an issue from a feature.
+### 4. 完成一次迭代中的小特性
 
 ```sh
 flow feature [-f, --feature_branch_name featureBranchName] close-issue [-i, --issue_branch_name issueBranchName]
-# (OPTIONAL) -i, --issue_branch_name issueBranchName, if it is not set,
-# current branch name will be used.
-# (OPTIONAL) -f, --feature_branch_name featureBranchName, if it is not set,
-# will find feature branch name relative to issue branch name.
+# (可选) -i, --issue_branch_name issueBranchName, 指明哪一个issue分支需要被完成，
+# 如果没有设置，会默认使用当前分支。
+# (可选) -f, --feature_branch_name featureBranchName, 指明此次小特性属于那一次迭代，
+# 如果没有设置，会根据issue分支确定
 ```
 
-### 5. Start a hotfix.
+### 5. 开启一次热修复
 
 ```sh
 flow hotfix open hotfix-name hotfix-description
-# (REQUIRED) hotfix-name will be used to create issue as title too.
-# (REQUIRED) hotfix-description will be to create issue as description too.
-#
-# RESULT:
-# hotfix/hotfix-name is your feature branch name.
+# (必填) hotfix-name 指明hotfix关联的issue的标题和hotfix的分支名
+# (必填) hotfix-description hotfix关联的issue的描述信息
 ```
-### 6. Finish a hotfix.
+### 6. 完成热修复
 
 ```sh
 flow hotfix close [-b, --branch_name hotfixBranchName]
-# (OPTIONAL) -b, --branch_name hotfixBranchName, if it is not set,
-# current branch name will be used.
+# (可选) -b, --branch_name 指明哪一个热修复分支需要被完成。
 ```
 
-### 7. Synchronize development
+### 7. 从远程迭代数据到本地
 
 ```sh
 flow feature sync [-m, --milestone_id milestoneId] [-i, --interact]
-# (OPTIONAL) -m, --milestone_id milestoneId input milestoneId 
-# which you want to synchronize.
-# (OPTIONAL) -i, --interact, if you don't know milestoneId, 
-# then choose one milestone reciprocally.
+# (可选) -m, --milestone_id 里程碑ID，指明哪次迭代的相关资源需要同步
+# (可选) -i, --interact, 交互模式，推荐使用
 #
-# NOTE: at least one way should be chosen. if both of them are valued, 
-# milestoneId has higher priority.
+# NOTE: 至少选择一种同步方式，如果两种都设置了那么会优先使用 milestone_id。
 ```
 
-### 8. Resolve conflict between feature branch and master (or other target branch)
+### 8. 解决冲突流程（master或者其他分支）
 
 ```sh
 flow --web feature [-f, --feature-branch-name featureBranchName] resolve-conflict \ 
 	[-t, --target_branch targetBranchName]
-# (OPTIONAL) -f, --feature-branch-name which feature branch you wanna resolve conflicts.
-# (OPTIONAL) -t, --target_branch targetBranchName, default is master.
+# (可选) -f, --feature-branch-name 指明哪一次迭代需要解决冲突，默认是当前分支
+# (可选) -t, --target_branch targetBranchName, 指明目标分支，默认是master分支
 
-# Notice: this command would execute `git merge --no-ff $featureBranchName`, of course it would make sure that
-# current branch is your target branch and it has the latest codes. It also create a merge request between
-# `conflict-resolve/feature-branch` into target branch.
+
+# 注意：此命令会在本地执行 `git merge --no-ff $featureBranchName`，需要保证本地的目标分支代码是最新的。
+# 1. 从目标分支创建一个 resolve-conflict/feature-branch
+# 2. 创建一个 resolve-conflict/feature-branch 到目标分支的 MR
+# 3. 本地 切换到 resolve-conflict/feature-branch 执行 `git merge --no-ff $featureBranchName`
 ```

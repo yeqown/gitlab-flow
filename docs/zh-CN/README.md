@@ -17,4 +17,4 @@
   这部分介绍如何配置和使用`gitlab-flow`的命令自动补全。
 
 
-<img src="../assets/gitlab-flow-arch.png" width="50%" align="center"/>
+<img src="../../assets/gitlab-flow-arch.png" width="50%" align="center"/>
