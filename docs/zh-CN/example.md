@@ -17,7 +17,7 @@ flow -c ~/.gitlab-flow --debug init ...
 # 上述命令的含义是：指定了 `~/.gitlab-flow` 作为gitlab-flow配置路径，并在调试模式下初始化。
 ```
 
-### 0.1 Feature flags
+### 0.1 迭代命令选项
 
 ```sh
 flow [global options] feature [feature options] SUB_COMMAND [options]
