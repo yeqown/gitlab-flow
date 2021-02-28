@@ -3,6 +3,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/yeqown/gitlab-flow)](https://goreportcard.com/report/github.com/yeqown/gitlab-flow) [![go.de
 │ v reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/yeqown/gitlab-flow)
 
+[中文文档](./README.zh-CN.md)
+
 A CLI tool to help manage the flow of developing on gitlab. The difference between this and `git-flow` is that 
 `gitlab-flow` would operate remote(gitlab) resources like: milestone, issue, merge request and branch. Importantly,
 if your team using `gitlab-flow` together, `gitlab-flow` could help you to synchronize others development data by
@@ -90,4 +92,4 @@ GLOBAL OPTIONS:
 
 <img align="center" src="./assets/gitlab-flow-branch.svg">
 
-More help information is [HERE](./docs/README.md).
+More help information is: [README](./docs/README.md).
