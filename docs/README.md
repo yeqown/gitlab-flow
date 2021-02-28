@@ -1,5 +1,7 @@
 ## Contents
 
+[中文文档](./zh-CN/README.md)
+
 * #### [Examples](./example.md)
 
 	Provides some examples to work with `gitlab-flow`.

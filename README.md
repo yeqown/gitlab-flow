@@ -90,4 +90,7 @@ GLOBAL OPTIONS:
 
 <img align="center" src="./assets/gitlab-flow-branch.svg">
 
-More help information is [HERE](./docs/README.md).
+More help information is:
+
+* [English](./docs/README.md).
+* [中文文档](./docs/zh-CN/README.md)
