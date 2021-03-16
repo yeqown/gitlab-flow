@@ -90,6 +90,6 @@ GLOBAL OPTIONS:
 
 ### Documents
 
-<img align="center" src="./assets/gitlab-flow-branch.svg">
+<img align="center" src="./assets/gitlab-flow-branch.png">
 
 More help information is: [README](./docs/README.md).
