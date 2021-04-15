@@ -303,6 +303,7 @@ func (f flowImpl) FeatureBeginIssue(opc *types.OpFeatureContext, title, desc str
 	return nil
 }
 
+// FeatureFinishIssue implements IFlow.FeatureFinishIssue
 // DONE(@yeqown): issue merge request should be called here, rather than FeatureBeginIssue
 func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchName string) (err error) {
 	// DONE(@yeqown): if issueBranchName is empty, make current branch name as default.

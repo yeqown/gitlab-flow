@@ -27,6 +27,7 @@ type IFlow interface {
 	// FeatureRelease open a MergeRequest of feature branch and types.MasterBranch branch.
 	FeatureRelease(opc *types.OpFeatureContext) error
 	// DONE(@yeqown) this would be useful while you merge feature into master but there is conflict.
+
 	// FeatureResolveConflict will checkout a new branch from target branch,
 	// then create a merge request from current feature branch to the new branch.
 	// newBranch = "resolve-conflict/featureBranchName-to-master"
@@ -38,10 +39,10 @@ type IFlow interface {
 	// FeatureFinishIssue open the WebURL of merge request which is from issue branch to feature branch.
 	FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchName string) error
 
-	// HotfixStart checkout a hotfix branch from types.MasterBranch, also open a merge request
+	// HotfixBegin checkout a hotfix branch from types.MasterBranch, also open a merge request
 	// which is from hotfix branch to types.MasterBranch.
 	HotfixBegin(title, desc string) error
-	// HotfixRelease open the WebURL of merge request which is from hotfix branch to types.MasterBranch.
+	// HotfixFinish open the WebURL of merge request which is from hotfix branch to types.MasterBranch.
 	HotfixFinish(hotfixBranchName string) error
 
 	// SyncMilestone synchronize remote repository milestone and
