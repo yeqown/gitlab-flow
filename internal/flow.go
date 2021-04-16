@@ -45,8 +45,9 @@ type IFlow interface {
 	// HotfixFinish open the WebURL of merge request which is from hotfix branch to types.MasterBranch.
 	HotfixFinish(hotfixBranchName string) error
 
-	// SyncMilestone synchronize remote repository milestone and
-	// related issues / merge requests to local.
+	// SyncProject synchronize project information from remote gitlab server.
+	SyncProject() error
+	// SyncMilestone synchronize remote repository milestone and related issues / merge requests to local.
 	SyncMilestone(milestoneID int, interact bool) error
 }
 

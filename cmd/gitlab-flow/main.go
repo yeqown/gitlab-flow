@@ -35,5 +35,6 @@ func mountCommands(app *cli.App) {
 		getFeatureCommand(),
 		getHotfixCommand(),
 		getDashCommand(),
+		getSyncCommand(),
 	}
 }

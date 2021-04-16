@@ -17,7 +17,7 @@ func getFeatureSubCommands() cli.Commands {
 		getFeatureTestSubCommand(),
 		getFeatureReleaseSubCommand(),
 		getFeatureResolveConflictCommand(),
-		getSyncMilestoneSubCommand(),
+		// getSyncMilestoneSubCommand(), moved into `sync` commands
 	}
 }
 
@@ -161,35 +161,6 @@ func getFeatureResolveConflictCommand() *cli.Command {
 			targetBranchName := c.String("target_branch")
 			opc := getOpFeatureContext(c)
 			return getFlow(c).FeatureResolveConflict(opc, types.BranchTyp(targetBranchName))
-		},
-	}
-}
-
-// getSyncMilestoneSubCommand
-func getSyncMilestoneSubCommand() *cli.Command {
-	return &cli.Command{
-		Name:      "sync",
-		Usage:     "rebuild local data from remote gitlab repository",
-		ArgsUsage: "",
-		Category:  "feature",
-		Flags: []cli.Flag{
-			&cli.IntFlag{
-				Name:     "milestone_id",
-				Aliases:  []string{"m"},
-				Usage:    "choose milestone manually",
-				Required: false,
-			},
-			&cli.BoolFlag{
-				Name:    "interact",
-				Aliases: []string{"i"},
-				Usage:   "choose milestone in the list load from remote repository",
-				Value:   false,
-			},
-		},
-		Action: func(c *cli.Context) error {
-			milestoneID := c.Int("milestoneID")
-			interact := c.Bool("interact")
-			return getFlow(c).SyncMilestone(milestoneID, interact)
 		},
 	}
 }
