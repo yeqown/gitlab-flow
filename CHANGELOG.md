@@ -1,4 +1,8 @@
-# [](https://github.com/yeqown/gitlab-flow/compare/v1.6.4...v) (2021-04-16)
+# [](https://github.com/yeqown/gitlab-flow/compare/v1.6.5...v) (2021-04-16)
+
+
+
+## [1.6.5](https://github.com/yeqown/gitlab-flow/compare/v1.6.4...v1.6.5) (2021-04-16)
 
 
 ### Bug Fixes
