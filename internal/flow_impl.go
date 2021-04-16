@@ -52,7 +52,7 @@ func NewFlow(ctx *types.FlowContext) IFlow {
 		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.Conf.DebugMode)),
 	}
 
-	// flowContext with null project information, so we need to fill it.
+	// if flowContext has NONE project information, so we need to fill it.
 	if err := flow.fillContextWithProject(); err != nil {
 		log.
 			Fatalf("could not locate project(%s): %v", ctx.ProjectName(), err)
@@ -605,6 +605,18 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 
 	log.Info("Fetching remote branches...")
 	_ = f.gitOperator.FetchOrigin()
+
+	return nil
+}
+
+// SyncProject want to rebuild project manually while project is not exists in local database.
+func (f flowImpl) SyncProject() error {
+	// NewFlow get project information earlier than SyncProject method, so synchronize project only need to
+	// set FlowContext.forceRemote as true which will read project information from remote rather than
+	// load from local database.
+
+	// forceRemote was set by `parseGlobalFlags` function.
+	// lookup parseGlobalFlags for more detail.
 
 	return nil
 }

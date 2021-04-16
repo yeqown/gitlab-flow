@@ -77,7 +77,7 @@ func parseGlobalFlags(c *cli.Context) globalFlags {
 		DebugMode:   c.Bool("debug"),
 		ProjectName: c.String("project"),
 		OpenBrowser: c.Bool("web"),
-		ForceRemote: c.Bool("force-remote"),
+		ForceRemote: c.Bool("force-remote") || c.Bool("sync-project"),
 		CWD:         c.String("cwd"),
 	}
 }

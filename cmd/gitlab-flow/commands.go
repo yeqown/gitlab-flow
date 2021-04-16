@@ -93,3 +93,13 @@ func getDashCommand() *cli.Command {
 		Subcommands: getDashSubCommands(),
 	}
 }
+
+// getSyncCommand
+func getSyncCommand() *cli.Command {
+	return &cli.Command{
+		Name:        "sync",
+		Usage:       "synchronize resource from remote gitlab server",
+		Category:    "sync",
+		Subcommands: getSyncSubCommands(),
+	}
+}
