@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -58,9 +59,9 @@ var (
 🎯 Milestone Desc	:		{{.milestoneDesc}}
 🤡 Feature Branch	:		{{.featureBranch}}
 👽 Milestone URL	:		{{.milestoneWebURL}}
-🎠 Merge Requests	:
 `
-	_featureDetailTblHeader = []string{"🎠MR#Flow", "✈️MR#WebURL", "🎯Issue#Title", "✈️Issue#URL"}
+	_featureDetailTblHeader      = []string{"MR#Src", "MR#Target", "MR#WebURL", "Issue#IID", "Issue#Desc"}
+	_featureDetailIssueTblHeader = []string{"Issue#IID", "Issue#Title", "Issue#Desc", "Issue#WebURL"}
 )
 
 func init() {
@@ -94,7 +95,10 @@ func (d dashImpl) fillContextWithProject() error {
 	return fmt.Errorf("could not match project(%s) from remote: %v", projectName, err)
 }
 
-// FeatureDetail get feature detail of current project
+// FeatureDetail get feature detail of current project:
+// * basic information to current milestone.
+// * all merge request and its related issue created in current milestone.
+// * all issues created in current milestone with web url.
 func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	if featureBranchName == "" {
 		featureBranchName, _ = d.gitOperator.CurrentBranch()
@@ -142,11 +146,18 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 
 	// rework issue
 	issueCache := make(map[int]*repository.IssueDO)
-	for _, v := range issues {
+	issueTblData := make([][]string, len(issues))
+	for idx, v := range issues {
 		issueCache[v.IssueIID] = v
+		issueTblData[idx] = []string{
+			strconv.Itoa(v.IssueIID),
+			v.Title,
+			v.Desc,
+			v.WebURL,
+		}
 	}
 
-	tblData := make([][]string, len(mrs))
+	mrTblData := make([][]string, len(mrs))
 	for idx, mr := range mrs {
 		issue, ok := issueCache[mr.IssueIID]
 		if !ok {
@@ -158,18 +169,18 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 			issue = new(repository.IssueDO)
 		}
 
-		tblData[idx] = []string{
-			//strconv.Itoa(mr.MergeRequestID), // MR-ID
-			fmt.Sprintf("%s🇨🇳 %s", mr.SourceBranch, mr.TargetBranch), // mr action
-			mr.WebURL,    // MR-URL
-			issue.Title,  // issue.Name
-			issue.WebURL, // issue.IssueURL
+		mrTblData[idx] = []string{
+			mr.SourceBranch,              //
+			mr.TargetBranch,              //
+			mr.WebURL,                    // MR-URL
+			strconv.Itoa(issue.IssueIID), // issue.issueIID
+			issue.Desc,                   // issue.Title
 		}
 	}
 
 	log.
-		WithFields(log.Fields{"tblData": tblData}).
-		Debug("tblData is conducted")
+		WithFields(log.Fields{"mrTblData": mrTblData}).
+		Debug("mrTblData is conducted")
 
 	data := map[string]interface{}{
 		"projectTitle":    d.ctx.Project.Name,
@@ -186,10 +197,48 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 		return nil, errors.Wrap(err, "detailTpl.Execute")
 	}
 
+	buf.WriteString("All Merge Requests:\n")
+
+	// output all merge request into table
 	w := tablewriter.NewWriter(buf)
 	w.SetHeader(_featureDetailTblHeader)
-	w.AppendBulk(tblData)
+	w.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	w.SetAlignment(tablewriter.ALIGN_LEFT)
+	for _, row := range mrTblData {
+		// if master merge request
+		if row[1] == types.MasterBranch.String() {
+			w.Rich(row, []tablewriter.Colors{
+				{tablewriter.Bold, tablewriter.FgHiRedColor},
+				{tablewriter.Bold, tablewriter.FgHiRedColor},
+				{},
+				{tablewriter.Bold, tablewriter.FgBlackColor},
+			})
+			continue
+		}
+
+		if row[1] == types.TestBranch.String() {
+			w.Rich(row, []tablewriter.Colors{
+				{tablewriter.Bold, tablewriter.FgHiGreenColor},
+				{tablewriter.Bold, tablewriter.FgHiGreenColor},
+				{},
+				{tablewriter.Bold, tablewriter.FgBlackColor},
+			})
+			continue
+		}
+
+		w.Append(row)
+	}
 	w.Render()
+
+	buf.WriteString("All Issues:\n")
+
+	// output all issues into detail
+	w2 := tablewriter.NewWriter(buf)
+	w2.SetHeader(_featureDetailIssueTblHeader)
+	w2.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	w2.SetAlignment(tablewriter.ALIGN_LEFT)
+	w2.AppendBulk(issueTblData)
+	w2.Render()
 
 	return buf.Bytes(), nil
 }
