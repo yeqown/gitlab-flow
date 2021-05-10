@@ -56,10 +56,11 @@ func getDashMilestoneOverviewSubCommand() *cli.Command {
 		Category:  "dash",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "milestone_name",
-				Aliases:  []string{"m"},
-				Usage:    "input `milestoneName` which you want to get its information",
-				Required: true,
+				Name:    "milestone_name",
+				Aliases: []string{"m"},
+				Usage: "input `milestoneName` which you want to get its information, " +
+					"default current branch milestone",
+				Required: false,
 			},
 			&cli.StringFlag{
 				Name:        "branch_name",

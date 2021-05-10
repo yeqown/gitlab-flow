@@ -17,6 +17,7 @@ type IFlowRepository interface {
 	SaveMilestone(m *MilestoneDO, txs ...*gorm2.DB) error
 	QueryMilestone(filter *MilestoneDO) (*MilestoneDO, error)
 	QueryMilestones(filter *MilestoneDO) ([]*MilestoneDO, error)
+	QueryMilestoneByBranchName(projectId int, branchName string) (*MilestoneDO, error)
 
 	SaveBranch(m *BranchDO, txs ...*gorm2.DB) error
 	BatchCreateBranch(records []*BranchDO, txs ...*gorm2.DB) error

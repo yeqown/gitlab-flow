@@ -252,7 +252,7 @@ func (d dashImpl) dealDataIntoFeatureDetail(
 }
 
 var (
-	_milestoneOverviewTblHeader = []string{"🏝Project🏖", "🎠MergeRequests🏕"}
+	_milestoneOverviewTblHeader = []string{"🏝Project", "MR#Action", "🏕MR#WebURL"}
 )
 
 func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte, error) {
@@ -266,24 +266,25 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 	if milestoneName == "" {
 		// get milestoneName from feature branchName
 		// query milestone name automatically when no milestone name provided.
-		// TODO(@yeqown): optimize this logic, using repo method.
 		featureBranchName, _ := d.gitOperator.CurrentBranch()
 		featureBranchName = genFeatureBranchName(featureBranchName)
-		branch, err := d.repo.QueryBranch(&repository.BranchDO{
-			ProjectID:  d.ctx.Project.ID,
-			BranchName: featureBranchName,
-		})
-		if err == nil && branch != nil {
-			milestone, _ := d.repo.QueryMilestone(&repository.MilestoneDO{MilestoneID: branch.MilestoneID})
-			if milestone != nil {
-				milestoneName = milestone.Title
-			}
+		// DONE(@yeqown): optimize this logic, using repo method.
+		milestone, err := d.repo.QueryMilestoneByBranchName(d.ctx.Project.ID, featureBranchName)
+		if milestone != nil {
+			milestoneName = milestone.Title
 		}
+
 		log.
 			WithFields(log.Fields{
 				"featureBranchName": featureBranchName,
+				"error":             err,
 			}).
-			Debugf("could not locate branch of current branch: %v", err)
+			Debugf("locate milestone of current branch")
+	}
+
+	if milestoneName == "" {
+		return nil, errors.New("you must specify a milestone name or " +
+			"sure you are using a branch which could get milestone")
 	}
 
 	// query milestone by name (milestone-project), so there are many.
@@ -330,16 +331,26 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 				Warnf("could not locate project merge request: %v", err)
 		}
 
-		uris := make([]string, 0, len(mrs))
+		// insert all merge requests of current project into tblData
 		for _, mr := range mrs {
-			uris = append(uris, fmt.Sprintf("%s➡️%s	🧲%s", mr.SourceBranch, mr.TargetBranch, mr.WebURL))
+			tblData = append(tblData, []string{
+				project.ProjectName,
+				fmt.Sprintf("%s => %s", mr.SourceBranch, mr.TargetBranch),
+				mr.WebURL,
+			})
 		}
-		tblData = append(tblData, []string{project.ProjectName, strings.Join(uris, "\n")})
 	}
 
 	buf := bytes.NewBuffer(nil)
 	w := tablewriter.NewWriter(buf)
 	w.SetHeader(_milestoneOverviewTblHeader)
+	w.SetColumnColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgGreenColor},
+		tablewriter.Colors{},
+		tablewriter.Colors{},
+	)
+	w.SetRowLine(true)
+	w.SetAutoMergeCells(true)
 	w.AppendBulk(tblData)
 	w.Render()
 
