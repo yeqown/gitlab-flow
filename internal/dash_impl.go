@@ -109,7 +109,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	featureBranchName = genFeatureBranchName(featureBranchName)
 
 	// locate branch
-	bm, err := d.repo.QueryBranch(&repository.BranchDO{
+	branch, err := d.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  d.ctx.Project.ID,
 		BranchName: featureBranchName,
 	})
@@ -120,7 +120,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	// query milestone
 	milestone, err := d.repo.QueryMilestone(&repository.MilestoneDO{
 		ProjectID:   d.ctx.Project.ID,
-		MilestoneID: bm.MilestoneID,
+		MilestoneID: branch.MilestoneID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "dashImpl.FeatureDetail query milestone")
@@ -129,7 +129,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	// query all merge requests related to milestone.
 	mrs, err := d.repo.QueryMergeRequests(&repository.MergeRequestDO{
 		ProjectID:   d.ctx.Project.ID,
-		MilestoneID: bm.MilestoneID,
+		MilestoneID: branch.MilestoneID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "dashImpl.FeatureDetail query mergeRequest")
@@ -138,12 +138,20 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	// query all issues related to milestone.
 	issues, err := d.repo.QueryIssues(&repository.IssueDO{
 		ProjectID:   d.ctx.Project.ID,
-		MilestoneID: bm.MilestoneID,
+		MilestoneID: branch.MilestoneID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "dashImpl.FeatureDetail query issues")
 	}
 
+	return d.dealDataIntoFeatureDetail(branch, milestone, issues, mrs)
+}
+
+// dealDataIntoFeatureDetail deal all data related to feature branch into template and tables.
+func (d dashImpl) dealDataIntoFeatureDetail(
+	bm *repository.BranchDO, milestone *repository.MilestoneDO,
+	issues []*repository.IssueDO, mrs []*repository.MergeRequestDO,
+) ([]byte, error) {
 	// rework issue
 	issueCache := make(map[int]*repository.IssueDO)
 	issueTblData := make([][]string, len(issues))
@@ -193,7 +201,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 		"milestoneWebURL": milestone.WebURL,
 	}
 	buf := bytes.NewBuffer(nil)
-	if err = detailTpl.Execute(buf, data); err != nil {
+	if err := detailTpl.Execute(buf, data); err != nil {
 		return nil, errors.Wrap(err, "detailTpl.Execute")
 	}
 
