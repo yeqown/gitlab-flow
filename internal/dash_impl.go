@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -58,9 +59,9 @@ var (
 🎯 Milestone Desc	:		{{.milestoneDesc}}
 🤡 Feature Branch	:		{{.featureBranch}}
 👽 Milestone URL	:		{{.milestoneWebURL}}
-🎠 Merge Requests	:
 `
-	_featureDetailTblHeader = []string{"🎠MR#Flow", "✈️MR#WebURL", "🎯Issue#Title", "✈️Issue#URL"}
+	_featureDetailTblHeader      = []string{"MR#Src", "MR#Target", "MR#WebURL", "Issue#IID", "Issue#Desc"}
+	_featureDetailIssueTblHeader = []string{"Issue#IID", "Issue#Title", "Issue#Desc", "Issue#WebURL"}
 )
 
 func init() {
@@ -94,7 +95,10 @@ func (d dashImpl) fillContextWithProject() error {
 	return fmt.Errorf("could not match project(%s) from remote: %v", projectName, err)
 }
 
-// FeatureDetail get feature detail of current project
+// FeatureDetail get feature detail of current project:
+// * basic information to current milestone.
+// * all merge request and its related issue created in current milestone.
+// * all issues created in current milestone with web url.
 func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	if featureBranchName == "" {
 		featureBranchName, _ = d.gitOperator.CurrentBranch()
@@ -105,7 +109,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	featureBranchName = genFeatureBranchName(featureBranchName)
 
 	// locate branch
-	bm, err := d.repo.QueryBranch(&repository.BranchDO{
+	branch, err := d.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  d.ctx.Project.ID,
 		BranchName: featureBranchName,
 	})
@@ -116,7 +120,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	// query milestone
 	milestone, err := d.repo.QueryMilestone(&repository.MilestoneDO{
 		ProjectID:   d.ctx.Project.ID,
-		MilestoneID: bm.MilestoneID,
+		MilestoneID: branch.MilestoneID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "dashImpl.FeatureDetail query milestone")
@@ -125,7 +129,7 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	// query all merge requests related to milestone.
 	mrs, err := d.repo.QueryMergeRequests(&repository.MergeRequestDO{
 		ProjectID:   d.ctx.Project.ID,
-		MilestoneID: bm.MilestoneID,
+		MilestoneID: branch.MilestoneID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "dashImpl.FeatureDetail query mergeRequest")
@@ -134,19 +138,34 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 	// query all issues related to milestone.
 	issues, err := d.repo.QueryIssues(&repository.IssueDO{
 		ProjectID:   d.ctx.Project.ID,
-		MilestoneID: bm.MilestoneID,
+		MilestoneID: branch.MilestoneID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "dashImpl.FeatureDetail query issues")
 	}
 
+	return d.dealDataIntoFeatureDetail(branch, milestone, issues, mrs)
+}
+
+// dealDataIntoFeatureDetail deal all data related to feature branch into template and tables.
+func (d dashImpl) dealDataIntoFeatureDetail(
+	bm *repository.BranchDO, milestone *repository.MilestoneDO,
+	issues []*repository.IssueDO, mrs []*repository.MergeRequestDO,
+) ([]byte, error) {
 	// rework issue
 	issueCache := make(map[int]*repository.IssueDO)
-	for _, v := range issues {
+	issueTblData := make([][]string, len(issues))
+	for idx, v := range issues {
 		issueCache[v.IssueIID] = v
+		issueTblData[idx] = []string{
+			strconv.Itoa(v.IssueIID),
+			v.Title,
+			v.Desc,
+			v.WebURL,
+		}
 	}
 
-	tblData := make([][]string, len(mrs))
+	mrTblData := make([][]string, len(mrs))
 	for idx, mr := range mrs {
 		issue, ok := issueCache[mr.IssueIID]
 		if !ok {
@@ -158,18 +177,18 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 			issue = new(repository.IssueDO)
 		}
 
-		tblData[idx] = []string{
-			//strconv.Itoa(mr.MergeRequestID), // MR-ID
-			fmt.Sprintf("%s🇨🇳 %s", mr.SourceBranch, mr.TargetBranch), // mr action
-			mr.WebURL,    // MR-URL
-			issue.Title,  // issue.Name
-			issue.WebURL, // issue.IssueURL
+		mrTblData[idx] = []string{
+			mr.SourceBranch,              //
+			mr.TargetBranch,              //
+			mr.WebURL,                    // MR-URL
+			strconv.Itoa(issue.IssueIID), // issue.issueIID
+			issue.Desc,                   // issue.Title
 		}
 	}
 
 	log.
-		WithFields(log.Fields{"tblData": tblData}).
-		Debug("tblData is conducted")
+		WithFields(log.Fields{"mrTblData": mrTblData}).
+		Debug("mrTblData is conducted")
 
 	data := map[string]interface{}{
 		"projectTitle":    d.ctx.Project.Name,
@@ -182,20 +201,58 @@ func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
 		"milestoneWebURL": milestone.WebURL,
 	}
 	buf := bytes.NewBuffer(nil)
-	if err = detailTpl.Execute(buf, data); err != nil {
+	if err := detailTpl.Execute(buf, data); err != nil {
 		return nil, errors.Wrap(err, "detailTpl.Execute")
 	}
 
+	buf.WriteString("All Merge Requests:\n")
+
+	// output all merge request into table
 	w := tablewriter.NewWriter(buf)
 	w.SetHeader(_featureDetailTblHeader)
-	w.AppendBulk(tblData)
+	w.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	w.SetAlignment(tablewriter.ALIGN_LEFT)
+	for _, row := range mrTblData {
+		// if master merge request
+		if row[1] == types.MasterBranch.String() {
+			w.Rich(row, []tablewriter.Colors{
+				{tablewriter.Bold, tablewriter.FgHiRedColor},
+				{tablewriter.Bold, tablewriter.FgHiRedColor},
+				{},
+				{tablewriter.Bold, tablewriter.FgBlackColor},
+			})
+			continue
+		}
+
+		if row[1] == types.TestBranch.String() {
+			w.Rich(row, []tablewriter.Colors{
+				{tablewriter.Bold, tablewriter.FgHiGreenColor},
+				{tablewriter.Bold, tablewriter.FgHiGreenColor},
+				{},
+				{tablewriter.Bold, tablewriter.FgBlackColor},
+			})
+			continue
+		}
+
+		w.Append(row)
+	}
 	w.Render()
+
+	buf.WriteString("All Issues:\n")
+
+	// output all issues into detail
+	w2 := tablewriter.NewWriter(buf)
+	w2.SetHeader(_featureDetailIssueTblHeader)
+	w2.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	w2.SetAlignment(tablewriter.ALIGN_LEFT)
+	w2.AppendBulk(issueTblData)
+	w2.Render()
 
 	return buf.Bytes(), nil
 }
 
 var (
-	_milestoneOverviewTblHeader = []string{"🏝Project🏖", "🎠MergeRequests🏕"}
+	_milestoneOverviewTblHeader = []string{"🏝Project", "MR#Action", "🏕MR#WebURL"}
 )
 
 func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte, error) {
@@ -209,24 +266,25 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 	if milestoneName == "" {
 		// get milestoneName from feature branchName
 		// query milestone name automatically when no milestone name provided.
-		// TODO(@yeqown): optimize this logic, using repo method.
 		featureBranchName, _ := d.gitOperator.CurrentBranch()
 		featureBranchName = genFeatureBranchName(featureBranchName)
-		branch, err := d.repo.QueryBranch(&repository.BranchDO{
-			ProjectID:  d.ctx.Project.ID,
-			BranchName: featureBranchName,
-		})
-		if err == nil && branch != nil {
-			milestone, _ := d.repo.QueryMilestone(&repository.MilestoneDO{MilestoneID: branch.MilestoneID})
-			if milestone != nil {
-				milestoneName = milestone.Title
-			}
+		// DONE(@yeqown): optimize this logic, using repo method.
+		milestone, err := d.repo.QueryMilestoneByBranchName(d.ctx.Project.ID, featureBranchName)
+		if milestone != nil {
+			milestoneName = milestone.Title
 		}
+
 		log.
 			WithFields(log.Fields{
 				"featureBranchName": featureBranchName,
+				"error":             err,
 			}).
-			Debugf("could not locate branch of current branch: %v", err)
+			Debugf("locate milestone of current branch")
+	}
+
+	if milestoneName == "" {
+		return nil, errors.New("you must specify a milestone name or " +
+			"sure you are using a branch which could get milestone")
 	}
 
 	// query milestone by name (milestone-project), so there are many.
@@ -273,16 +331,26 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 				Warnf("could not locate project merge request: %v", err)
 		}
 
-		uris := make([]string, 0, len(mrs))
+		// insert all merge requests of current project into tblData
 		for _, mr := range mrs {
-			uris = append(uris, fmt.Sprintf("%s➡️%s	🧲%s", mr.SourceBranch, mr.TargetBranch, mr.WebURL))
+			tblData = append(tblData, []string{
+				project.ProjectName,
+				fmt.Sprintf("%s => %s", mr.SourceBranch, mr.TargetBranch),
+				mr.WebURL,
+			})
 		}
-		tblData = append(tblData, []string{project.ProjectName, strings.Join(uris, "\n")})
 	}
 
 	buf := bytes.NewBuffer(nil)
 	w := tablewriter.NewWriter(buf)
 	w.SetHeader(_milestoneOverviewTblHeader)
+	w.SetColumnColor(
+		tablewriter.Colors{tablewriter.Bold, tablewriter.FgGreenColor},
+		tablewriter.Colors{},
+		tablewriter.Colors{},
+	)
+	w.SetRowLine(true)
+	w.SetAutoMergeCells(true)
 	w.AppendBulk(tblData)
 	w.Render()
 

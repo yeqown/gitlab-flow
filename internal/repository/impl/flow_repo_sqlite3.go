@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mattn/go-sqlite3"
+	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 	"gorm.io/driver/sqlite"
 	gorm2 "gorm.io/gorm"
@@ -95,6 +96,7 @@ func ConnectDB(path string, debug bool) func() *gorm2.DB {
 	}
 }
 
+// NewBasedSqlite3
 // DONE(@yeqown): load or create sqlite3 database.
 func NewBasedSqlite3(connectFunc func() *gorm2.DB) repository.IFlowRepository {
 	repo := sqliteFlowRepositoryImpl{
@@ -201,6 +203,21 @@ func (repo *sqliteFlowRepositoryImpl) QueryMilestones(
 	}
 
 	return out, nil
+}
+
+func (repo *sqliteFlowRepositoryImpl) QueryMilestoneByBranchName(projectId int, branchName string,
+) (*repository.MilestoneDO, error) {
+	branch, err := repo.QueryBranch(&repository.BranchDO{
+		ProjectID:  projectId,
+		BranchName: branchName,
+	})
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not locate branch:"+branchName)
+	}
+
+	milestone, err := repo.QueryMilestone(&repository.MilestoneDO{MilestoneID: branch.MilestoneID})
+	return milestone, err
 }
 
 func (repo *sqliteFlowRepositoryImpl) SaveBranch(m *repository.BranchDO, txs ...*gorm2.DB) (err error) {
