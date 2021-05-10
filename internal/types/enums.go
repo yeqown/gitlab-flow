@@ -1,6 +1,6 @@
 package types
 
-// BranchTyp
+// BranchTyp is builtin branch type to limit parameter passing
 type BranchTyp string
 
 func (b BranchTyp) String() string {
