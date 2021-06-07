@@ -1,10 +1,11 @@
-# [](https://github.com/yeqown/gitlab-flow/compare/v1.6.5...v) (2021-05-10)
+# [](https://github.com/yeqown/gitlab-flow/compare/v1.6.6...v) (2021-06-07)
 
 
 ### Features
 
 * **dash:** enhance dash milestone display; and finish one todo. ([82a1496](https://github.com/yeqown/gitlab-flow/commit/82a1496c4593916330e96bd29d651da8f0c3e198))
 * **dash:** enhance feature detail information ([f928a20](https://github.com/yeqown/gitlab-flow/commit/f928a20f0859d9980687ca39618fb191a08d7a2d))
+* **dash:** project detail has more URL to open ([a540c4d](https://github.com/yeqown/gitlab-flow/commit/a540c4d56ffaf3b482682c47a2e44eb23b61052f))
 
 
 
