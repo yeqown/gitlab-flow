@@ -10,5 +10,5 @@ type IDash interface {
 	MilestoneOverview(milestoneName, branchFilter string) ([]byte, error)
 
 	// ProjectDetail display project detail， includes: project web URL
-	ProjectDetail() ([]byte, error)
+	ProjectDetail(module string) ([]byte, error)
 }

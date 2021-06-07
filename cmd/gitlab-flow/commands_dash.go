@@ -89,9 +89,19 @@ func getDashProjectDetailSubCommand() *cli.Command {
 		Aliases:  []string{"p"},
 		Usage:    "do something of current project.",
 		Category: "dash",
-		//Flags:    []cli.Flag{},
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "module",
+				Aliases:     []string{"m"},
+				Usage:       "project `module`, module is one of (home, tag, branch, commit)",
+				DefaultText: "home",
+				Value:       "home",
+				Required:    false,
+			},
+		},
 		Action: func(c *cli.Context) error {
-			data, err := getDash(c).ProjectDetail()
+			module := c.String("module")
+			data, err := getDash(c).ProjectDetail(module)
 			if err != nil {
 				return err
 			}

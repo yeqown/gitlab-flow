@@ -357,10 +357,23 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 	return buf.Bytes(), nil
 }
 
-func (d dashImpl) ProjectDetail() ([]byte, error) {
-	d.printAndOpenBrowser(d.ctx.Project.Name, d.ctx.Project.WebURL)
+func (d dashImpl) ProjectDetail(module string) ([]byte, error) {
+	switch module {
+	case "home":
+		d.printAndOpenBrowser(d.ctx.Project.Name, d.ctx.Project.WebURL)
+	case "branch":
+		d.printAndOpenBrowser("branches", genProjectURL(d.ctx.Project.WebURL, "/-/branches"))
+	case "tag":
+		d.printAndOpenBrowser("tags", genProjectURL(d.ctx.Project.WebURL, "/-/tags"))
+	case "commit":
+		d.printAndOpenBrowser("commits", genProjectURL(d.ctx.Project.WebURL, "/commits/master"))
+	}
 
 	return nil, nil
+}
+
+func genProjectURL(base, suffix string) string {
+	return base + suffix
 }
 
 // printAndOpenBrowser print WebURL into stdout and open web browser.
