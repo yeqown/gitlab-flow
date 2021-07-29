@@ -23,7 +23,6 @@ func getHotfixStartSubCommand() *cli.Command {
 		ArgsUsage: "@title] [@description",
 		Description: "open a hotfix branch and merge request to master. " +
 			"\n@title title \n@desc description",
-		Category: "hotfix",
 		Action: func(c *cli.Context) error {
 			log.
 				WithFields(log.Fields{"args": c.Args().Slice()}).
@@ -50,7 +49,6 @@ func getHotfixFinishSubCommand() *cli.Command {
 		Usage:       "close [-b, --hotfix_branch_name `hotfixBranchName`]",
 		ArgsUsage:   "[-b, --hotfix_branch_name `hotfixBranchName`]",
 		Description: "close a hotfix development, then create a merge request into master",
-		Category:    "hotfix",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "hotfix_branch_name",

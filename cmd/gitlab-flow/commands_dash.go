@@ -24,7 +24,6 @@ func getDashFeatureDetailSubCommand() *cli.Command {
 		Aliases:   []string{"f"},
 		Usage:     "overview of the feature of current project.",
 		ArgsUsage: "-b, --branch_name `BranchName`",
-		Category:  "dash",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "branch_name",
@@ -53,7 +52,6 @@ func getDashMilestoneOverviewSubCommand() *cli.Command {
 		Aliases:   []string{"m"},
 		Usage:     "overview of one milestone, includes: merges, issues, branch",
 		ArgsUsage: "-m, --milestone_name -b --branch_name",
-		Category:  "dash",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "milestone_name",
@@ -85,10 +83,9 @@ func getDashMilestoneOverviewSubCommand() *cli.Command {
 // gitlab-flow dash project
 func getDashProjectDetailSubCommand() *cli.Command {
 	return &cli.Command{
-		Name:     "project",
-		Aliases:  []string{"p"},
-		Usage:    "do something of current project.",
-		Category: "dash",
+		Name:    "project",
+		Aliases: []string{"p"},
+		Usage:   "do something of current project.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "module",

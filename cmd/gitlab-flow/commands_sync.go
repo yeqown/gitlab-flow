@@ -17,7 +17,6 @@ func getSyncProjectCommand() *cli.Command {
 		Name:      "project",
 		Usage:     "synchronize project information from remote gitlab server into local database",
 		ArgsUsage: "",
-		Category:  "sync",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:   "sync-project",
@@ -37,7 +36,6 @@ func getSyncMilestoneSubCommand() *cli.Command {
 		Name:      "milestone",
 		Usage:     "rebuild local features, branches, issues and merges from remote gitlab repository",
 		ArgsUsage: "",
-		Category:  "sync",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:     "milestone_id",

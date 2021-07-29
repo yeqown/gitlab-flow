@@ -12,26 +12,25 @@ func getInitCommand() *cli.Command {
 		Name: "init",
 		Usage: "initialize gitlab-flow, generate default config file and sqlite DB " +
 			"related to the path",
-		Category: "init",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "access_token",
+				Name:     "access-token",
 				Aliases:  []string{"s"},
 				Required: true,
 				Usage:    "access_token is `secret` for user to access gitlab API.",
 			},
 			&cli.StringFlag{
-				Name:     "gitlab_host",
+				Name:     "host",
 				Aliases:  []string{"d"},
 				Required: true,
-				Usage:    "gitlab_host is the `domain` of YOUR gitlab server.",
+				Usage:    "gitlab API host is the host of YOUR gitlab server. https://gitlab.example.com/api/v4/",
 			},
 		},
 		ArgsUsage: "-s ACCESS_TOKEN -h GITLAB_HOST",
 		Action: func(c *cli.Context) error {
-			accessToken := c.String("access_token")
-			host := c.String("gitlab_host")
-			confPath := c.String("conf_path")
+			accessToken := c.String("access-token")
+			host := c.String("gitlab-host")
+			confPath := c.String("conf")
 
 			cfg := conf.Default()
 			cfg.AccessToken = accessToken
@@ -49,12 +48,11 @@ func getInitCommand() *cli.Command {
 }
 
 // getFeatureCommand
-// gitlab-flow feature [command options] -c --conf_path
+// gitlab-flow feature [command options] -c --conf
 func getFeatureCommand() *cli.Command {
 	return &cli.Command{
-		Name:     "feature",
-		Usage:    "managing the works in developing.",
-		Category: "flow",
+		Name:  "feature",
+		Usage: "managing the works in developing.",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:        "force-create-mr",
@@ -79,7 +77,6 @@ func getHotfixCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "hotfix",
 		Usage:       "managing the works in hotfix.",
-		Category:    "flow",
 		Subcommands: getHotfixSubCommands(),
 	}
 }
@@ -89,7 +86,6 @@ func getDashCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "dash",
 		Usage:       "overview of local development",
-		Category:    "dash",
 		Subcommands: getDashSubCommands(),
 	}
 }
@@ -99,7 +95,6 @@ func getSyncCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "sync",
 		Usage:       "synchronize resource from remote gitlab server",
-		Category:    "sync",
 		Subcommands: getSyncSubCommands(),
 	}
 }

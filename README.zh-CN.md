@@ -24,7 +24,7 @@ go get -u github.com/yeqown/gitlab-flow
 ### 初始化
 
 ```shell
-gitlab-flow [-c, --conf_path `path/to/confpath/`] init -s "YOUR_GITLAB_ACCESS_TOKEN" -d "YOUR_GITLAB_API_HOST"
+gitlab-flow [-c, --conf `path/to/confpath/`] init -s "YOUR_GITLAB_ACCESS_TOKEN" -d "YOUR_GITLAB_API_HOST"
 # 注意：全局选项必须置于子命令之前；
 # -c 参数只需要配置路径即可，而不需要指定文件；
 ```
@@ -53,7 +53,7 @@ NAME:
    gitlab-flow - 命令行工具
 
 USAGE:
-   flow2 [全局选项] 命令 [命令选项] [参数...]
+   flows [全局选项] 命令 [命令选项] [参数...]
 
 VERSION:
    v1.6.2
@@ -75,7 +75,7 @@ COMMANDS:
      init  初始化命令
 
 GLOBAL OPTIONS:
-   --conf_path path/to/file, -c path/to/file  指定配置路径 (default: ~/.gitlab-flow)
+   --conf path/to/file, -c path/to/file  指定配置路径 (default: ~/.gitlab-flow)
    --cwd path/to/file                         指定工作路径 (default: 当前路径)
    --debug                                    调试模式 (default: false)
    --project projectName, -p projectName      指定项目名 (default: 当前目录名)

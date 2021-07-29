@@ -5,8 +5,8 @@
 ### 0. 全局参数
 
 ```sh
-flow [-c, --conf_path] [--debug] [--web] [-p, --project] [--force-remote] SUB_COMMAND [options]
-# (可选) -c, --conf_path 配置文件路径。
+flow [-c, --conf] [--debug] [--web] [-p, --project] [--force-remote] SUB_COMMAND [options]
+# (可选) -c, --conf 配置文件路径。
 # (可选) --debug 调试模式。
 # (可选) --web 是否自动打开浏览器，来访问某些资源（MR/ISSUE的网络地址）。
 # (可选) -p, --project 项目名，默认使用当前目录名。

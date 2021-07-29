@@ -43,7 +43,7 @@ unset PROG
 
 ```sh
 # you can changes to your actual program name.
-# As for me, I would like to use flow2 rather than `gitlab-flow`
+# As for me, I would like to use flows rather than `gitlab-flow`
 PROG=gitlab-flow
 _CLI_ZSH_AUTOCOMPLETE_HACK=1
 

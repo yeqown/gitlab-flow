@@ -16,7 +16,7 @@ import (
 // flow --debug -c path/to/config SUB-COMMAND [...options]
 var _cliGlobalFlags = []cli.Flag{
 	&cli.StringFlag{
-		Name:        "conf_path",
+		Name:        "conf",
 		Aliases:     []string{"c"},
 		Value:       conf.DefaultConfPath(),
 		DefaultText: "~/.gitlab-flow",
@@ -73,7 +73,7 @@ type globalFlags struct {
 
 func parseGlobalFlags(c *cli.Context) globalFlags {
 	return globalFlags{
-		ConfPath:    c.String("conf_path"),
+		ConfPath:    c.String("conf"),
 		DebugMode:   c.Bool("debug"),
 		ProjectName: c.String("project"),
 		OpenBrowser: c.Bool("web"),

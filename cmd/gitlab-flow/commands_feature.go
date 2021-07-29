@@ -3,8 +3,9 @@ package main
 import (
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
-	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/log"
+
+	"github.com/yeqown/gitlab-flow/internal/types"
 )
 
 // feature 管理下的 子命令
@@ -17,7 +18,6 @@ func getFeatureSubCommands() cli.Commands {
 		getFeatureTestSubCommand(),
 		getFeatureReleaseSubCommand(),
 		getFeatureResolveConflictCommand(),
-		// getSyncMilestoneSubCommand(), moved into `sync` commands
 	}
 }
 
@@ -31,7 +31,6 @@ func getFeatureBeginSubCommand() *cli.Command {
 		Usage:       "open a milestone and branch name, feature name would be same to milestone",
 		ArgsUsage:   "open @title @desc",
 		Description: "@title title of milestone \n\t @desc description of milestone",
-		Category:    "feature",
 		Action: func(c *cli.Context) error {
 			title := c.Args().Get(0)
 			desc := c.Args().Get(1)
@@ -54,7 +53,6 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 		Name:      "open-issue",
 		Usage:     "open an issue then create issue branch from feature branch, also merge request",
 		ArgsUsage: "open-issue -f @featureBranchName @title @desc",
-		Category:  "feature",
 		Flags:     []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			defer func() {
@@ -78,7 +76,6 @@ func getFeatureFinishIssueSubCommand() *cli.Command {
 		Name:      "close-issue",
 		Usage:     "close an issue it's merge request.",
 		ArgsUsage: "close-issue -i @issueBranchName -f @featureBranchName",
-		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "issue_branch_name",
@@ -102,7 +99,6 @@ func getFeatureDebugSubCommand() *cli.Command {
 		Name:      "debug",
 		Usage:     "open a merge request from feature branch into DevBranch",
 		ArgsUsage: "-f, --feature_branch_name `featureBranchName`",
-		Category:  "feature",
 		Flags:     []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			opc := getOpFeatureContext(c)
@@ -117,7 +113,6 @@ func getFeatureTestSubCommand() *cli.Command {
 		Name:      "test",
 		Usage:     "open a merge request from feature branch into TestBranch",
 		ArgsUsage: "-f, --feature_branch_name `featureBranchName`",
-		Category:  "feature",
 		Flags:     []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			opc := getOpFeatureContext(c)
@@ -132,7 +127,6 @@ func getFeatureReleaseSubCommand() *cli.Command {
 		Name:      "release",
 		Usage:     "open a merge request from feature branch into MasterBranch",
 		ArgsUsage: "-f, --feature_branch_name `featureBranchName`",
-		Category:  "feature",
 		Flags:     []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			opc := getOpFeatureContext(c)
@@ -146,7 +140,6 @@ func getFeatureResolveConflictCommand() *cli.Command {
 		Name:      "resolve-conflict",
 		Usage:     "if there is a conflict of your merge request indicates conflicts(feature => target branch)",
 		ArgsUsage: "-f, --feature_branch_name `featureBranchName`, -t, --target_branch `targetBranch`",
-		Category:  "feature",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "target_branch",
