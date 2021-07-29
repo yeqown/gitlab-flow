@@ -1,4 +1,12 @@
-# [](https://github.com/yeqown/gitlab-flow/compare/v1.6.6...v) (2021-06-07)
+# [](https://github.com/yeqown/gitlab-flow/compare/v1.6.8...v) (2021-07-29)
+
+
+### Features
+
+* **spin:** create spiner ([8512152](https://github.com/yeqown/gitlab-flow/commit/85121522e4d0c30339f0a6ddd2b92aee19448925))
+
+
+## [1.6.7](https://github.com/yeqown/gitlab-flow/compare/v1.6.6...v1.6.7) (2021-06-07)
 
 
 ### Features
