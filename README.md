@@ -27,7 +27,7 @@ go get -u github.com/yeqown/gitlab-flow
 ### Initialization
 
 ```shell
-gitlab-flow [-c, --conf_path `path/to/confpath/`] init -s "YOUR_GITLAB_ACCESS_TOKEN" -d "YOUR_GITLAB_API_HOST"
+gitlab-flow [-c, --conf `path/to/confpath/`] init -s "YOUR_GITLAB_ACCESS_TOKEN" -d "YOUR_GITLAB_API_HOST"
 # Notice here, global flag is before subcommand `init` or others.
 # -c only need a directory path not file path.
 ```
@@ -56,7 +56,7 @@ NAME:
    gitlab-flow - CLI tool
 
 USAGE:
-   flow2 [global options] command [command options] [arguments...]
+   flows [global options] command [command options] [arguments...]
 
 VERSION:
    v1.6.2
@@ -78,7 +78,7 @@ COMMANDS:
      init  initialize gitlab-flow, generate default config file and sqlite DB related to the path
 
 GLOBAL OPTIONS:
-   --conf_path path/to/file, -c path/to/file  choose which path/to/file to load (default: ~/.gitlab-flow)
+   --conf path/to/file, -c path/to/file  choose which path/to/file to load (default: ~/.gitlab-flow)
    --cwd path/to/file                         choose which path/to/file to load (default: /Users/med/projects/opensource/gitlab-flow)
    --debug                                    verbose mode (default: false)
    --project projectName, -p projectName      input projectName to locate which project should be operate. (default: gitlab-flow)
