@@ -85,8 +85,6 @@ GLOBAL OPTIONS:
    --version, -v                              版本号 (default: false)
 ```
 
-### 文档
+### [文档](./docs/zh-CN/README.md)
 
 <img align="center" src="./assets/gitlab-flow-branch.png">
-
-查看更多说明: [文档](./docs/zh-CN/README.md).

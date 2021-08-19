@@ -88,8 +88,6 @@ GLOBAL OPTIONS:
    --version, -v                              print the version (default: false)
 ```
 
-### Documents
+### [Documents](./docs/README.md)
 
 <img align="center" src="./assets/gitlab-flow-branch.png">
-
-More help information is: [README](./docs/README.md).
