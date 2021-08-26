@@ -414,7 +414,7 @@ func (d dashImpl) printAndOpenBrowser(title, url string) {
 		err1, err2 error
 	)
 
-	_, err1 = fmt.Fprint(os.Stdout, fmt.Sprintf(_printTpl, title, url))
+	_, err1 = fmt.Fprintf(os.Stdout, _printTpl, title, url)
 	if d.ctx.Conf.OpenBrowser {
 		err2 = pkg.OpenBrowser(url)
 	}
