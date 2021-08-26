@@ -67,6 +67,11 @@ func getFeatureCommand() *cli.Command {
 				Usage:    "input the `featureBranchName`",
 				Required: false,
 			},
+			&cli.BoolFlag{
+				Name:     "parse-issue-compatible",
+				Usage:    "switch to parse issue name in comptaible mode",
+				Required: false,
+			},
 		},
 		Subcommands: getFeatureSubCommands(),
 	}

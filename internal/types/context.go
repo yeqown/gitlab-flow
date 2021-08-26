@@ -120,4 +120,7 @@ type OpFeatureContext struct {
 	ForceCreateMergeRequest bool
 	// FeatureBranchName specify which branch name to use in the lifecycle of feature operations.
 	FeatureBranchName string
+
+	// ParseIssueCompatible if this is true, means parse issueName to feature in compatible way.
+	ParseIssueCompatible bool
 }
