@@ -105,9 +105,7 @@ func getDash(c *cli.Context) internal.IDash {
 // DONE(@yeqown): apply project name from CLI and CWD.
 // DONE(@yeqown): CWD could be configured from CLI.
 func setEnviron(flags globalFlags) *types.FlowContext {
-	if !flags.DebugMode {
-		log.SetLogLevel(log.LevelInfo)
-	} else {
+	if flags.DebugMode {
 		// open caller report
 		log.SetCallerReporter(true)
 		log.SetLogLevel(log.LevelDebug)

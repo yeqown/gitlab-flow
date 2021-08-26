@@ -1,12 +1,16 @@
 package conf
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/yeqown/gitlab-flow/internal/types"
+	"github.com/yeqown/gitlab-flow/pkg"
 	"github.com/yeqown/log"
 )
 
@@ -32,6 +36,9 @@ func Load(confPath string, parser ConfigParser) (cfg *types.Config, err error) {
 	cfg = new(types.Config)
 	p := precheckConfigDirectory(confPath)
 	r, err = os.OpenFile(p, os.O_RDONLY, 0777)
+	if err != nil {
+		return nil, errors.Wrap(err, "conf.Load")
+	}
 	err = parser.Unmarshal(r, cfg)
 
 	return cfg, err
@@ -80,7 +87,7 @@ func DefaultConfPath() string {
 		log.Errorf("get user home failed: %v", err)
 	}
 
-	configDirectory := filepath.Join(home, _defaultConfigDirectory)
+	configDirectory := filepath.Join(home, _defaultConfigDirectoryName)
 	if _, err = os.Stat(configDirectory); err == nil {
 		return configDirectory
 	}
@@ -96,14 +103,37 @@ func DefaultConfPath() string {
 	return configDirectory
 }
 
-func DefaultCWD() string {
-	cwd, _ := os.Getwd()
+// DefaultCWD returns the working directory of current project, default cwd is from
+// git rev-parse --show-toplevel command, but if the command could not execute successfully,
+// `pwd` command will be used instead.
+func DefaultCWD() (cwd string) {
+	w := bytes.NewBuffer(nil)
+	if err := pkg.RunOutput("git rev-parse --show-toplevel", w); err != nil {
+		log.
+			WithFields(log.Fields{
+				"error":   err,
+				"command": "git rev-parse --show-toplevel",
+			}).
+			Warn("conf.DefaultCWD failed")
+	}
+
+	if s := w.String(); s != "" {
+		cwd = s
+	}
+
+	if cwd == "" {
+		cwd, _ = os.Getwd()
+	}
+
+	cwd = strings.Trim(cwd, "\n")
+	cwd = strings.Trim(cwd, "\t")
+
 	return cwd
 }
 
 const (
-	_defaultConfigDirectory = ".gitlab-flow" // under user home path.
-	_configFilename         = "config.toml"
+	_defaultConfigDirectoryName = ".gitlab-flow" // under user home path.
+	_defaultConfigFilename      = "config.toml"
 )
 
 // precheckConfigDirectory could parse filename and path from configDirectory.
@@ -115,7 +145,7 @@ func precheckConfigDirectory(configDirectory string) string {
 	}
 
 	if fi.IsDir() {
-		return filepath.Join(configDirectory, _configFilename)
+		return filepath.Join(configDirectory, _defaultConfigFilename)
 	}
 
 	return configDirectory

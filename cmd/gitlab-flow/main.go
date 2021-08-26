@@ -22,11 +22,17 @@ func main() {
 	app.Description = `A tool for managing gitlab Feature/Milestone/Issue/MergeRequest as gitlab-flow.`
 	app.Flags = _cliGlobalFlags
 
+	initLogger()
 	mountCommands(app)
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func initLogger() {
+	log.SetTimeFormat(true, "")
+	log.SetLogLevel(log.LevelInfo)
 }
 
 func mountCommands(app *cli.App) {
