@@ -112,25 +112,25 @@ func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
 			return nil, errors.Wrap(errInvalidFeatureName, "dashImpl.FeatureDetail.CurrentBranch")
 		}
 		branchName = out
-	}
 
-	// if current branch name could be parsed to feature branch name, then use it.
-	if !isFeatureName(branchName) {
-		out, ok := tryParseFeatureNameFrom(branchName)
-		if !ok {
-			log.
-				WithFields(log.Fields{
-					"branchName": branchName,
-					"out":        out,
-					"ok":         ok,
-				}).
-				Debug("dashImpl.FeatureDetail could not parse branch name by default")
-			return nil, errors.Wrap(errInvalidFeatureName, "dashImpl.FeatureDetail.tryParseFeatureNameFrom")
+		// if current branch name could be parsed to feature branch name, then use it.
+		if !isFeatureName(branchName) {
+			out, ok := tryParseFeatureNameFrom(branchName, false)
+			if !ok {
+				log.
+					WithFields(log.Fields{
+						"branchName": branchName,
+						"out":        out,
+						"ok":         ok,
+					}).
+					Debug("dashImpl.FeatureDetail could not parse branch name by default")
+				return nil, errors.Wrap(errInvalidFeatureName, "dashImpl.FeatureDetail.tryParseFeatureNameFrom")
+			}
+			branchName = out
 		}
-		branchName = out
 	}
-	branchName = genFeatureBranchName(branchName)
 
+	branchName = genFeatureBranchName(branchName)
 	// locate branch
 	branch, err := d.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  d.ctx.Project.ID,

@@ -331,7 +331,7 @@ func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchNam
 
 	// DONE(@yeqown) get feature branch name from issueBranchName
 	if opc.FeatureBranchName == "" {
-		opc.FeatureBranchName = parseFeaturenameFromIssueName(issueBranchName)
+		opc.FeatureBranchName = parseFeatureFromIssueName(issueBranchName, opc.ParseIssueCompatible)
 	}
 	if opc.FeatureBranchName == "" {
 		return errInvalidFeatureName
@@ -386,7 +386,7 @@ func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchNam
 	}
 issueCreateMR:
 	// not hit, so create one
-	title := genMRTitle(issueBranchName, opc.FeatureBranchName)
+	title := genMergeRequestName(issueBranchName, opc.FeatureBranchName)
 	desc := ""
 	result, err := f.createMergeRequest(title, desc, milestoneID, issueIID, issueBranchName, opc.FeatureBranchName)
 	if err != nil {
@@ -473,7 +473,7 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 	}
 
 	// then create MR to master
-	title := genMRTitle(hotfixBranchName, types.MasterBranch.String())
+	title := genMergeRequestName(hotfixBranchName, types.MasterBranch.String())
 	result, err := f.createMergeRequest(
 		title, issue.Desc, 0, issue.IssueIID, hotfixBranchName, types.MasterBranch.String())
 	if err != nil {
@@ -958,7 +958,7 @@ featureCreateMR:
 	}
 	// create MR
 	targetBranch := targetBranchName.String()
-	title := genMRTitle(featureBranchName, targetBranch)
+	title := genMergeRequestName(featureBranchName, targetBranch)
 	result, err := f.createMergeRequest(
 		title, milestone.Desc, milestone.MilestoneID, 0, featureBranch.BranchName, targetBranch)
 	if err != nil {

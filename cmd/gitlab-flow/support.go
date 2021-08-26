@@ -86,6 +86,7 @@ func getOpFeatureContext(c *cli.Context) *types.OpFeatureContext {
 	return &types.OpFeatureContext{
 		ForceCreateMergeRequest: c.Bool("force-create-mr"),
 		FeatureBranchName:       c.String("feature-branch-name"),
+		ParseIssueCompatible:    c.Bool("parse-issue-compatible"),
 	}
 }
 

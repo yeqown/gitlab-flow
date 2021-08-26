@@ -93,6 +93,7 @@ const (
 	FeatureBranchPrefix         = "feature/"
 	HotfixBranchPrefix          = "hotfix/"
 	ConflictResolveBranchPrefix = "conflict-resolve/"
+	IssueBranchPrefix           = "issue/"
 )
 
 // genFeatureBranchName
@@ -107,17 +108,13 @@ func genFeatureBranchName(name string) string {
 // tryParseFeatureNameFrom try parse feature name from issue name or other cases.
 // if branchName has no prefix, which means tryParseFeatureNameFrom could judge it.
 // otherwise, branchName must have prefix, which was one of flow branch prefixes.
-func tryParseFeatureNameFrom(branchName string) (string, bool) {
+func tryParseFeatureNameFrom(branchName string, comptaible bool) (string, bool) {
 	arr := strings.Split(branchName, "/")
 	if len(arr) < 2 {
-		// FIXME(@yeqown): maybe old issue name, so try parse it.
-		if out := parseFeaturenameFromIssueName(branchName); out != "" {
-			return out, true
-		}
 		return "", false
 	}
 
-	prefix := arr[0]
+	prefix := arr[0] + "/"
 	switch prefix {
 	case FeatureBranchPrefix:
 		// pass
@@ -125,6 +122,11 @@ func tryParseFeatureNameFrom(branchName string) (string, bool) {
 		// pass
 	case ConflictResolveBranchPrefix:
 		// pass
+	case IssueBranchPrefix:
+		out := strings.Join(arr[1:], "/")
+		if out = parseFeatureFromIssueName(out, comptaible); out != "" {
+			return out, true
+		}
 	case "":
 		fallthrough
 	default:
@@ -149,30 +151,47 @@ func genHotfixBranchName(name string) string {
 	return HotfixBranchPrefix + name
 }
 
-// genMRTitle
-func genMRTitle(srcBranch, targetBranch string) string {
+// genMergeRequestName generate merge request name.
+func genMergeRequestName(srcBranch, targetBranch string) string {
 	return fmt.Sprintf("Merge %s into %s", srcBranch, targetBranch)
 }
 
 // genIssueBranchName .
-// @result = 1-milestoneTitle as default
-// fmt.Sprintf("%d-%s", issue.IID, milestone.Title)
+// @result = issue/milestoneTitle-1 as default
 func genIssueBranchName(name string, issueIID int) string {
-	if strings.HasPrefix(name, strconv.Itoa(issueIID)+"-") {
+	if strings.HasPrefix(name, IssueBranchPrefix) {
 		return name
 	}
 
-	return fmt.Sprintf("%d-%s", issueIID, name)
+	return IssueBranchPrefix + name + "-" + strconv.Itoa(issueIID)
 }
 
-func parseFeaturenameFromIssueName(issueName string) string {
-	idx := strings.Index(issueName, "-")
+// parseFeatureFromIssueName parse issue name to feature name, there are
+// two different cases:
+// 1. "1-milestoneName"
+// 2. "issue/milestoneName-1"
+//
+// TODO(@yeqown): comptaible with old.
+func parseFeatureFromIssueName(issueName string, compatible bool) string {
+	// if comptaible, try parse "1-milestoneName"
+	if compatible {
+		// DONE(@yeqown): support "1-milestoneName"
+		idx := strings.Index(issueName, "-")
+		if idx == -1 {
+			return ""
+		}
+
+		return issueName[idx+1:]
+	}
+
+	issueName = strings.TrimPrefix(issueName, IssueBranchPrefix)
+	idx := strings.LastIndex(issueName, "-")
 	if idx == -1 {
 		//	not errCouldNotFound
 		return ""
 	}
 
-	return issueName[idx+1:]
+	return issueName[:idx]
 }
 
 // chooseOneProjectInteractively if there are not only one project matched from local or remote,
