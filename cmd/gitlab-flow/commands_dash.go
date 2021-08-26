@@ -37,6 +37,9 @@ func getDashFeatureDetailSubCommand() *cli.Command {
 			featureBranchName := c.String("branch_name")
 			data, err := getDash(c).FeatureDetail(featureBranchName)
 			if err != nil {
+				fmt.Printf("\nIf could not parse branch name by default, you can try:\n" +
+					"1. specify a branch name by `-b YOUR-BRANCH-NAME`\n" +
+					"2. switch to feature branch by `git checkout feature/YOUR-BRANCH-NAME`\n")
 				return err
 			}
 			_, _ = fmt.Fprintf(os.Stdout, "%s\n", data)

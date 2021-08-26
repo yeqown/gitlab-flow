@@ -104,6 +104,42 @@ func genFeatureBranchName(name string) string {
 	return FeatureBranchPrefix + name
 }
 
+// tryParseFeatureNameFrom try parse feature name from issue name or other cases.
+// if branchName has no prefix, which means tryParseFeatureNameFrom could judge it.
+// otherwise, branchName must have prefix, which was one of flow branch prefixes.
+func tryParseFeatureNameFrom(branchName string) (string, bool) {
+	arr := strings.Split(branchName, "/")
+	if len(arr) < 2 {
+		// FIXME(@yeqown): maybe old issue name, so try parse it.
+		if out := parseFeaturenameFromIssueName(branchName); out != "" {
+			return out, true
+		}
+		return "", false
+	}
+
+	prefix := arr[0]
+	switch prefix {
+	case FeatureBranchPrefix:
+		// pass
+	case HotfixBranchPrefix:
+		// pass
+	case ConflictResolveBranchPrefix:
+		// pass
+	case "":
+		fallthrough
+	default:
+		return "", false
+	}
+
+	return strings.Join(arr[1:], "/"), true
+}
+
+// isFeatureName judge whether branchName is feature branch or not.
+// strings.HasPrefix(name, FeatureBranchPrefix)
+func isFeatureName(name string) bool {
+	return strings.HasPrefix(name, FeatureBranchPrefix)
+}
+
 // genHotfixBranchName .
 func genHotfixBranchName(name string) string {
 	if strings.HasPrefix(name, HotfixBranchPrefix) {

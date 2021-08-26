@@ -99,22 +99,45 @@ func (d dashImpl) fillContextWithProject() error {
 // * basic information to current milestone.
 // * all merge request and its related issue created in current milestone.
 // * all issues created in current milestone with web url.
-func (d dashImpl) FeatureDetail(featureBranchName string) ([]byte, error) {
-	if featureBranchName == "" {
-		featureBranchName, _ = d.gitOperator.CurrentBranch()
+func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
+	if branchName == "" {
+		out, err := d.gitOperator.CurrentBranch()
+		if out == "" || err != nil {
+			log.
+				WithFields(log.Fields{
+					"branch": branchName,
+					"err":    err,
+				}).
+				Debug("dashImpl.FeatureDetail get branch name failed")
+			return nil, errors.Wrap(errInvalidFeatureName, "dashImpl.FeatureDetail.CurrentBranch")
+		}
+		branchName = out
 	}
-	if featureBranchName == "" {
-		return nil, errInvalidFeatureName
+
+	// if current branch name could be parsed to feature branch name, then use it.
+	if !isFeatureName(branchName) {
+		out, ok := tryParseFeatureNameFrom(branchName)
+		if !ok {
+			log.
+				WithFields(log.Fields{
+					"branchName": branchName,
+					"out":        out,
+					"ok":         ok,
+				}).
+				Debug("dashImpl.FeatureDetail could not parse branch name by default")
+			return nil, errors.Wrap(errInvalidFeatureName, "dashImpl.FeatureDetail.tryParseFeatureNameFrom")
+		}
+		branchName = out
 	}
-	featureBranchName = genFeatureBranchName(featureBranchName)
+	branchName = genFeatureBranchName(branchName)
 
 	// locate branch
 	branch, err := d.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  d.ctx.Project.ID,
-		BranchName: featureBranchName,
+		BranchName: branchName,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "could not locate branch")
+		return nil, errors.Wrap(err, "could not locate branch:"+branchName)
 	}
 
 	// query milestone
