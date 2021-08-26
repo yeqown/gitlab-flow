@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/yeqown/gitlab-flow/internal/types"
@@ -103,32 +104,35 @@ func DefaultConfPath() string {
 	return configDirectory
 }
 
+var (
+	_defaultCWD     string
+	_defaultCwdOnce sync.Once
+)
+
 // DefaultCWD returns the working directory of current project, default cwd is from
 // git rev-parse --show-toplevel command, but if the command could not execute successfully,
 // `pwd` command will be used instead.
-func DefaultCWD() (cwd string) {
-	w := bytes.NewBuffer(nil)
-	if err := pkg.RunOutput("git rev-parse --show-toplevel", w); err != nil {
-		log.
-			WithFields(log.Fields{
-				"error":   err,
-				"command": "git rev-parse --show-toplevel",
-			}).
-			Warn("conf.DefaultCWD failed")
-	}
+func DefaultCWD() string {
+	_defaultCwdOnce.Do(func() {
+		w := bytes.NewBuffer(nil)
+		if err := pkg.RunOutput("git rev-parse --show-toplevel", w); err != nil {
+			log.Debug("pre-exec 'git rev-parse --show-toplevel' failed:")
+			log.Debugf("%s\n", err)
+		}
 
-	if s := w.String(); s != "" {
-		cwd = s
-	}
+		if s := w.String(); s != "" {
+			_defaultCWD = s
+		}
 
-	if cwd == "" {
-		cwd, _ = os.Getwd()
-	}
+		if _defaultCWD == "" {
+			_defaultCWD, _ = os.Getwd()
+		}
 
-	cwd = strings.Trim(cwd, "\n")
-	cwd = strings.Trim(cwd, "\t")
+		_defaultCWD = strings.Trim(_defaultCWD, "\n")
+		_defaultCWD = strings.Trim(_defaultCWD, "\t")
+	})
 
-	return cwd
+	return _defaultCWD
 }
 
 const (
