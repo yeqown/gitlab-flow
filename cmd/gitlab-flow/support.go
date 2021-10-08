@@ -106,19 +106,12 @@ func getDash(c *cli.Context) internal.IDash {
 // DONE(@yeqown): apply project name from CLI and CWD.
 // DONE(@yeqown): CWD could be configured from CLI.
 func setEnviron(flags globalFlags) *types.FlowContext {
-	if flags.DebugMode {
-		// open caller report
-		log.SetCallerReporter(true)
-		log.SetLogLevel(log.LevelDebug)
-	}
-
 	var err error
 	(&flags).CWD, err = filepath.Abs(flags.CWD)
 	if err != nil {
 		log.
 			WithField("cwd", flags.CWD).
 			Fatalf("get ABS of cwd failed: %v", err)
-		panic("could not reach")
 	}
 	log.
 		WithField("flags", flags).
@@ -130,15 +123,14 @@ func setEnviron(flags globalFlags) *types.FlowContext {
 		log.
 			WithField("path", flags.ConfPath).
 			Fatalf("could not load config file: %v", err)
-		panic("could not reach")
 	}
+
 	if err = cfg.
 		Apply(flags.DebugMode, flags.OpenBrowser).
 		Valid(); err != nil {
 		log.
 			WithField("cfg", cfg).
 			Fatalf("config is invalid")
-		panic("could not reach")
 	}
 
 	return types.NewContext(flags.CWD, flags.ConfPath, flags.ProjectName, cfg, flags.ForceRemote)

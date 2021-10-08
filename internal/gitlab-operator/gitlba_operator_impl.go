@@ -16,19 +16,39 @@ type gitlabOperator struct {
 	gitlab *gogitlab.Client
 }
 
+type Config struct {
+	AppID        string
+	AppSecret    string
+	AccessToken  string
+	RefreshToken string
+	Host         string
+	ApiURL       string
+}
+
 // NewGitlabOperator generate IGitlabOperator.
-func NewGitlabOperator(accessToken, APIURL string) IGitlabOperator {
-	gitlab, err := gogitlab.NewClient(accessToken, gogitlab.WithBaseURL(APIURL))
-	if err != nil {
-		log.WithFields(log.Fields{
+func NewGitlabOperator(accessToken, apiURL string) IGitlabOperator {
+	log.
+		WithFields(log.Fields{
 			"accessToken": accessToken,
-			"apiURL":      APIURL,
-		}).Errorf("could not generate gitlab client: %v", err)
-		// could not go ahead if could not initialize gitlab client.
+			"apiURL":      apiURL,
+		}).
+		Debug("NewGitlabOperator get new access token")
+
+	gitlab, err := gogitlab.NewOAuthClient(accessToken, gogitlab.WithBaseURL(apiURL))
+	if err != nil {
+		log.
+			WithFields(log.Fields{
+				"AccessToken": accessToken,
+				"apiURL":      apiURL,
+			}).
+			Errorf("NewGitlabOperator could not initialize OAuth client: %v", err)
+		// could not go ahead if we could not initialize gitlab client.
 		panic(err)
 	}
 
-	return &gitlabOperator{gitlab: gitlab}
+	return &gitlabOperator{
+		gitlab: gitlab,
+	}
 }
 
 func (g gitlabOperator) CreateBranch(ctx context.Context, req *CreateBranchRequest) (*CreateBranchResult, error) {

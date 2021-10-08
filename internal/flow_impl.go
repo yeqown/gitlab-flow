@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitop "github.com/yeqown/gitlab-flow/internal/git-operator"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 	"github.com/yeqown/gitlab-flow/internal/repository"
@@ -35,6 +36,46 @@ var (
 	errInvalidFeatureName = errors.New("feature branch could not be empty")
 )
 
+// checkOAuthAccessToken check access token is valid or not. If access token becomes invalid
+// then refresh it, if refresh failed, it leads to  re-authorize.
+func checkOAuthAccessToken(ctx *types.FlowContext) {
+	c, _ := conf.Load(ctx.ConfPath(), nil)
+	oauth := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
+		AppID:        c.OAuth.AppID,
+		AppSecret:    c.OAuth.AppSecret,
+		Host:         c.GitlabHost,
+		ServeAddr:    "", // use default address
+		AccessToken:  c.OAuth.AccessToken,
+		RefreshToken: c.OAuth.RefreshToken,
+	})
+	if err := oauth.Enter(c.OAuth.RefreshToken); err != nil {
+		log.
+			WithFields(log.Fields{
+				"config": c,
+			}).
+			Errorf("NewGitlabOperator could not renew token: %v", err)
+		panic(err)
+	}
+
+	accessToken, refreshToken := oauth.Load()
+
+	c.OAuth.AccessToken = accessToken
+	c.OAuth.RefreshToken = refreshToken
+
+	// update context oauth configuration
+	ctx.Conf.OAuth.AccessToken = accessToken
+	ctx.Conf.OAuth.RefreshToken = refreshToken
+
+	if err := conf.Save(ctx.ConfPath(), c, nil); err != nil {
+		log.
+			WithFields(log.Fields{
+				"config": c,
+				"error":  err,
+			}).
+			Error("checkOAuthAccessToken failed to save")
+	}
+}
+
 func NewFlow(ctx *types.FlowContext) IFlow {
 	if ctx == nil {
 		log.Fatal("empty FlowContext initialized")
@@ -45,9 +86,11 @@ func NewFlow(ctx *types.FlowContext) IFlow {
 		WithField("context", ctx).
 		Debugf("constructing flow")
 
+	checkOAuthAccessToken(ctx)
+
 	flow := &flowImpl{
 		ctx:            ctx,
-		gitlabOperator: gitlabop.NewGitlabOperator(ctx.Conf.AccessToken, ctx.Conf.GitlabAPIURL),
+		gitlabOperator: gitlabop.NewGitlabOperator(ctx.Conf.OAuth.AccessToken, ctx.Conf.GitlabAPIURL),
 		gitOperator:    gitop.NewBasedCmd(ctx.CWD),
 		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.Conf.DebugMode)),
 	}

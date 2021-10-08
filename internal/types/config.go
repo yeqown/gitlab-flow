@@ -7,11 +7,23 @@ var (
 	ErrEmptyGitlabAPI   = errors.New("empty gitlab API URL")
 )
 
+type OAuth struct {
+	AccessToken  string `toml:"access_token"`
+	RefreshToken string `toml:"refresh_token"`
+	AppID        string `toml:"app_id"`
+	AppSecret    string `toml:"app_secret"`
+}
+
 // Config contains all fields can be specified by user.
 type Config struct {
-	AccessToken  string `toml:"access_token"`
-	DebugMode    bool   `toml:"debug"`
+	OAuth *OAuth
+
+	// Deprecated: use oauth as instead
+	//AccessToken string `toml:"access_token"`
+
 	GitlabAPIURL string `toml:"gitlab_api_url"`
+	GitlabHost   string `toml:"gitlab_host"`
+	DebugMode    bool   `toml:"debug"`
 	OpenBrowser  bool   `toml:"open_browser"`
 }
 
@@ -30,9 +42,9 @@ func (cfg *Config) Apply(debug, openBrowser bool) *Config {
 
 // Valid validates config is valid to use.
 func (cfg Config) Valid() error {
-	if cfg.AccessToken == "" {
-		return ErrEmptyAccessToken
-	}
+	//if cfg.AccessToken == "" {
+	//	return ErrEmptyAccessToken
+	//}
 
 	if cfg.GitlabAPIURL == "" {
 		return ErrEmptyGitlabAPI

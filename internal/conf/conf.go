@@ -10,9 +10,10 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/yeqown/log"
+
 	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/gitlab-flow/pkg"
-	"github.com/yeqown/log"
 )
 
 // ConfigParser is an interface to parse config in different ways.
@@ -68,9 +69,15 @@ func Save(confPath string, cfg *types.Config, parser ConfigParser) error {
 
 var (
 	defaultConf = &types.Config{
-		AccessToken:  "",
-		DebugMode:    false,
+		OAuth: &types.OAuth{
+			AccessToken:  "",
+			RefreshToken: "",
+			AppID:        "",
+			AppSecret:    "",
+		},
 		GitlabAPIURL: "https://YOUR_HOSTNAME/api/v4",
+		GitlabHost:   "https://YOUR_HOSTNAME",
+		DebugMode:    false,
 		OpenBrowser:  true,
 	}
 )

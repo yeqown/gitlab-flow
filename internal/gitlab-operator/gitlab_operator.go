@@ -150,7 +150,6 @@ type ListMilestoneResult struct {
 	Data []MilestoneShort
 }
 
-// ListProjectRequest
 type ListProjectRequest struct {
 	Page        int
 	PerPage     int
@@ -165,4 +164,13 @@ type ProjectShort struct {
 
 type ListProjectResult struct {
 	Data []ProjectShort
+}
+
+type IGitlabOauth2Support interface {
+	// Enter is an asynchronous process that would not return accessToken and refreshToken synchronized.
+	// IGitlabOauth2Support.Load will return the refreshToken and accessToken after signaling.
+	Enter(refreshToken string) (err error)
+
+	// Load only use this after any signal from Enter channel. blocked method.
+	Load() (accessToken, refreshToken string)
 }
