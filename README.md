@@ -27,25 +27,26 @@ go get -u github.com/yeqown/gitlab-flow
 ### Initialization
 
 ```shell
-gitlab-flow [-c, --conf `path/to/confpath/`] init -s "YOUR_GITLAB_ACCESS_TOKEN" -d "YOUR_GITLAB_API_HOST"
+gitlab-flow [-c, --conf `path/to/confpath/`] init
 # Notice here, global flag is before subcommand `init` or others.
 # -c only need a directory path not file path.
 ```
 
 #### Access Token
 
-You can find or create your own access token in: 
+***❗️❗️❗️NOTICE: since `1.7.0` gitlab-flow use OAuth2 access token instead of personal access token.***
 
-[https://git.example.com/profile/personal_access_tokens](https://git.example.com/profile/personal_access_tokens).
+> !!! Before initialize gitlab-flow, you must have a custom-compiled gitlab-flow executable binary 
+> which contains appId and appSecret of gitlab application on your gitlab server.
 
-Then you need to choose `api, read_user, read_repository, read_registry` scopes.
+After you initialize gitlab-flow on your machine, it will automatically request OAuth credentials
+from your gitlab server.
 
-#### API Host
-
-You can find it in:
-
+> Host: The domain of your gitlab server. such as https://git.example.com 
+> 
+> API Host: The API path to your gitlab server. such as: https://git.example.com/api/v4/. 
+> You can find it in:
 [https://git.example.com/help/api/README.md](https://git.example.com/help/api/README.md).
-
 This page provide some example for you to request gitlab API, so you got host.
 
 ### CLI Help  

@@ -34,8 +34,6 @@ func getInitCommand() *cli.Command {
 
 			// DONE(@yeqown): refresh user's access token
 			support := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
-				AppID:        cfg.OAuth.AppID,
-				AppSecret:    cfg.OAuth.AppSecret,
 				Host:         cfg.GitlabHost,
 				ServeAddr:    "", // use default
 				AccessToken:  "", // empty

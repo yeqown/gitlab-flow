@@ -18,7 +18,7 @@ func main() {
 			Email: "yeqown@gmail.com",
 		},
 	}
-	app.Version = "v1.7.0"
+	app.Version = "v1.7.0-alpha"
 	app.Description = `A tool for managing gitlab Feature/Milestone/Issue/MergeRequest as gitlab-flow.`
 	app.Flags = _cliGlobalFlags
 

@@ -1,16 +1,14 @@
 package main
 
 import (
-	"github.com/yeqown/log"
-
 	"github.com/yeqown/gitlab-flow/internal/types"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/yeqown/log"
 )
 
-// surveyConfig
+// surveyConfig initialize configuration in an interactive session.
 // DONE(@yeqown): init flow2 in survey method.
-// FIXME(@yeqown): make appId and appSecret safety. use build ldflags?
 func surveyConfig(cfg *types.Config) error {
 	log.
 		WithField("config", cfg).
@@ -21,24 +19,6 @@ func surveyConfig(cfg *types.Config) error {
 	}
 
 	questions := []*survey.Question{
-		{
-			Name: "appId",
-			Prompt: &survey.Input{
-				Message: "Input your application client ID",
-				Default: cfg.OAuth.AppID,
-			},
-			Validate:  survey.Required,
-			Transform: nil,
-		},
-		{
-			Name: "appSecret",
-			Prompt: &survey.Input{
-				Message: "Input your application client secret",
-				Default: cfg.OAuth.AppSecret,
-			},
-			Validate:  survey.Required,
-			Transform: nil,
-		},
 		{
 			Name: "host",
 			Prompt: &survey.Input{
@@ -91,8 +71,6 @@ func surveyConfig(cfg *types.Config) error {
 	cfg.OpenBrowser = ans.OpenBrowser
 	cfg.GitlabHost = ans.Host
 	cfg.GitlabAPIURL = ans.APIURL
-	cfg.OAuth.AppID = ans.AppID
-	cfg.OAuth.AppSecret = ans.AppSecret
 
 	return err
 }

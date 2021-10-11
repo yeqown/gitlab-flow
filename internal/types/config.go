@@ -10,8 +10,6 @@ var (
 type OAuth struct {
 	AccessToken  string `toml:"access_token"`
 	RefreshToken string `toml:"refresh_token"`
-	AppID        string `toml:"app_id"`
-	AppSecret    string `toml:"app_secret"`
 }
 
 // Config contains all fields can be specified by user.

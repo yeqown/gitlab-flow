@@ -72,8 +72,6 @@ var (
 		OAuth: &types.OAuth{
 			AccessToken:  "",
 			RefreshToken: "",
-			AppID:        "",
-			AppSecret:    "",
 		},
 		GitlabAPIURL: "https://YOUR_HOSTNAME/api/v4",
 		GitlabHost:   "https://YOUR_HOSTNAME",
@@ -87,7 +85,6 @@ func Default() *types.Config {
 	return defaultConf
 }
 
-// DefaultConfPath
 func DefaultConfPath() string {
 	// generate default config directory
 	home, err := os.UserHomeDir()

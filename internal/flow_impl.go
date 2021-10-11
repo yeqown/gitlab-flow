@@ -41,8 +41,6 @@ var (
 func checkOAuthAccessToken(ctx *types.FlowContext) {
 	c, _ := conf.Load(ctx.ConfPath(), nil)
 	oauth := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
-		AppID:        c.OAuth.AppID,
-		AppSecret:    c.OAuth.AppSecret,
 		Host:         c.GitlabHost,
 		ServeAddr:    "", // use default address
 		AccessToken:  c.OAuth.AccessToken,

@@ -22,18 +22,21 @@ const (
 	step1URI     = "/oauth/authorize"
 	step2URI     = "/oauth/token"
 	defaultScope = "read_user api read_repository read_registry"
+)
 
+var (
 	// OAuth2AppID and OAuth2AppSecret
-	// TODO(@yeqown) These two parameters should be passed from build parameters to keep application safety.
-	// go build -o flow2 -ldflags "-X gitlabop.OAuth2AppID=XXX -X gitlabop.OAuth2AppSecret=XXX" ./cmd/gitlab-flow
-	OAuth2AppID     = ""
-	OAuth2AppSecret = ""
+	// DONE(@yeqown) These two parameters should be passed from build parameters to keep application safety.
+	// go build -ldflags="-X package/sub.OAuth2AppID=XXX -X package/sub.OAuth2AppSecret=XXX" ./cmd/gitlab-flow
+	OAuth2AppID     string
+	OAuth2AppSecret string
+
+	errNilOAuth2Application = errors.New(
+		"empty app id or secret, visit: https://github.com/yeqown/gitlab-flow#access-token for more detail")
 )
 
 // OAuth2Config helps construct gitlab OAuth2 support.
 type OAuth2Config struct {
-	AppID, AppSecret string
-
 	// Host of gitlab code repository web application, such as: https://git.example.com
 	Host string
 
@@ -59,8 +62,8 @@ func fixOAuthConfig(c *OAuth2Config) error {
 		c.ServeAddr = "localhost:2333"
 	}
 
-	if c.AppID == "" || c.AppSecret == "" {
-		return errors.New("empty app id or secret")
+	if OAuth2AppID == "" || OAuth2AppSecret == "" {
+		return errNilOAuth2Application
 	}
 
 	return nil
@@ -156,14 +159,6 @@ func (g *gitlabOAuth2Support) _proc() {
 		state := r.Form.Get("state")
 		_error := r.Form.Get("_error")
 		errorDescription := r.Form.Get("error_description")
-		stage := r.Form.Get("stage")
-
-		switch stage {
-		case "token":
-			w.WriteHeader(http.StatusOK)
-			_, _ = fmt.Fprint(w, "gitlab-flow oauth authorization succeeded!")
-			return
-		}
 
 		log.
 			WithFields(log.Fields{
@@ -206,7 +201,7 @@ func (g *gitlabOAuth2Support) calcState() string {
 func (g *gitlabOAuth2Support) triggerAuthorize(ctx context.Context) {
 	form := url.Values{}
 
-	form.Add("client_id", g.oc.AppID)
+	form.Add("client_id", OAuth2AppID)
 	form.Add("redirect_uri", fmt.Sprintf("http://%s/callback", g.oc.ServeAddr))
 	form.Add("response_type", "code")
 	form.Add("state", g.calcState())
@@ -230,8 +225,8 @@ var (
 // in case of Enter token expired, should be forced to re-request triggerAuthorize from user.
 func (g *gitlabOAuth2Support) requestToken(ctx context.Context, credential string, isRefresh bool) error {
 	form := url.Values{}
-	form.Add("client_id", g.oc.AppID)
-	form.Add("client_secret", g.oc.AppSecret)
+	form.Add("client_id", OAuth2AppID)
+	form.Add("client_secret", OAuth2AppSecret)
 	form.Add("redirect_uri", fmt.Sprintf("http://%s/callback", g.oc.ServeAddr))
 
 	switch isRefresh {
@@ -261,7 +256,7 @@ func (g *gitlabOAuth2Support) requestToken(ctx context.Context, credential strin
 
 	log.
 		WithField("response", resp).
-		Info("requestToken response")
+		Debug("requestToken response")
 
 	if len(resp.Error) != 0 {
 		// got Error
@@ -291,9 +286,9 @@ func (g *gitlabOAuth2Support) requestToken(ctx context.Context, credential strin
 func (g *gitlabOAuth2Support) _execPost(ctx context.Context, uri string, form url.Values, resp interface{}) error {
 	uri = fmt.Sprintf("%s%s?%s", g.oc.Host, uri, form.Encode())
 
-	log.
-		WithField("uri", uri).
-		Debug("gitlabOAuth2Support _execPost called")
+	//log.
+	//	WithField("uri", uri).
+	//	Debug("gitlabOAuth2Support _execPost called")
 
 	r, err := g.hc.Post(uri, "application/json", nil)
 	if err != nil {
