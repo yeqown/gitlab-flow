@@ -106,16 +106,17 @@ func getDash(c *cli.Context) internal.IDash {
 // DONE(@yeqown): apply project name from CLI and CWD.
 // DONE(@yeqown): CWD could be configured from CLI.
 func setEnviron(flags globalFlags) *types.FlowContext {
-	var err error
-	(&flags).CWD, err = filepath.Abs(flags.CWD)
-	if err != nil {
-		log.
-			WithField("cwd", flags.CWD).
-			Fatalf("get ABS of cwd failed: %v", err)
-	}
 	log.
 		WithField("flags", flags).
 		Debugf("setEnviron called")
+
+	// get absolute path of current working directory.
+	cwd, err := filepath.Abs(flags.CWD)
+	if err != nil {
+		log.
+			WithField("cwd", flags.CWD).
+			Fatalf("get absolute path of CWD failed: %v", err)
+	}
 
 	// prepare configuration
 	cfg, err := conf.Load(flags.ConfPath, nil)
@@ -125,13 +126,19 @@ func setEnviron(flags globalFlags) *types.FlowContext {
 			Fatalf("could not load config file: %v", err)
 	}
 
-	if err = cfg.
-		Apply(flags.DebugMode, flags.OpenBrowser).
-		Valid(); err != nil {
+	// pass flags parameters into configuration
+	if flags.DebugMode {
+		cfg.DebugMode = flags.DebugMode
+	}
+	if flags.OpenBrowser {
+		cfg.OpenBrowser = flags.OpenBrowser
+	}
+
+	if err = cfg.Valid(); err != nil {
 		log.
 			WithField("cfg", cfg).
 			Fatalf("config is invalid")
 	}
 
-	return types.NewContext(flags.CWD, flags.ConfPath, flags.ProjectName, cfg, flags.ForceRemote)
+	return types.NewContext(cwd, flags.ConfPath, flags.ProjectName, cfg, flags.ForceRemote)
 }

@@ -41,6 +41,7 @@ func setupCommands(app *cli.App) {
 			log.SetCallerReporter(true)
 			log.SetLogLevel(log.LevelDebug)
 		}
+
 		return nil
 	}
 

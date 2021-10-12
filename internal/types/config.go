@@ -25,18 +25,19 @@ type Config struct {
 	OpenBrowser  bool   `toml:"open_browser"`
 }
 
-// Apply open debug in Config if debug is true, otherwise do nothing.
-func (cfg *Config) Apply(debug, openBrowser bool) *Config {
-	if debug {
-		cfg.DebugMode = debug
-	}
-
-	if openBrowser {
-		cfg.OpenBrowser = openBrowser
-	}
-
-	return cfg
-}
+//// Apply open debug in Config if debug is true, otherwise do nothing.
+//// Deprecated
+//func (cfg *Config) Apply(debug, openBrowser bool) *Config {
+//	if debug {
+//		cfg.DebugMode = debug
+//	}
+//
+//	if openBrowser {
+//		cfg.OpenBrowser = openBrowser
+//	}
+//
+//	return cfg
+//}
 
 // Valid validates config is valid to use.
 func (cfg Config) Valid() error {
