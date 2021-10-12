@@ -12,9 +12,15 @@ type OAuth struct {
 	RefreshToken string `toml:"refresh_token"`
 }
 
+// BranchSetting contains some personal setting of git branch.
+type BranchSetting struct {
+	Master, Dev, Test BranchTyp
+}
+
 // Config contains all fields can be specified by user.
 type Config struct {
-	OAuth *OAuth
+	OAuth  *OAuth         `toml:"oauth"`
+	Branch *BranchSetting `toml:"branch"`
 
 	// Deprecated: use oauth as instead
 	//AccessToken string `toml:"access_token"`

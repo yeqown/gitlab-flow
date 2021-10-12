@@ -35,7 +35,14 @@ func Load(confPath string, parser ConfigParser) (cfg *types.Config, err error) {
 	var (
 		r io.Reader
 	)
-	cfg = new(types.Config)
+	cfg = &types.Config{
+		OAuth:        new(types.OAuth),
+		Branch:       new(types.BranchSetting),
+		GitlabAPIURL: "",
+		GitlabHost:   "",
+		DebugMode:    false,
+		OpenBrowser:  false,
+	}
 	p := precheckConfigDirectory(confPath)
 	r, err = os.OpenFile(p, os.O_RDONLY, 0777)
 	if err != nil {
@@ -69,6 +76,11 @@ func Save(confPath string, cfg *types.Config, parser ConfigParser) error {
 
 var (
 	defaultConf = &types.Config{
+		Branch: &types.BranchSetting{
+			Master: types.MasterBranch,
+			Dev:    types.DevBranch,
+			Test:   types.TestBranch,
+		},
 		OAuth: &types.OAuth{
 			AccessToken:  "",
 			RefreshToken: "",

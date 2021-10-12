@@ -92,23 +92,23 @@ func getOpFeatureContext(c *cli.Context) *types.OpFeatureContext {
 
 func getFlow(c *cli.Context) internal.IFlow {
 	flags := parseGlobalFlags(c)
-	ctx := setEnviron(flags)
+	ctx := resolveFlags(flags)
 	return internal.NewFlow(ctx)
 }
 
 func getDash(c *cli.Context) internal.IDash {
 	flags := parseGlobalFlags(c)
-	ctx := setEnviron(flags)
+	ctx := resolveFlags(flags)
 	return internal.NewDash(ctx)
 }
 
-// setEnviron set global environment of debug mode.
+// resolveFlags set global environment of debug mode.
 // DONE(@yeqown): apply project name from CLI and CWD.
 // DONE(@yeqown): CWD could be configured from CLI.
-func setEnviron(flags globalFlags) *types.FlowContext {
+func resolveFlags(flags globalFlags) *types.FlowContext {
 	log.
 		WithField("flags", flags).
-		Debugf("setEnviron called")
+		Debugf("resolveFlags called")
 
 	// get absolute path of current working directory.
 	cwd, err := filepath.Abs(flags.CWD)
@@ -119,8 +119,8 @@ func setEnviron(flags globalFlags) *types.FlowContext {
 	}
 
 	// prepare configuration
-	cfg, err := conf.Load(flags.ConfPath, nil)
-	if err != nil {
+	var c *types.Config
+	if c, err = conf.Load(flags.ConfPath, nil); err != nil {
 		log.
 			WithField("path", flags.ConfPath).
 			Fatalf("could not load config file: %v", err)
@@ -128,17 +128,19 @@ func setEnviron(flags globalFlags) *types.FlowContext {
 
 	// pass flags parameters into configuration
 	if flags.DebugMode {
-		cfg.DebugMode = flags.DebugMode
+		c.DebugMode = flags.DebugMode
 	}
 	if flags.OpenBrowser {
-		cfg.OpenBrowser = flags.OpenBrowser
+		c.OpenBrowser = flags.OpenBrowser
 	}
 
-	if err = cfg.Valid(); err != nil {
+	if err = c.Valid(); err != nil {
 		log.
-			WithField("cfg", cfg).
+			WithField("config", c).
 			Fatalf("config is invalid")
 	}
 
-	return types.NewContext(cwd, flags.ConfPath, flags.ProjectName, cfg, flags.ForceRemote)
+	types.SyncBranchSetting(c.Branch.Master, c.Branch.Dev, c.Branch.Test)
+
+	return types.NewContext(cwd, flags.ConfPath, flags.ProjectName, c, flags.ForceRemote)
 }
