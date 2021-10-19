@@ -1,3 +1,5 @@
+<img align="center" src="./assets/gitlab-flow-branch.svg">
+
 # gitlab-flow
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/yeqown/gitlab-flow)](https://goreportcard.com/report/github.com/yeqown/gitlab-flow) [![go.de
@@ -90,5 +92,3 @@ GLOBAL OPTIONS:
 ```
 
 ### [Documents](./docs/README.md)
-
-<img align="center" src="./assets/gitlab-flow-branch.png">

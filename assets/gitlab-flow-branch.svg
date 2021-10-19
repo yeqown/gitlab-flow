@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1583px" height="703px" viewBox="0 0 1583 703" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>切片</title>
+    <g id="branch-flow-v2" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <text id="@yeqown" font-family="STKaitiSC-Regular, Kaiti SC" font-size="16" font-weight="normal" fill="#000000">
+            <tspan x="1394" y="592">@yeqown</tspan>
+        </text>
+        <line x1="42.5" y1="328.5" x2="1463" y2="328" id="直线" stroke="#595959" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+        <line x1="416" y1="225" x2="663" y2="225" id="直线备份-5" stroke="#595959" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+        <line x1="174.5" y1="430.5" x2="834.5" y2="430.5" id="直线备份" stroke="#595959" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+        <line x1="909" y1="121" x2="1126" y2="121" id="直线备份-4" stroke="#595959" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+        <line x1="296.5" y1="601.5" x2="492" y2="602" id="直线备份-2" stroke="#595959" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+        <line x1="344.5" y1="515.5" x2="409" y2="516" id="直线备份-3" stroke="#595959" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+        <line x1="1220.5" y1="226.5" x2="1333" y2="226" id="直线备份-6" stroke="#595959" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+        <circle id="椭圆形" stroke="#595959" stroke-width="4" fill="#FFC069" cx="44.5" cy="328.5" r="14.5"></circle>
+        <circle id="椭圆形备份-7" stroke="#595959" stroke-width="4" fill="#FFC069" cx="297.5" cy="328.5" r="14.5"></circle>
+        <circle id="椭圆形备份-21" stroke="#595959" stroke-width="4" fill="#FF7875" cx="415.5" cy="225.5" r="14.5"></circle>
+        <circle id="椭圆形备份-22" stroke="#595959" stroke-width="4" fill="#FF7875" cx="482.5" cy="225.5" r="14.5"></circle>
+        <circle id="椭圆形备份-23" stroke="#595959" stroke-width="4" fill="#FF7875" cx="662.5" cy="224.5" r="14.5"></circle>
+        <circle id="椭圆形备份-8" stroke="#595959" stroke-width="4" fill="#FFC069" cx="415.5" cy="328.5" r="14.5"></circle>
+        <circle id="椭圆形备份-9" stroke="#595959" stroke-width="4" fill="#FFC069" cx="662.5" cy="328.5" r="14.5"></circle>
+        <circle id="椭圆形备份-20" stroke="#595959" stroke-width="4" fill="#FFC069" cx="964.5" cy="328.5" r="14.5"></circle>
+        <circle id="椭圆形备份-24" stroke="#595959" stroke-width="4" fill="#FFC069" cx="1125.5" cy="328.5" r="14.5"></circle>
+        <circle id="椭圆形备份-27" stroke="#595959" stroke-width="4" fill="#FFC069" cx="1331.5" cy="327.5" r="14.5"></circle>
+        <circle id="椭圆形备份-25" stroke="#595959" stroke-width="4" fill="#95DE64" cx="1220.5" cy="225.5" r="14.5"></circle>
+        <circle id="椭圆形备份-26" stroke="#595959" stroke-width="4" fill="#95DE64" cx="1331.5" cy="225.5" r="14.5"></circle>
+        <circle id="椭圆形备份" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="174.5" cy="431.5" r="14.5"></circle>
+        <circle id="椭圆形备份-3" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="909.5" cy="121.5" r="14.5"></circle>
+        <circle id="椭圆形备份-4" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="964.5" cy="121.5" r="14.5"></circle>
+        <circle id="椭圆形备份-5" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="1126.5" cy="121.5" r="14.5"></circle>
+        <circle id="椭圆形备份-13" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="259.5" cy="431.5" r="14.5"></circle>
+        <circle id="椭圆形备份-14" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="344.5" cy="431.5" r="14.5"></circle>
+        <circle id="椭圆形备份-15" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="599.5" cy="431.5" r="14.5"></circle>
+        <circle id="椭圆形备份-19" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="834.5" cy="431.5" r="14.5"></circle>
+        <circle id="椭圆形备份-18" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="492.5" cy="431.5" r="14.5"></circle>
+        <circle id="椭圆形备份-2" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="296.5" cy="602.5" r="14.5"></circle>
+        <circle id="椭圆形备份-16" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="344.5" cy="516.5" r="14.5"></circle>
+        <circle id="椭圆形备份-10" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="347.5" cy="602.5" r="14.5"></circle>
+        <circle id="椭圆形备份-17" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="395.5" cy="516.5" r="14.5"></circle>
+        <circle id="椭圆形备份-11" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="415.5" cy="602.5" r="14.5"></circle>
+        <circle id="椭圆形备份-12" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="492.5" cy="602.5" r="14.5"></circle>
+        <g id="master" transform="translate(148.000000, 97.000000)">
+            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#FFC069" x="2" y="2" width="96" height="44" rx="4"></rect>
+            <text id="Master" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="25" y="30">Master</tspan>
+            </text>
+        </g>
+        <g id="master备份-4" transform="translate(14.000000, 271.000000)">
+            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#FFC069" x="2" y="2" width="57" height="29" rx="4"></rect>
+            <text id="v1.0.0" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="10" y="22">v1.0.0</tspan>
+            </text>
+        </g>
+        <g id="master备份-5" transform="translate(934.000000, 271.000000)">
+            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#FFC069" x="2" y="2" width="57" height="29" rx="4"></rect>
+            <text id="v1.1.0" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="10" y="22">v1.1.0</tspan>
+            </text>
+        </g>
+        <g id="master备份-8" transform="translate(1353.000000, 271.000000)">
+            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#FFC069" x="2" y="2" width="57" height="29" rx="4"></rect>
+            <text id="v1.2.0" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="8" y="22">v1.2.0</tspan>
+            </text>
+        </g>
+        <g id="master备份-7" transform="translate(679.000000, 271.000000)">
+            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#FFC069" x="2" y="2" width="57" height="29" rx="4"></rect>
+            <text id="v1.0.1" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="10" y="22">v1.0.1</tspan>
+            </text>
+        </g>
+        <g id="master备份" transform="translate(282.000000, 97.000000)">
+            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#B37FEB" x="2" y="2" width="96" height="44" rx="4"></rect>
+            <text id="Feature" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="22" y="29">Feature</tspan>
+            </text>
+        </g>
+        <g id="master备份-2" transform="translate(416.000000, 97.000000)">
+            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#87E8DE" x="2" y="2" width="96" height="44" rx="4"></rect>
+            <text id="Issue" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="31" y="30">Issue</tspan>
+            </text>
+        </g>
+        <g id="master备份-3" transform="translate(550.000000, 97.000000)">
+            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#95DE64" x="2" y="2" width="96" height="44" rx="4"></rect>
+            <text id="Conflict" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="23" y="29">Conflict</tspan>
+            </text>
+        </g>
+        <g id="master备份-6" transform="translate(14.000000, 97.000000)">
+            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#FF7875" x="2" y="2" width="96" height="44" rx="4"></rect>
+            <text id="Hotfix" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="29" y="30">Hotfix</tspan>
+            </text>
+        </g>
+        <path d="M191,431 C235.5,431 235.5,459.360962 235.5,516.5 C235.5,573.639024 235.5,601.75 281.107095,602" id="路径" stroke="#595959" stroke-width="4"></path>
+        <path d="M61,328.5 C109.5,329.274956 109.5,356.734103 109.5,379.5 C109.5,414.699656 110.033918,430.5 159.067836,430.5" id="路径-2" stroke="#595959" stroke-width="4"></path>
+        <text id="Inspired-from-git-fl" font-family="STKaitiSC-Regular, Kaiti SC" font-size="16" font-weight="normal" fill="#000000">
+            <tspan x="1273" y="614">Inspired from git flow design</tspan>
+        </text>
+        <path d="M508.120882,602.5 C546,601.665053 546,539.52428 546,510.273359 C546,481.022438 545.560441,430.5 583,430.5" id="路径-3" stroke="#595959" stroke-width="4"></path>
+        <line x1="344.5" y1="446.5" x2="344.5" y2="500.5" id="直线-2" stroke="#595959" stroke-width="4" stroke-linecap="square"></line>
+        <path d="M412,516 C447.80575,516.5 444.5,500 444.5,473.5 C444.5,447 444.5,430.500982 477,430.500982" id="路径-4" stroke="#595959" stroke-width="4"></path>
+        <path d="M851,430.5 C899.600526,431.5 899.600526,419.245948 899.600526,379.375 C899.600526,339.504052 899.600526,328 948.201051,328.25" id="路径-5" stroke="#595959" stroke-width="4"></path>
+        <path d="M313,328.25 C356,328 356,302.119437 356,276.872111 C356,251.624785 356,225 399,225.5" id="路径-6" stroke="#595959" stroke-width="4"></path>
+        <line x1="662.5" y1="240.5" x2="662.5" y2="311.5" id="直线-3" stroke="#595959" stroke-width="4" stroke-linecap="square"></line>
+        <path d="M893.853943,121.248674 C847.90749,121 830,156.104308 830,224.5 C830,292.895692 818,329 769,328.5" id="路径-7" stroke="#595959" stroke-width="4"></path>
+        <line x1="1126.5" y1="137.5" x2="1127" y2="277" id="直线-4" stroke="#595959" stroke-width="4" stroke-linecap="round"></line>
+        <g id="编组" transform="translate(1118.859945, 287.846021)" stroke-linecap="round" stroke-width="4">
+            <line x1="0.143998959" y1="0.153940051" x2="15.9944383" y2="15.0000387" id="直线-5" stroke="#F5222D" stroke-linejoin="round" transform="translate(8.069219, 7.576989) rotate(1.123303) translate(-8.069219, -7.576989) "></line>
+            <line x1="15.6964041" y1="0.153978714" x2="0.140054909" y2="15.1539787" id="直线-6" stroke="#FF4D4F" fill="#FF4D4F"></line>
+        </g>
+        <path d="M1142,328.505124 C1170.57377,328.505124 1173,308.76411 1173,277.251141 C1173,245.738173 1179.88075,225.75 1204,226" id="路径-8" stroke="#595959" stroke-width="4"></path>
+        <path d="M1142,121.5 C1197.19558,121.5 1225.0582,137.5 1241.94503,173.86949 C1258.83187,210.23898 1270.41221,225.25 1316.3158,226.25" id="路径-9" stroke="#595959" stroke-width="4"></path>
+        <line x1="1330.5" y1="241.5" x2="1330.5" y2="311.5" id="直线-7" stroke="#595959" stroke-width="4" stroke-linecap="square"></line>
+    </g>
+</svg>
