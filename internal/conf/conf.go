@@ -10,9 +10,10 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/yeqown/log"
+
 	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/gitlab-flow/pkg"
-	"github.com/yeqown/log"
 )
 
 // ConfigParser is an interface to parse config in different ways.
@@ -34,7 +35,14 @@ func Load(confPath string, parser ConfigParser) (cfg *types.Config, err error) {
 	var (
 		r io.Reader
 	)
-	cfg = new(types.Config)
+	cfg = &types.Config{
+		OAuth:        new(types.OAuth),
+		Branch:       new(types.BranchSetting),
+		GitlabAPIURL: "",
+		GitlabHost:   "",
+		DebugMode:    false,
+		OpenBrowser:  false,
+	}
 	p := precheckConfigDirectory(confPath)
 	r, err = os.OpenFile(p, os.O_RDONLY, 0777)
 	if err != nil {
@@ -68,9 +76,18 @@ func Save(confPath string, cfg *types.Config, parser ConfigParser) error {
 
 var (
 	defaultConf = &types.Config{
-		AccessToken:  "",
-		DebugMode:    false,
+		Branch: &types.BranchSetting{
+			Master: types.MasterBranch,
+			Dev:    types.DevBranch,
+			Test:   types.TestBranch,
+		},
+		OAuth: &types.OAuth{
+			AccessToken:  "",
+			RefreshToken: "",
+		},
 		GitlabAPIURL: "https://YOUR_HOSTNAME/api/v4",
+		GitlabHost:   "https://YOUR_HOSTNAME",
+		DebugMode:    false,
 		OpenBrowser:  true,
 	}
 )
@@ -80,7 +97,6 @@ func Default() *types.Config {
 	return defaultConf
 }
 
-// DefaultConfPath
 func DefaultConfPath() string {
 	// generate default config directory
 	home, err := os.UserHomeDir()

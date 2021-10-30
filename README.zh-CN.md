@@ -24,26 +24,24 @@ go get -u github.com/yeqown/gitlab-flow
 ### 初始化
 
 ```shell
-gitlab-flow [-c, --conf `path/to/confpath/`] init -s "YOUR_GITLAB_ACCESS_TOKEN" -d "YOUR_GITLAB_API_HOST"
+gitlab-flow [-c, --conf `path/to/confpath/`] init
 # 注意：全局选项必须置于子命令之前；
 # -c 参数只需要配置路径即可，而不需要指定文件；
 ```
 
 #### Gitlab 授权
 
-你可以在如下的地址去创建: 
+> !!! 在你初始化 gitlab-flow 客户端之前，你必须使用【特殊编译】的 gitlab-flow 可执行文件。
+> 特殊编译是指：将在你的 gitlab 服务器上创建的 gitlab-flow 应用的应用ID和应用密钥编译到可执行文件中。
 
-[https://git.example.com/profile/personal_access_tokens](https://git.example.com/profile/personal_access_tokens).
+在初始化命令执行后，gitlab-flow会通过交互式命令行采集你的本地配置，并在配置采集完成后自动运行授权程序。
 
-你需要选中 `api, read_user, read_repository, read_registry` 等作用域.
-
-#### Gitlab API 域名
-
-可以在这里找到:
-
+> Gitlab 服务地址: The domain of your gitlab server. such as https://git.example.com
+>
+> Gitlab API 域名: gitlab服务的 API 端点. 譬如: https://git.example.com/api/v4/。
+> 你可以在这里找到:
 [https://git.example.com/help/api/README.md](https://git.example.com/help/api/README.md).
-
-这个页面提供一些示范API，你可以从中找到gitlab服务的API域名.
+这个页面提供一些示范API，你可以从中找到gitlab服务的API域名。
 
 ### CLI Help  
 

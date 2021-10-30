@@ -1,7 +1,11 @@
 package main
 
 import (
+	"errors"
+	"os"
+
 	"github.com/yeqown/gitlab-flow/internal/conf"
+	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 
 	"github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
@@ -10,34 +14,41 @@ import (
 func getInitCommand() *cli.Command {
 	return &cli.Command{
 		Name: "init",
-		Usage: "initialize gitlab-flow, generate default config file and sqlite DB " +
+		Usage: "initialize or migrate configuration gitlab-flow, generate default config file and sqlite DB " +
 			"related to the path",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "access-token",
-				Aliases:  []string{"s"},
-				Required: true,
-				Usage:    "access_token is `secret` for user to access gitlab API.",
-			},
-			&cli.StringFlag{
-				Name:     "host",
-				Aliases:  []string{"d"},
-				Required: true,
-				Usage:    "gitlab API host is the host of YOUR gitlab server. https://gitlab.example.com/api/v4/",
-			},
-		},
-		ArgsUsage: "-s ACCESS_TOKEN -h GITLAB_HOST",
 		Action: func(c *cli.Context) error {
-			accessToken := c.String("access-token")
-			host := c.String("gitlab-host")
 			confPath := c.String("conf")
+			cfg, err := conf.Load(confPath, nil)
+			if err != nil {
+				if !errors.Is(err, os.ErrNotExist) {
+					panic(err)
+				}
 
-			cfg := conf.Default()
-			cfg.AccessToken = accessToken
-			cfg.GitlabAPIURL = host
+				cfg = conf.Default()
+			}
 
-			if err := conf.Save(confPath, cfg, nil); err != nil {
-				log.Errorf("gitlab-flow initialize failed: %v", err)
+			if err = surveyConfig(cfg); err != nil {
+				log.Errorf("failed to survey config: %v", err)
+				return err
+			}
+
+			// DONE(@yeqown): refresh user's access token
+			support := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
+				Host:         cfg.GitlabHost,
+				ServeAddr:    "", // use default
+				AccessToken:  "", // empty
+				RefreshToken: "", // empty
+			})
+			if err = support.Enter(""); err != nil {
+				log.
+					WithFields(log.Fields{"config": cfg}).
+					Error("gitlab-flow initialize.oauth failed:", err)
+				return err
+			}
+			cfg.OAuth.AccessToken, cfg.OAuth.RefreshToken = support.Load()
+
+			if err = conf.Save(confPath, cfg, nil); err != nil {
+				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
 				return err
 			}
 

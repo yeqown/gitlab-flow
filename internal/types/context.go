@@ -15,25 +15,25 @@ type ProjectBasics struct {
 }
 
 // FlowContext contains all necessary parameters of flow command to execute.
+// SHOULD NOT export context attributes to another package.
 type FlowContext struct {
-	// Conf of flow CLI.
-	Conf *Config
-
-	// CWD current working directory.
-	CWD string
-
-	// Project of current working directory, normally,
+	oauth *OAuth
+	// project of current working directory, normally,
 	// get from current working directory.
-	Project *ProjectBasics
-
+	project *ProjectBasics
+	// cwd represents current working directory.
+	cwd string
+	// gitlabAPIUrl represents gitlab API endpoint.
+	gitlabAPIUrl string
 	// projectName the actual name of project.
 	projectName string
-
 	// confPath of configuration file path.
 	confPath string
-
 	// forceRemote force choose load project from remote(gitlab) rather than local.
 	forceRemote bool
+	// debug indicates whether gitlab-flow print more detail logs.
+	debug       bool
+	openBrowser bool
 }
 
 // NewContext be generated with non project information.
@@ -44,16 +44,40 @@ func NewContext(cwd, confPath, projectName string, c *Config, forceRemote bool) 
 	}
 
 	ctx := &FlowContext{
-		Conf:        c,
-		CWD:         cwd,
-		Project:     nil,
-		forceRemote: forceRemote,
+		oauth:        c.OAuth,
+		gitlabAPIUrl: c.GitlabAPIURL,
+		cwd:          cwd,
+		project:      nil,
+		projectName:  "",
+		confPath:     "",
+		forceRemote:  forceRemote,
+		debug:        c.DebugMode,
+		openBrowser:  c.OpenBrowser,
 	}
 
 	ctx.applyConfPath(confPath)
 	ctx.applyProjectName(projectName)
 
 	return ctx
+}
+
+func (c *FlowContext) GetOAuth() *OAuth {
+	if c == nil {
+		return &OAuth{}
+	}
+	return c.oauth
+}
+
+func (c *FlowContext) InjectProject(p *ProjectBasics) {
+	c.project = p
+}
+
+func (c *FlowContext) Project() *ProjectBasics {
+	if c == nil {
+		return &ProjectBasics{}
+	}
+
+	return c.project
 }
 
 // ProjectName return project name.
@@ -85,6 +109,38 @@ func (c *FlowContext) ForceRemote() bool {
 	return c.forceRemote
 }
 
+func (c *FlowContext) CWD() string {
+	if c == nil {
+		return ""
+	}
+
+	return c.cwd
+}
+
+func (c *FlowContext) IsDebug() bool {
+	if c == nil {
+		return false
+	}
+
+	return c.debug
+}
+
+func (c *FlowContext) ShouldOpenBrowser() bool {
+	if c == nil {
+		return false
+	}
+
+	return c.openBrowser
+}
+
+func (c *FlowContext) APIEndpoint() string {
+	if c == nil {
+		return ""
+	}
+
+	return c.gitlabAPIUrl
+}
+
 // applyConfPath to get configuration directory path rather than file path.
 func (c *FlowContext) applyConfPath(confPath string) {
 	fi, err := os.Stat(confPath)
@@ -102,14 +158,14 @@ func (c *FlowContext) applyConfPath(confPath string) {
 	return
 }
 
-// applyProjectName to judge which project name should be took.
+// applyProjectName to judge which project name should be taken.
 func (c *FlowContext) applyProjectName(projectName string) {
 	if projectName != "" {
 		c.projectName = projectName
 		return
 	}
 
-	c.projectName = path.Base(c.CWD)
+	c.projectName = path.Base(c.cwd)
 	return
 }
 

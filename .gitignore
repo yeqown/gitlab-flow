@@ -21,3 +21,4 @@ flow-debug
 flow2
 !gitlab-flow/
 secret
+install.local.sh

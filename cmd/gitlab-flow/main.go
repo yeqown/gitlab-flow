@@ -18,24 +18,33 @@ func main() {
 			Email: "yeqown@gmail.com",
 		},
 	}
-	app.Version = "v1.6.6"
+	app.Version = "v1.7.0-alpha"
 	app.Description = `A tool for managing gitlab Feature/Milestone/Issue/MergeRequest as gitlab-flow.`
 	app.Flags = _cliGlobalFlags
 
-	initLogger()
-	mountCommands(app)
+	setupLogger()
+	setupCommands(app)
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func initLogger() {
+func setupLogger() {
 	log.SetTimeFormat(true, "")
 	log.SetLogLevel(log.LevelInfo)
 }
 
-func mountCommands(app *cli.App) {
+func setupCommands(app *cli.App) {
+	app.Before = func(c *cli.Context) error {
+		if c.Bool("debug") {
+			log.SetCallerReporter(true)
+			log.SetLogLevel(log.LevelDebug)
+		}
+
+		return nil
+	}
+
 	app.Commands = []*cli.Command{
 		getInitCommand(),
 		getFeatureCommand(),

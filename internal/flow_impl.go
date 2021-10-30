@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitop "github.com/yeqown/gitlab-flow/internal/git-operator"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 	"github.com/yeqown/gitlab-flow/internal/repository"
@@ -35,6 +36,43 @@ var (
 	errInvalidFeatureName = errors.New("feature branch could not be empty")
 )
 
+// checkOAuthAccessToken check access token is valid or not. If access token becomes invalid
+// then refresh it, if refresh failed, it leads to  re-authorize.
+func checkOAuthAccessToken(ctx *types.FlowContext) {
+	c, _ := conf.Load(ctx.ConfPath(), nil)
+	oauth := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
+		Host:         c.GitlabHost,
+		ServeAddr:    "", // use default address
+		AccessToken:  c.OAuth.AccessToken,
+		RefreshToken: c.OAuth.RefreshToken,
+	})
+	if err := oauth.Enter(c.OAuth.RefreshToken); err != nil {
+		log.
+			WithFields(log.Fields{
+				"config": c,
+			}).
+			Errorf("NewGitlabOperator could not renew token: %v", err)
+		panic(err)
+	}
+
+	accessToken, refreshToken := oauth.Load()
+
+	c.OAuth.AccessToken = accessToken
+	c.OAuth.RefreshToken = refreshToken
+	// update context oauth configuration
+	ctx.GetOAuth().AccessToken = accessToken
+	ctx.GetOAuth().RefreshToken = refreshToken
+
+	if err := conf.Save(ctx.ConfPath(), c, nil); err != nil {
+		log.
+			WithFields(log.Fields{
+				"config": c,
+				"error":  err,
+			}).
+			Error("checkOAuthAccessToken failed to save")
+	}
+}
+
 func NewFlow(ctx *types.FlowContext) IFlow {
 	if ctx == nil {
 		log.Fatal("empty FlowContext initialized")
@@ -45,11 +83,13 @@ func NewFlow(ctx *types.FlowContext) IFlow {
 		WithField("context", ctx).
 		Debugf("constructing flow")
 
+	checkOAuthAccessToken(ctx)
+
 	flow := &flowImpl{
 		ctx:            ctx,
-		gitlabOperator: gitlabop.NewGitlabOperator(ctx.Conf.AccessToken, ctx.Conf.GitlabAPIURL),
-		gitOperator:    gitop.NewBasedCmd(ctx.CWD),
-		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.Conf.DebugMode)),
+		gitlabOperator: gitlabop.NewGitlabOperator(ctx.GetOAuth().AccessToken, ctx.APIEndpoint()),
+		gitOperator:    gitop.NewBasedCmd(ctx.CWD()),
+		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.IsDebug())),
 	}
 
 	// if flowContext has NONE project information, so we need to fill it.
@@ -81,13 +121,13 @@ func (f flowImpl) fillContextWithProject() error {
 	projects, err = f.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
 	if err == nil && len(projects) != 0 {
 		// locate project from local, and there are maybe more than one project.
-		matched, err := chooseOneProjectInteractively(projects)
-		if err == nil {
-			f.ctx.Project = &types.ProjectBasics{
+		matched, err2 := chooseOneProjectInteractively(projects)
+		if err2 == nil {
+			f.ctx.InjectProject(&types.ProjectBasics{
 				ID:     matched.ProjectID,
 				Name:   matched.ProjectName,
 				WebURL: matched.WebURL,
-			}
+			})
 			return nil
 		}
 	}
@@ -125,7 +165,7 @@ locateFromRemote:
 			projectDO := repository.ProjectDO{
 				ProjectName: projectName,
 				ProjectID:   v.ID,
-				LocalDir:    f.ctx.CWD,
+				LocalDir:    f.ctx.CWD(),
 				WebURL:      v.WebURL,
 			}
 			remoteMatched = append(remoteMatched, &projectDO)
@@ -141,11 +181,11 @@ locateFromRemote:
 				Warn("could not save project")
 		}
 
-		f.ctx.Project = &types.ProjectBasics{
+		f.ctx.InjectProject(&types.ProjectBasics{
 			ID:     matched.ProjectID,
 			Name:   matched.ProjectName,
 			WebURL: matched.WebURL,
-		}
+		})
 		return nil
 	}
 
@@ -227,7 +267,7 @@ func (f flowImpl) FeatureResolveConflict(opc *types.OpFeatureContext, targetBran
 
 	// locate feature branch
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
-		ProjectID:  f.ctx.Project.ID,
+		ProjectID:  f.ctx.Project().ID,
 		BranchName: opc.FeatureBranchName,
 	})
 	if err != nil {
@@ -262,7 +302,7 @@ func (f flowImpl) FeatureBeginIssue(opc *types.OpFeatureContext, title, desc str
 	opc.FeatureBranchName = genFeatureBranchName(opc.FeatureBranchName)
 
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
-		ProjectID:  f.ctx.Project.ID,
+		ProjectID:  f.ctx.Project().ID,
 		BranchName: opc.FeatureBranchName,
 	})
 	if err != nil {
@@ -271,7 +311,7 @@ func (f flowImpl) FeatureBeginIssue(opc *types.OpFeatureContext, title, desc str
 
 	// query milestone
 	milestone, err := f.repo.QueryMilestone(&repository.MilestoneDO{
-		ProjectID:   f.ctx.Project.ID,
+		ProjectID:   f.ctx.Project().ID,
 		MilestoneID: featureBranch.MilestoneID,
 	})
 	if err != nil {
@@ -320,7 +360,7 @@ func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchNam
 	)
 	// locate issue branch.
 	if b, err := f.repo.QueryBranch(&repository.BranchDO{
-		ProjectID:  f.ctx.Project.ID,
+		ProjectID:  f.ctx.Project().ID,
 		BranchName: issueBranchName,
 	}); err != nil {
 		return errors.Wrapf(err, "locate issue branch(%s) failed", issueBranchName)
@@ -338,7 +378,7 @@ func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchNam
 	}
 	opc.FeatureBranchName = genFeatureBranchName(opc.FeatureBranchName)
 	//if _, err := f.repo.QueryBranch(&repository.BranchDO{
-	//	ProjectID:   f.ctx.Project.ID,
+	//	ProjectID:   f.ctx.Project().ID,
 	//	BranchName:  featureBranchName,
 	//	MilestoneID: milestoneID,
 	//}); err != nil {
@@ -352,7 +392,7 @@ func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchNam
 
 	// locate MR
 	mr, err = f.repo.QueryMergeRequest(&repository.MergeRequestDO{
-		ProjectID:    f.ctx.Project.ID,
+		ProjectID:    f.ctx.Project().ID,
 		IssueIID:     issueIID,
 		MilestoneID:  milestoneID,
 		SourceBranch: issueBranchName,
@@ -361,7 +401,7 @@ func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchNam
 	if err != nil && !repository.IsErrNotFound(err) {
 		log.
 			WithFields(log.Fields{
-				"projectID":    f.ctx.Project.ID,
+				"projectID":    f.ctx.Project().ID,
 				"issueIID":     issueIID,
 				"milestoneID":  milestoneID,
 				"sourceBranch": issueBranchName,
@@ -438,7 +478,7 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 
 	hotfixBranchName = genHotfixBranchName(hotfixBranchName)
 	_, err := f.repo.QueryBranch(&repository.BranchDO{
-		ProjectID:  f.ctx.Project.ID,
+		ProjectID:  f.ctx.Project().ID,
 		BranchName: hotfixBranchName,
 	})
 	if err != nil {
@@ -447,7 +487,7 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 
 	// locate issue
 	issue, err := f.repo.QueryIssue(&repository.IssueDO{
-		ProjectID:     f.ctx.Project.ID,
+		ProjectID:     f.ctx.Project().ID,
 		RelatedBranch: hotfixBranchName,
 	})
 	if err != nil {
@@ -456,7 +496,7 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 
 	// locate MR first
 	mr, err := f.repo.QueryMergeRequest(&repository.MergeRequestDO{
-		ProjectID:   f.ctx.Project.ID,
+		ProjectID:   f.ctx.Project().ID,
 		MilestoneID: issue.MilestoneID,
 		IssueIID:    issue.IssueIID,
 		//SourceBranch:   "",
@@ -500,7 +540,7 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 //
 func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 	ctx := context.Background()
-	projectId := f.ctx.Project.ID
+	projectId := f.ctx.Project().ID
 
 	// parameter checking
 	if milestoneID == 0 && !interact {
@@ -636,7 +676,7 @@ func (f flowImpl) syncFormatResultIntoDO(
 
 		c                 = make(map[int]*repository.IssueDO)
 		featureBranchName string
-		projectID         = f.ctx.Project.ID
+		projectID         = f.ctx.Project().ID
 		milestoneID       = milestone.ID
 	)
 
@@ -738,7 +778,7 @@ func (f flowImpl) createBranch(
 	req := gitlabop.CreateBranchRequest{
 		TargetBranch: targetBranchName,
 		SrcBranch:    srcBranch,
-		ProjectID:    f.ctx.Project.ID,
+		ProjectID:    f.ctx.Project().ID,
 		//MilestoneID:  milestoneID,
 		//IssueID:      issueIID,
 	}
@@ -774,7 +814,7 @@ func (f flowImpl) createBranch(
 	go func() {
 		wg.Done()
 		m := repository.BranchDO{
-			ProjectID:   f.ctx.Project.ID,
+			ProjectID:   f.ctx.Project().ID,
 			MilestoneID: milestoneID,
 			IssueIID:    issueIID,
 			BranchName:  targetBranchName,
@@ -804,14 +844,14 @@ func (f flowImpl) createMilestone(title, desc string) (*gitlabop.CreateMilestone
 	result, err := f.gitlabOperator.CreateMilestone(ctx, &gitlabop.CreateMilestoneRequest{
 		Title:     title,
 		Desc:      desc,
-		ProjectID: f.ctx.Project.ID,
+		ProjectID: f.ctx.Project().ID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "CreateMilestone failed")
 	}
 
 	if err = f.repo.SaveMilestone(&repository.MilestoneDO{
-		ProjectID:   f.ctx.Project.ID,
+		ProjectID:   f.ctx.Project().ID,
 		MilestoneID: result.ID,
 		Title:       title,
 		Desc:        desc,
@@ -837,7 +877,7 @@ func (f flowImpl) createIssue(title, desc, relatedBranch string, milestoneID int
 		Desc:          desc,
 		RelatedBranch: relatedBranch,
 		MilestoneID:   milestoneID,
-		ProjectID:     f.ctx.Project.ID,
+		ProjectID:     f.ctx.Project().ID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "create Issue failed")
@@ -847,7 +887,7 @@ func (f flowImpl) createIssue(title, desc, relatedBranch string, milestoneID int
 		IssueIID:      result.IID,
 		Title:         title,
 		Desc:          desc,
-		ProjectID:     f.ctx.Project.ID,
+		ProjectID:     f.ctx.Project().ID,
 		MilestoneID:   milestoneID,
 		RelatedBranch: relatedBranch,
 		WebURL:        result.WebURL,
@@ -882,7 +922,7 @@ func (f flowImpl) createMergeRequest(
 		TargetBranch: targetBranch,
 		MilestoneID:  milestoneID,
 		IssueIID:     issueIID,
-		ProjectID:    f.ctx.Project.ID,
+		ProjectID:    f.ctx.Project().ID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "create MR failed")
@@ -898,7 +938,7 @@ func (f flowImpl) createMergeRequest(
 		Debug("create mr success")
 
 	if err = f.repo.SaveMergeRequest(&repository.MergeRequestDO{
-		ProjectID:      f.ctx.Project.ID,
+		ProjectID:      f.ctx.Project().ID,
 		MilestoneID:    milestoneID,
 		IssueIID:       issueIID,
 		MergeRequestID: result.ID,
@@ -921,7 +961,7 @@ func (f flowImpl) createMergeRequest(
 func (f flowImpl) featureProcessMR(
 	featureBranchName string, targetBranchName types.BranchTyp, forceCreateMR bool) error {
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
-		ProjectID:  f.ctx.Project.ID,
+		ProjectID:  f.ctx.Project().ID,
 		BranchName: featureBranchName,
 	})
 	if err != nil {
@@ -935,7 +975,7 @@ func (f flowImpl) featureProcessMR(
 	}
 	// query feature MR first
 	mr, err = f.repo.QueryMergeRequest(&repository.MergeRequestDO{
-		ProjectID:    f.ctx.Project.ID,
+		ProjectID:    f.ctx.Project().ID,
 		MilestoneID:  featureBranch.MilestoneID,
 		IssueIID:     featureBranch.IssueIID,
 		SourceBranch: featureBranchName,
@@ -991,7 +1031,7 @@ func (f flowImpl) printAndOpenBrowser(title, url string) {
 	)
 
 	_, err1 = fmt.Fprintf(os.Stdout, _printTpl, title, url)
-	if f.ctx.Conf.OpenBrowser {
+	if f.ctx.ShouldOpenBrowser() {
 		err2 = pkg.OpenBrowser(url)
 	}
 	log.WithFields(log.Fields{

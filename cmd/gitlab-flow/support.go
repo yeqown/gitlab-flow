@@ -92,54 +92,55 @@ func getOpFeatureContext(c *cli.Context) *types.OpFeatureContext {
 
 func getFlow(c *cli.Context) internal.IFlow {
 	flags := parseGlobalFlags(c)
-	ctx := setEnviron(flags)
+	ctx := resolveFlags(flags)
 	return internal.NewFlow(ctx)
 }
 
 func getDash(c *cli.Context) internal.IDash {
 	flags := parseGlobalFlags(c)
-	ctx := setEnviron(flags)
+	ctx := resolveFlags(flags)
 	return internal.NewDash(ctx)
 }
 
-// setEnviron set global environment of debug mode.
+// resolveFlags set global environment of debug mode.
 // DONE(@yeqown): apply project name from CLI and CWD.
 // DONE(@yeqown): CWD could be configured from CLI.
-func setEnviron(flags globalFlags) *types.FlowContext {
-	if flags.DebugMode {
-		// open caller report
-		log.SetCallerReporter(true)
-		log.SetLogLevel(log.LevelDebug)
-	}
+func resolveFlags(flags globalFlags) *types.FlowContext {
+	log.
+		WithField("flags", flags).
+		Debugf("resolveFlags called")
 
-	var err error
-	(&flags).CWD, err = filepath.Abs(flags.CWD)
+	// get absolute path of current working directory.
+	cwd, err := filepath.Abs(flags.CWD)
 	if err != nil {
 		log.
 			WithField("cwd", flags.CWD).
-			Fatalf("get ABS of cwd failed: %v", err)
-		panic("could not reach")
+			Fatalf("get absolute path of CWD failed: %v", err)
 	}
-	log.
-		WithField("flags", flags).
-		Debugf("setEnviron called")
 
 	// prepare configuration
-	cfg, err := conf.Load(flags.ConfPath, nil)
-	if err != nil {
+	var c *types.Config
+	if c, err = conf.Load(flags.ConfPath, nil); err != nil {
 		log.
 			WithField("path", flags.ConfPath).
 			Fatalf("could not load config file: %v", err)
-		panic("could not reach")
-	}
-	if err = cfg.
-		Apply(flags.DebugMode, flags.OpenBrowser).
-		Valid(); err != nil {
-		log.
-			WithField("cfg", cfg).
-			Fatalf("config is invalid")
-		panic("could not reach")
 	}
 
-	return types.NewContext(flags.CWD, flags.ConfPath, flags.ProjectName, cfg, flags.ForceRemote)
+	// pass flags parameters into configuration
+	if flags.DebugMode {
+		c.DebugMode = flags.DebugMode
+	}
+	if flags.OpenBrowser {
+		c.OpenBrowser = flags.OpenBrowser
+	}
+
+	if err = c.Valid(); err != nil {
+		log.
+			WithField("config", c).
+			Fatalf("config is invalid")
+	}
+
+	types.SyncBranchSetting(c.Branch.Master, c.Branch.Dev, c.Branch.Test)
+
+	return types.NewContext(cwd, flags.ConfPath, flags.ProjectName, c, flags.ForceRemote)
 }

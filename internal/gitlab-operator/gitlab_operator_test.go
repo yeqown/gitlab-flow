@@ -2,9 +2,9 @@ package gitlabop
 
 import (
 	"context"
+	"encoding/json"
 	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/yeqown/gitlab-flow/internal/types"
@@ -22,16 +22,16 @@ type gitlabOperatorTestSuite struct {
 }
 
 func (g *gitlabOperatorTestSuite) SetupSuite() {
-	r, err := os.Open("./secret")
+	r, err := os.Open("./testdata/secret.json")
 	g.Require().Nil(err)
 
 	data, err := ioutil.ReadAll(r)
 	g.Require().Nil(err)
+	var c = new(Config)
+	err = json.Unmarshal(data, c)
+	g.Require().Nil(err)
 
-	arr := strings.Split(string(data), "\n")
-	g.Require().Equal(2, len(arr))
-	g.T().Logf("%+v", arr)
-	g.op = NewGitlabOperator(arr[0], arr[1])
+	g.op = NewGitlabOperator(c.AccessToken, c.ApiURL)
 
 	// this only could be test locally
 	g.projectID = 851

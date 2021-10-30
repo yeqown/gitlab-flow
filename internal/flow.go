@@ -171,9 +171,9 @@ func genIssueBranchName(name string, issueIID int) string {
 // 1. "1-milestoneName"
 // 2. "issue/milestoneName-1"
 //
-// TODO(@yeqown): comptaible with old.
+// DONE(@yeqown): compatible with old.
 func parseFeatureFromIssueName(issueName string, compatible bool) string {
-	// if comptaible, try parse "1-milestoneName"
+	// if compatible, try parse "1-milestoneName"
 	if compatible {
 		// DONE(@yeqown): support "1-milestoneName"
 		idx := strings.Index(issueName, "-")

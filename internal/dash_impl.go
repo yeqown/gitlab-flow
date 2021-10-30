@@ -37,8 +37,8 @@ func NewDash(ctx *types.FlowContext) IDash {
 
 	dash := dashImpl{
 		ctx:         ctx,
-		repo:        impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.Conf.DebugMode)),
-		gitOperator: gitop.NewBasedCmd(ctx.CWD),
+		repo:        impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.IsDebug())),
+		gitOperator: gitop.NewBasedCmd(ctx.CWD()),
 	}
 
 	// DONE(@yeqown): need load project info from local database.
@@ -77,14 +77,14 @@ func (d dashImpl) fillContextWithProject() error {
 	// get from local
 	projects, err := d.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
 	if err == nil && len(projects) != 0 {
-		// should let user to choose one
-		matched, err := chooseOneProjectInteractively(projects)
-		if err == nil {
-			d.ctx.Project = &types.ProjectBasics{
+		// should let user choose one
+		matched, err2 := chooseOneProjectInteractively(projects)
+		if err2 == nil {
+			d.ctx.InjectProject(&types.ProjectBasics{
 				ID:     matched.ProjectID,
 				Name:   matched.ProjectName,
 				WebURL: matched.WebURL,
-			}
+			})
 			return nil
 		}
 	}
@@ -133,7 +133,7 @@ func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
 	branchName = genFeatureBranchName(branchName)
 	// locate branch
 	branch, err := d.repo.QueryBranch(&repository.BranchDO{
-		ProjectID:  d.ctx.Project.ID,
+		ProjectID:  d.ctx.Project().ID,
 		BranchName: branchName,
 	})
 	if err != nil {
@@ -142,7 +142,7 @@ func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
 
 	// query milestone
 	milestone, err := d.repo.QueryMilestone(&repository.MilestoneDO{
-		ProjectID:   d.ctx.Project.ID,
+		ProjectID:   d.ctx.Project().ID,
 		MilestoneID: branch.MilestoneID,
 	})
 	if err != nil {
@@ -151,7 +151,7 @@ func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
 
 	// query all merge requests related to milestone.
 	mrs, err := d.repo.QueryMergeRequests(&repository.MergeRequestDO{
-		ProjectID:   d.ctx.Project.ID,
+		ProjectID:   d.ctx.Project().ID,
 		MilestoneID: branch.MilestoneID,
 	})
 	if err != nil {
@@ -160,7 +160,7 @@ func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
 
 	// query all issues related to milestone.
 	issues, err := d.repo.QueryIssues(&repository.IssueDO{
-		ProjectID:   d.ctx.Project.ID,
+		ProjectID:   d.ctx.Project().ID,
 		MilestoneID: branch.MilestoneID,
 	})
 	if err != nil {
@@ -214,9 +214,9 @@ func (d dashImpl) dealDataIntoFeatureDetail(
 		Debug("mrTblData is conducted")
 
 	data := map[string]interface{}{
-		"projectTitle":    d.ctx.Project.Name,
-		"projectID":       d.ctx.Project.ID,
-		"projectURL":      d.ctx.Project.WebURL,
+		"projectTitle":    d.ctx.Project().Name,
+		"projectID":       d.ctx.Project().ID,
+		"projectURL":      d.ctx.Project().WebURL,
 		"milestoneTitle":  milestone.Title,
 		"milestoneID":     milestone.MilestoneID,
 		"milestoneDesc":   milestone.Desc,
@@ -292,7 +292,7 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 		featureBranchName, _ := d.gitOperator.CurrentBranch()
 		featureBranchName = genFeatureBranchName(featureBranchName)
 		// DONE(@yeqown): optimize this logic, using repo method.
-		milestone, err := d.repo.QueryMilestoneByBranchName(d.ctx.Project.ID, featureBranchName)
+		milestone, err := d.repo.QueryMilestoneByBranchName(d.ctx.Project().ID, featureBranchName)
 		if milestone != nil {
 			milestoneName = milestone.Title
 		}
@@ -383,13 +383,13 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 func (d dashImpl) ProjectDetail(module string) ([]byte, error) {
 	switch module {
 	case "home":
-		d.printAndOpenBrowser(d.ctx.Project.Name, d.ctx.Project.WebURL)
+		d.printAndOpenBrowser(d.ctx.Project().Name, d.ctx.Project().WebURL)
 	case "branch":
-		d.printAndOpenBrowser("branches", genProjectURL(d.ctx.Project.WebURL, "/-/branches"))
+		d.printAndOpenBrowser("branches", genProjectURL(d.ctx.Project().WebURL, "/-/branches"))
 	case "tag":
-		d.printAndOpenBrowser("tags", genProjectURL(d.ctx.Project.WebURL, "/-/tags"))
+		d.printAndOpenBrowser("tags", genProjectURL(d.ctx.Project().WebURL, "/-/tags"))
 	case "commit":
-		d.printAndOpenBrowser("commits", genProjectURL(d.ctx.Project.WebURL, "/commits/master"))
+		d.printAndOpenBrowser("commits", genProjectURL(d.ctx.Project().WebURL, "/commits/master"))
 	}
 
 	return nil, nil
@@ -415,7 +415,7 @@ func (d dashImpl) printAndOpenBrowser(title, url string) {
 	)
 
 	_, err1 = fmt.Fprintf(os.Stdout, _printTpl, title, url)
-	if d.ctx.Conf.OpenBrowser {
+	if d.ctx.ShouldOpenBrowser() {
 		err2 = pkg.OpenBrowser(url)
 	}
 	log.WithFields(log.Fields{
