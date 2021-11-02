@@ -19,11 +19,9 @@ using `milestoneId` or interactive mode.
 There is no precompiled binary to install directly, so you need to install by yourself.
 
 ```shell
-go install github.com/yeqown/gitlab-flow/cmd/gitlab-flow
-
-# if you cannot install directly, try following command,
-# then input install command again
-go get -u github.com/yeqown/gitlab-flow
+APP_ID=YOUR_GITLAB_APP_ID \
+APP_SECRET=YOUR_GITLAB_APP_SECRET \
+make build
 ```
 
 ### Initialization

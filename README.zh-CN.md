@@ -15,10 +15,9 @@
 因为仓库没有提供预编译的可执行文件，所以需要你自己安装。
 
 ```shell
-go install github.com/yeqown/gitlab-flow/cmd/gitlab-flow
-
-# 如果不能通过上述命令直接安装，你可以尝试如下的命令，然后再执行安装命令。
-go get -u github.com/yeqown/gitlab-flow
+APP_ID=YOUR_GITLAB_APP_ID \
+APP_SECRET=YOUR_GITLAB_APP_SECRET \
+make build
 ```
 
 ### 初始化
