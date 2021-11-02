@@ -7,7 +7,7 @@ import (
 
 var spinChars = `|/-\`
 
-// ISpinner spinner interface to allow more than one implementations.
+// ISpinner spinner interface to allow more than one of implementations.
 type ISpinner interface {
 	// Start spin
 	Start()
