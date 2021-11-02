@@ -21,4 +21,5 @@ flow-debug
 flow2
 !gitlab-flow/
 secret
+go.sum
 install.local.sh
