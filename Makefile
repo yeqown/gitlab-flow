@@ -1,3 +1,5 @@
+GOBIN=`go env GOBIN`
+
 build:
 	# install gitlab-flow2 with gitlab application(appId, appSecret)
 	# replace follow variables with your personal parameters,
@@ -43,9 +45,10 @@ changelog:
 
 debug:
 	BIN=flow-debug make build
-	mv ./flow-debug ~/go/bin
+	mv ./flow-debug ${GOBIN}
 
 pre-release:
+	echo "GOBIN: ${GOBIN}"
 	# install.local.sh export APP_ID and APP_SECRET
 	BIN=flow2 bash ./install.local.sh
-	mv ./flow2 ~/go/bin
+	mv ./flow2 ${GOBIN}
