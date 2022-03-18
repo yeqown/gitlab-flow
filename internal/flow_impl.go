@@ -201,6 +201,10 @@ func (f flowImpl) FeatureBegin(opc *types.OpFeatureContext, title, desc string) 
 		}).
 		Debug("FeatureBegin called")
 
+	if err := blockingNamePrefix(title); err != nil {
+		return errors.Wrap(err, "blocking name prefix detected")
+	}
+
 	// create milestone
 	result, err := f.createMilestone(title, desc)
 	if err != nil {
@@ -320,6 +324,10 @@ func (f flowImpl) FeatureBeginIssue(opc *types.OpFeatureContext, title, desc str
 
 	if len(title) == 0 {
 		title = milestone.Title
+	} else {
+		if err := blockingNamePrefix(title); err != nil {
+			return errors.Wrap(err, "blocking name prefix detected")
+		}
 	}
 	if len(desc) == 0 {
 		desc = milestone.Desc

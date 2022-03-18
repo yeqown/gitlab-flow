@@ -80,7 +80,7 @@ func getFeatureCommand() *cli.Command {
 			},
 			&cli.BoolFlag{
 				Name:     "parse-issue-compatible",
-				Usage:    "switch to parse issue name in comptaible mode",
+				Usage:    "switch to parse issue name in compatible mode",
 				Required: false,
 			},
 		},

@@ -166,6 +166,28 @@ func genIssueBranchName(name string, issueIID int) string {
 	return IssueBranchPrefix + name + "-" + strconv.Itoa(issueIID)
 }
 
+func blockingNamePrefix(name string) error {
+	if len(name) == 0 || (len(name) <= 3 && name != "/") {
+		return nil
+	}
+
+	// FIXED(@yeqown): blocking some prefixes to be milestone title.
+	blacklist := []string{
+		"/", "bug/", "test/", "issue/", // test-like
+		"fix/", "refactor/", "docs/", "chore/", // commit-like
+		"master/", "develop/", "hotfix/", "release/", "feature/", // branch-like
+		"WIP:", // others
+	}
+
+	for _, pre := range blacklist {
+		if strings.HasPrefix(name, pre) {
+			return fmt.Errorf("title(%s) should not start with prefix(%s)", name, pre)
+		}
+	}
+
+	return nil
+}
+
 // parseFeatureFromIssueName parse issue name to feature name, there are
 // two different cases:
 // 1. "1-milestoneName"

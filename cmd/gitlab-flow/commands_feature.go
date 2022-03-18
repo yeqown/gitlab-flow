@@ -22,7 +22,7 @@ func getFeatureSubCommands() cli.Commands {
 }
 
 // getFeatureBeginSubCommand to start feature command
-// command: gitlab-flow feature start @title @desc
+// @command: gitlab-flow feature start @title @desc
 // @title will be used as branchName
 // @desc will be used as milestone information
 func getFeatureBeginSubCommand() *cli.Command {
