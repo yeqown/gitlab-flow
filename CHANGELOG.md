@@ -1,9 +1,28 @@
-# [](https://github.com/yeqown/gitlab-flow/compare/v1.6.8...v) (2021-07-29)
+# [](https://github.com/yeqown/gitlab-flow/compare/v1.7.1...v) (2022-03-18)
+
+
+
+## [1.7.1](https://github.com/yeqown/gitlab-flow/compare/v1.7.0...v1.7.1) (2022-03-18)
+
+
+### Bug Fixes
+
+* blocking some prefixes of milestone/feature/issue title ([a144135](https://github.com/yeqown/gitlab-flow/commit/a144135ac41720cacc6bdf36877f6613e75ccd7b))
+* **conf:** ignore git rev-parse error ([d20dcc6](https://github.com/yeqown/gitlab-flow/commit/d20dcc64e16e2cb3d40d710732a5911731a75dd0))
 
 
 ### Features
 
+* **cli/support:** optimise config support function ([efe729b](https://github.com/yeqown/gitlab-flow/commit/efe729bec04b9bf11955a6a4df26b63187c9bf5f))
+* **conf:** log format adjust; use git toplevel as cwd firstly ([ca8ff3b](https://github.com/yeqown/gitlab-flow/commit/ca8ff3bb094b3a274fb5fe90814122897cafc7ab))
+* **conf/branchs:** add branch enums in configuration which will replace builtin branch enums when it is configured. ([97f8c0f](https://github.com/yeqown/gitlab-flow/commit/97f8c0f4c4c487c3b642f8dfc8dbce8557fabe75))
+* **dash:** feature dashboard could parse default feature branch name ([f4e94e0](https://github.com/yeqown/gitlab-flow/commit/f4e94e00c1de35a5d2d0ffc681a837f89cdb9b54))
+* **issue:** redesign issue name ([7921272](https://github.com/yeqown/gitlab-flow/commit/79212729a96280351b4d5c6e7d31f82d103837a5))
+* **oauth:** move appId and appSecret into build parameters, instead of configuring file. ([9d88182](https://github.com/yeqown/gitlab-flow/commit/9d88182ebfcfc5821209285bb390f704d799931b))
+* **oauth:** use oauth2 verification instead of personal token ([d93544a](https://github.com/yeqown/gitlab-flow/commit/d93544ac4f4b4a36b1f991337750d4feb16e98f6))
 * **spin:** create spiner ([8512152](https://github.com/yeqown/gitlab-flow/commit/85121522e4d0c30339f0a6ddd2b92aee19448925))
+* **types/context:** hide all attributes of context, avoiding wrong modifying from other package. ([d0bc0a2](https://github.com/yeqown/gitlab-flow/commit/d0bc0a2ae7f042833aed88e10265395ca704f3aa))
+
 
 
 ## [1.6.7](https://github.com/yeqown/gitlab-flow/compare/v1.6.6...v1.6.7) (2021-06-07)
