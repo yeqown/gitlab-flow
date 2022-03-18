@@ -1,3 +1,8 @@
+// Package conf implements the configuration of the application.
+// The configuration is loaded from the configuration file. The configuration
+// file is a TOML file.
+// TODO(@yeqown): store configuration in the database instead of the file,
+// and then we can use CLI application to manage and checkout these configurations.
 package conf
 
 import (
@@ -65,7 +70,7 @@ func Save(confPath string, cfg *types.Config, parser ConfigParser) error {
 	}
 
 	p := precheckConfigDirectory(confPath)
-	w, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
+	w, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
