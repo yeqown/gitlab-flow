@@ -26,7 +26,7 @@ func (s testFlowSuite) Test_genIssueName() {
 	s.Equal("milestone-test", feature2)
 }
 
-func (s testFlowSuite) Test_parseFeatureFromIssueName_comptaible() {
+func (s testFlowSuite) Test_parseFeatureFromIssueName_compatible() {
 	name := "123-milestone-test"
 	feature := parseFeatureFromIssueName(name, true)
 	s.Equal("milestone-test", feature)
