@@ -2,10 +2,11 @@ package gitlabop
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -103,7 +104,7 @@ func NewOAuth2Support(c *OAuth2Config) IGitlabOauth2Support {
 		tokenC: make(chan struct{}),
 	}
 
-	go g._proc()
+	go g.serve()
 
 	return g
 }
@@ -144,55 +145,84 @@ func (g *gitlabOAuth2Support) Load() (accessToken, refreshToken string) {
 	return g.oc.AccessToken, g.oc.RefreshToken
 }
 
-// _proc serving a backend HTTP server process to receive redirect requests from gitlab.
-func (g *gitlabOAuth2Support) _proc() {
-	var err error
-	defer func() {
-		if err != nil {
-			log.Errorf("gitlabOAuth2Support _proc quit: %v", err)
+//go:embed callback.tmpl
+var callbackTmpl embed.FS
+
+func (g *gitlabOAuth2Support) callbackHandl(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	code := r.Form.Get("code")
+	state := r.Form.Get("state")
+	_error := r.Form.Get("_error")
+	errorDescription := r.Form.Get("error_description")
+
+	log.WithFields(log.Fields{
+		"code":             code,
+		"state":            state,
+		"_error":           _error,
+		"errorDescription": errorDescription,
+	}).Debug("gitlabOAuth2Support serve gets a callback request")
+
+	tmpl, err := template.ParseFS(callbackTmpl, "callback.tmpl")
+	if err != nil {
+		log.Errorf("gitlabOAuth2Support.callbackHandl parse FS failed: %v", err)
+	}
+
+	var (
+		status = http.StatusOK
+		data   = struct {
+			Error        bool
+			ErrorMessage string
+			Now          string
+		}{
+			Error:        false,
+			ErrorMessage: "",
+			Now:          time.Now().Format(time.RFC1123),
 		}
-	}()
+	)
 
-	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
-		_ = r.ParseForm()
-		code := r.Form.Get("code")
-		state := r.Form.Get("state")
-		_error := r.Form.Get("_error")
-		errorDescription := r.Form.Get("error_description")
+	// error check and parameters validation check.
+	if len(_error) != 0 {
+		data.Error = true
+		data.ErrorMessage = fmt.Sprintf("%s (%s)", _error, errorDescription)
+		status = http.StatusInternalServerError
+		goto render
+	}
+	if code == "" || state == "" {
+		data.Error = true
+		data.ErrorMessage = fmt.Sprintf("Invalid Parameter(code:%s empty or state:%s is empty)", code, state)
+		status = http.StatusBadRequest
+		goto render
+	}
 
-		log.
-			WithFields(log.Fields{
-				"code":             code,
-				"state":            state,
-				"_error":           _error,
-				"errorDescription": errorDescription,
-			}).
-			Debug("gitlabOAuth2Support _proc gets a callback request")
+	// authorization callback is in line with forecast.
+	if err := g.requestToken(r.Context(), code, false); err != nil {
+		log.Errorf("gitlabOAuth2Support callbackHandl failed to requestToken: %v", err)
+		data.Error = true
+		data.ErrorMessage = fmt.Sprintf("Request Token Failed (%s)", err.Error())
+		status = http.StatusInternalServerError
+		goto render
+	}
 
-		if len(_error) != 0 {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = fmt.Fprint(w, _error, errorDescription)
-			return
-		}
+	log.Info("gitlab-flow oauth authorization succeeded!")
 
-		if code != "" && state != "" {
-			// authorization callback
-			if err2 := g.requestToken(r.Context(), code, false); err2 != nil {
-				log.Errorf("gitlabOAuth2Support _proc failed to get requestToken: %v", err2)
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = fmt.Fprint(w, err2.Error())
-				return
-			}
-		}
-
-		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprint(w, "gitlab-flow oauth authorization succeeded!")
-	})
-
-	err = http.ListenAndServe(g.oc.ServeAddr, nil)
+render:
+	w.WriteHeader(status)
+	if err := tmpl.Execute(w, &data); err != nil {
+		log.Errorf("gitlabOAuth2Support.callbackHandl failed to render: %v", err)
+	}
 }
 
-func (g *gitlabOAuth2Support) calcState() string {
+// serve is serving a backend HTTP server process to
+// receive redirect requests from gitlab.
+func (g *gitlabOAuth2Support) serve() {
+	http.HandleFunc("/callback", g.callbackHandl)
+	err := http.ListenAndServe(g.oc.ServeAddr, nil)
+	if err != nil {
+		log.Errorf("gitlabOAuth2Support serve quit: %v", err)
+	}
+}
+
+func (g *gitlabOAuth2Support) generateState() string {
 	// DONE(@yeqown): replace state calculation with random int
 	g.state = strconv.Itoa(rand.Intn(int(time.Now().UnixNano())))
 	return g.state
@@ -204,7 +234,7 @@ func (g *gitlabOAuth2Support) triggerAuthorize(ctx context.Context) {
 	form.Add("client_id", OAuth2AppID)
 	form.Add("redirect_uri", fmt.Sprintf("http://%s/callback", g.oc.ServeAddr))
 	form.Add("response_type", "code")
-	form.Add("state", g.calcState())
+	form.Add("state", g.generateState())
 	form.Add("scope", defaultScope)
 
 	fmt.Println("Your access token is invalid or expired, please click following link to authorize:")
@@ -299,7 +329,7 @@ func (g *gitlabOAuth2Support) _execPost(ctx context.Context, uri string, form ur
 		_ = Body.Close()
 	}(r.Body)
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return errors.Wrap(err, "failed to read")
 	}

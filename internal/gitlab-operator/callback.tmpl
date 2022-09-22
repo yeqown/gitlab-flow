@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gitlab flow callback</title>
+</head>
+
+<body>
+    <div style="height: 100px; width: 100%;">
+        <!-- <h1 style="text-align: center;">Gitlab Oauth callback</h1> -->
+    </div>
+    <div id="tip-container">
+        <div id="tip-header">
+            <div class="icon" style="background-color: #fe6057;"></div>
+            <div class="icon" style="background-color: #febd2e;"></div>
+            <div class="icon" style="background-color: #25c93f;"></div>
+        </div>
+
+        <div id="tip-content">
+            <p class="text"> Last login: {{ .Now }} on ttys011 </p>
+            <p class="command"><span class="text">$</span> gitlab-flow <span class="text">authorize</span>
+            </p>
+            <p class="text"> [1/3] requesting token... </p>
+
+            {{if .Error}}
+            <p class="error"> Oops! {{.ErrorMessage}} </p>
+            {{else}}
+            <p class="text"> [2/3] save tokens into local... </p>
+            <p class="text"> [3/3] we are almost ready... </p>
+            <p class="text"> DONE! </p>
+            {{end}}
+        </div>
+    </div>
+</body>
+
+<style>
+    body {
+        background-color: #eeeeee;
+        font-family: monospace, serif;
+    }
+
+    #tip-container {
+        background-color: #322931;
+        width: 800px;
+        height: 500px;
+        border-radius: 20px;
+        margin: 0 auto;
+
+        display: flex;
+        flex-direction: column;
+    }
+
+    #tip-header {
+        max-height: 100%;
+        display: flex;
+        align-items: flex-start;
+        padding-left: 20px;
+        padding-top: 20px;
+        border-bottom: #e6f7ff 5px;
+    }
+
+    .icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        margin: 5px;
+    }
+
+    #tip-content {
+        color: green;
+        padding: 1em;
+        padding-left: 20px;
+    }
+
+    #tip-content>p {
+        margin: 0.2em;
+        word-break: break-all;
+    }
+
+    .command {
+        color: #25c93f;
+    }
+
+    .text {
+        color: whitesmoke;
+    }
+
+    .error {
+        color: #fe6057;
+    }
+</style>
+
+</html>
