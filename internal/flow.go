@@ -28,7 +28,7 @@ type IFlow interface {
 	FeatureRelease(opc *types.OpFeatureContext) error
 	// DONE(@yeqown) this would be useful while you merge feature into master but there is conflict.
 
-	// FeatureResolveConflict will checkout a new branch from target branch,
+	// FeatureResolveConflict will check out a new branch from target branch,
 	// then create a merge request from current feature branch to the new branch.
 	// newBranch = "resolve-conflict/featureBranchName-to-master"
 	FeatureResolveConflict(opc *types.OpFeatureContext, targetBranch types.BranchTyp) error

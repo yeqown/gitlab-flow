@@ -291,7 +291,7 @@ func (f flowImpl) FeatureResolveConflict(opc *types.OpFeatureContext, targetBran
 	}
 
 	// then local git command to use git merge
-	// git merge --no-ff `featureBranchName`
+	//  --no-ff `featureBranchName`
 	return f.gitOperator.Merge(opc.FeatureBranchName, resolveConflictBranch)
 }
 
@@ -545,7 +545,6 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 // 1. pull milestone + MergeRequest + Issues by `milestoneID`.
 // 2. parse `IssueID` from MR description.
 // 3. handle and save data.
-//
 func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 	ctx := context.Background()
 	projectId := f.ctx.Project().ID
