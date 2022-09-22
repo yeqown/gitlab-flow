@@ -1,4 +1,13 @@
-# [](https://github.com/yeqown/gitlab-flow/compare/v1.7.1...v) (2022-03-18)
+# [](https://github.com/yeqown/gitlab-flow/compare/v1.7.2...v) (2022-09-22)
+
+
+
+## [1.7.2](https://github.com/yeqown/gitlab-flow/compare/v1.7.1...v1.7.2) (2022-09-22)
+
+
+### Features
+
+* **gitlab-op:** beautify callback page based html/template ([8cb4930](https://github.com/yeqown/gitlab-flow/commit/8cb49305aebc3f5cfe6942a9f423441deba38cfd))
 
 
 
