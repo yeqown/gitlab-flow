@@ -14,8 +14,10 @@
         <line x1="402.5" y1="516.5" x2="467" y2="517" id="直线备份-3" stroke="#595959" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
         <line x1="1278.5" y1="227.5" x2="1391" y2="227" id="直线备份-6" stroke="#595959" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
         <circle id="椭圆形" stroke="#595959" stroke-width="4" fill="#FFC069" cx="102.5" cy="329.5" r="14.5"></circle>
+        <circle id="椭圆形备份-6" stroke="#595959" stroke-width="4" fill="#FFC069" cx="94.5" cy="41.5" r="14.5"></circle>
         <circle id="椭圆形备份-7" stroke="#595959" stroke-width="4" fill="#FFC069" cx="355.5" cy="329.5" r="14.5"></circle>
         <circle id="椭圆形备份-21" stroke="#595959" stroke-width="4" fill="#FF7875" cx="473.5" cy="226.5" r="14.5"></circle>
+        <circle id="椭圆形备份-28" stroke="#595959" stroke-width="4" fill="#FF7875" cx="94.5" cy="88.5" r="14.5"></circle>
         <circle id="椭圆形备份-22" stroke="#595959" stroke-width="4" fill="#FF7875" cx="540.5" cy="226.5" r="14.5"></circle>
         <circle id="椭圆形备份-23" stroke="#595959" stroke-width="4" fill="#FF7875" cx="720.5" cy="225.5" r="14.5"></circle>
         <circle id="椭圆形备份-8" stroke="#595959" stroke-width="4" fill="#FFC069" cx="473.5" cy="329.5" r="14.5"></circle>
@@ -25,7 +27,9 @@
         <circle id="椭圆形备份-27" stroke="#595959" stroke-width="4" fill="#FFC069" cx="1389.5" cy="328.5" r="14.5"></circle>
         <circle id="椭圆形备份-25" stroke="#595959" stroke-width="4" fill="#95DE64" cx="1278.5" cy="226.5" r="14.5"></circle>
         <circle id="椭圆形备份-26" stroke="#595959" stroke-width="4" fill="#95DE64" cx="1389.5" cy="226.5" r="14.5"></circle>
+        <circle id="椭圆形备份-31" stroke="#595959" stroke-width="4" fill="#95DE64" cx="242.5" cy="88.5" r="14.5"></circle>
         <circle id="椭圆形备份" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="232.5" cy="432.5" r="14.5"></circle>
+        <circle id="椭圆形备份-29" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="94.5" cy="137.5" r="14.5"></circle>
         <circle id="椭圆形备份-3" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="967.5" cy="122.5" r="14.5"></circle>
         <circle id="椭圆形备份-4" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="1022.5" cy="122.5" r="14.5"></circle>
         <circle id="椭圆形备份-5" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="1183.5" cy="122.5" r="14.5"></circle>
@@ -36,16 +40,11 @@
         <circle id="椭圆形备份-18" stroke="#595959" stroke-width="4" fill="#B37FEB" cx="550.5" cy="432.5" r="14.5"></circle>
         <circle id="椭圆形备份-2" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="354.5" cy="603.5" r="14.5"></circle>
         <circle id="椭圆形备份-16" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="402.5" cy="517.5" r="14.5"></circle>
+        <circle id="椭圆形备份-30" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="242.5" cy="41.5" r="14.5"></circle>
         <circle id="椭圆形备份-10" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="405.5" cy="603.5" r="14.5"></circle>
         <circle id="椭圆形备份-17" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="453.5" cy="517.5" r="14.5"></circle>
         <circle id="椭圆形备份-11" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="473.5" cy="603.5" r="14.5"></circle>
         <circle id="椭圆形备份-12" stroke="#595959" stroke-width="4" fill="#87E8DE" cx="550.5" cy="603.5" r="14.5"></circle>
-        <g id="master" transform="translate(206.000000, 98.000000)">
-            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#FFC069" x="2" y="2" width="96" height="44" rx="4"></rect>
-            <text id="Master" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
-                <tspan x="25" y="30">Master</tspan>
-            </text>
-        </g>
         <g id="master备份-4" transform="translate(72.000000, 272.000000)">
             <rect id="矩形" stroke="#595959" stroke-width="4" fill="#FFC069" x="2" y="2" width="57" height="29" rx="4"></rect>
             <text id="v1.0.0" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
@@ -70,30 +69,6 @@
                 <tspan x="10" y="22">v1.0.1</tspan>
             </text>
         </g>
-        <g id="master备份" transform="translate(340.000000, 98.000000)">
-            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#B37FEB" x="2" y="2" width="96" height="44" rx="4"></rect>
-            <text id="Feature" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
-                <tspan x="22" y="29">Feature</tspan>
-            </text>
-        </g>
-        <g id="master备份-2" transform="translate(474.000000, 98.000000)">
-            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#87E8DE" x="2" y="2" width="96" height="44" rx="4"></rect>
-            <text id="Issue" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
-                <tspan x="31" y="30">Issue</tspan>
-            </text>
-        </g>
-        <g id="master备份-3" transform="translate(608.000000, 98.000000)">
-            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#95DE64" x="2" y="2" width="96" height="44" rx="4"></rect>
-            <text id="Conflict" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
-                <tspan x="23" y="29">Conflict</tspan>
-            </text>
-        </g>
-        <g id="master备份-6" transform="translate(72.000000, 98.000000)">
-            <rect id="矩形" stroke="#595959" stroke-width="4" fill="#FF7875" x="2" y="2" width="96" height="44" rx="4"></rect>
-            <text id="Hotfix" font-family="Chalkboard" font-size="16" font-weight="normal" fill="#000000">
-                <tspan x="29" y="30">Hotfix</tspan>
-            </text>
-        </g>
         <path d="M249,432 C293.5,432 293.5,460.360962 293.5,517.5 C293.5,574.639024 293.5,602.75 339.107095,603" id="路径" stroke="#595959" stroke-width="4"></path>
         <path d="M119,329.5 C167.5,330.274956 167.5,357.734103 167.5,380.5 C167.5,415.699656 168.033918,431.5 217.067836,431.5" id="路径-2" stroke="#595959" stroke-width="4"></path>
         <text id="Inspired-from-git-fl" font-family="PTMono-Regular, PT Mono" font-size="16" font-weight="normal" fill="#000000">
@@ -115,27 +90,42 @@
         <path d="M1200,329.505124 C1228.57377,329.505124 1231,309.76411 1231,278.251141 C1231,246.738173 1237.88075,226.75 1262,227" id="路径-8" stroke="#595959" stroke-width="4"></path>
         <path d="M1200,122.5 C1255.19558,122.5 1283.0582,138.5 1299.94503,174.86949 C1316.83187,211.23898 1328.41221,226.25 1374.3158,227.25" id="路径-9" stroke="#595959" stroke-width="4"></path>
         <line x1="1388.5" y1="242.5" x2="1388.5" y2="312.5" id="直线-7" stroke="#595959" stroke-width="4" stroke-linecap="square"></line>
-        <text id="start-feature" font-family="PTMono-Regular, PT Mono" font-size="16" font-weight="normal" fill="#000000">
+        <text id="start-feature" font-family="HanziPenSC-W5, HanziPen SC" font-size="16" font-weight="bold" fill="#000000">
             <tspan x="222" y="400">start feature</tspan>
         </text>
-        <text id="start-hotfix" font-family="PTMono-Regular, PT Mono" font-size="16" font-weight="normal" fill="#000000">
+        <text id="start-hotfix" font-family="HanziPenSC-W5, HanziPen SC" font-size="16" font-weight="bold" fill="#000000">
             <tspan x="457" y="192">start hotfix</tspan>
         </text>
-        <text id="release-feature" font-family="PTMono-Regular, PT Mono" font-size="16" font-weight="normal" fill="#000000">
+        <text id="release-feature" font-family="HanziPenSC-W5, HanziPen SC" font-size="16" font-weight="bold" fill="#000000">
             <tspan x="760" y="399">release feature</tspan>
         </text>
-        <text id="release-feature-but" font-family="PTMono-Regular, PT Mono" font-size="16" font-weight="normal" fill="#000000">
+        <text id="release-feature-but" font-family="HanziPenSC-W5, HanziPen SC" font-size="16" font-weight="bold" fill="#000000">
             <tspan x="1168" y="52">release feature</tspan>
-            <tspan x="1168" y="70">but got a conflict</tspan>
-            <tspan x="1168" y="88">with master</tspan>
+            <tspan x="1168" y="74">but got a conflict</tspan>
+            <tspan x="1168" y="96">with master</tspan>
         </text>
-        <text id="create-a-new-branch" font-family="PTMono-Regular, PT Mono" font-size="16" font-weight="normal" fill="#000000">
+        <text id="create-a-new-branch" font-family="HanziPenSC-W5, HanziPen SC" font-size="16" font-weight="bold" fill="#000000">
             <tspan x="1168" y="363">create a new </tspan>
-            <tspan x="1168" y="381">branch to </tspan>
-            <tspan x="1168" y="399">resolve conflict</tspan>
+            <tspan x="1168" y="385">branch to </tspan>
+            <tspan x="1168" y="407">resolve conflict</tspan>
         </text>
-        <text id="feature-stage-develo" font-family="PTMono-Regular, PT Mono" font-size="16" font-weight="normal" fill="#000000">
+        <text id="feature-stage-develo" font-family="HanziPenSC-W5, HanziPen SC" font-size="16" font-weight="bold" fill="#000000">
             <tspan x="342" y="647">feature stage developing</tspan>
+        </text>
+        <text id="Hotfix" font-family="HanziPenSC-W5, HanziPen SC" font-size="24" font-weight="bold" fill="#000000">
+            <tspan x="119" y="97">Hotfix</tspan>
+        </text>
+        <text id="Master" font-family="HanziPenSC-W5, HanziPen SC" font-size="24" font-weight="bold" fill="#000000">
+            <tspan x="119" y="50">Master</tspan>
+        </text>
+        <text id="Feature" font-family="HanziPenSC-W5, HanziPen SC" font-size="24" font-weight="bold" fill="#000000">
+            <tspan x="119" y="146">Feature</tspan>
+        </text>
+        <text id="Issue" font-family="HanziPenSC-W5, HanziPen SC" font-size="24" font-weight="bold" fill="#000000">
+            <tspan x="267" y="50">Issue</tspan>
+        </text>
+        <text id="Conflict" font-family="HanziPenSC-W5, HanziPen SC" font-size="24" font-weight="bold" fill="#000000">
+            <tspan x="267" y="97">Conflict</tspan>
         </text>
     </g>
 </svg>
