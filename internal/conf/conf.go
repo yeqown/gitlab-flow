@@ -21,9 +21,9 @@ import (
 	"github.com/yeqown/gitlab-flow/pkg"
 )
 
-// ConfigParser is an interface to parse config in different ways.
+// Parser is an interface to parse config in different ways.
 // For example: JSON, TOML and YAML;
-type ConfigParser interface {
+type Parser interface {
 	// Unmarshal ...
 	Unmarshal(r io.Reader, rcv *types.Config) error
 
@@ -32,14 +32,11 @@ type ConfigParser interface {
 }
 
 // Load to load config from confPath with specified parser.
-func Load(confPath string, parser ConfigParser) (cfg *types.Config, err error) {
+func Load(confPath string, parser Parser) (cfg *types.Config, err error) {
 	if parser == nil {
 		parser = NewTOMLParser()
 	}
 
-	var (
-		r io.Reader
-	)
 	cfg = &types.Config{
 		OAuth:        new(types.OAuth),
 		Branch:       new(types.BranchSetting),
@@ -49,6 +46,7 @@ func Load(confPath string, parser ConfigParser) (cfg *types.Config, err error) {
 		OpenBrowser:  false,
 	}
 	p := precheckConfigDirectory(confPath)
+	var r io.Reader
 	r, err = os.OpenFile(p, os.O_RDONLY, 0777)
 	if err != nil {
 		return nil, errors.Wrap(err, "conf.Load")
@@ -59,7 +57,7 @@ func Load(confPath string, parser ConfigParser) (cfg *types.Config, err error) {
 }
 
 // Save to save config with specified parser.
-func Save(confPath string, cfg *types.Config, parser ConfigParser) error {
+func Save(confPath string, cfg *types.Config, parser Parser) error {
 	if parser == nil {
 		parser = NewTOMLParser()
 	}
@@ -97,7 +95,8 @@ var (
 	}
 )
 
-// Default .
+// Default get default config which is embedded in the source file, so that
+// this program could run without any configuration file.
 func Default() *types.Config {
 	return defaultConf
 }

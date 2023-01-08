@@ -6,12 +6,13 @@ import (
 	"io"
 
 	"github.com/pelletier/go-toml"
+
 	"github.com/yeqown/gitlab-flow/internal/types"
 )
 
 type tomlParser struct{}
 
-func NewTOMLParser() ConfigParser {
+func NewTOMLParser() Parser {
 	return tomlParser{}
 }
 
