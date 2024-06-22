@@ -8,6 +8,8 @@ var (
 )
 
 type OAuth struct {
+	Scopes       string `toml:"scopes"`
+	CallbackHost string `toml:"callback_host"` // Notice: callback host for oauth2 without scheme
 	AccessToken  string `toml:"access_token"`
 	RefreshToken string `toml:"refresh_token"`
 }
@@ -15,42 +17,25 @@ type OAuth struct {
 // BranchSetting contains some personal setting of git branch.
 type BranchSetting struct {
 	Master, Dev, Test BranchTyp
+
+	FeatureBranchPrefix         string `toml:"feature_branch_prefix"`
+	HotfixBranchPrefix          string `toml:"hotfix_branch_prefix"`
+	ConflictResolveBranchPrefix string `toml:"conflict_resolve_branch_prefix"`
+	IssueBranchPrefix           string `toml:"issue_branch_prefix"`
 }
 
 // Config contains all fields can be specified by user.
 type Config struct {
-	OAuth  *OAuth         `toml:"oauth"`
-	Branch *BranchSetting `toml:"branch"`
-
-	// Deprecated: use oauth as instead
-	//AccessToken string `toml:"access_token"`
-
-	GitlabAPIURL string `toml:"gitlab_api_url"`
-	GitlabHost   string `toml:"gitlab_host"`
-	DebugMode    bool   `toml:"debug"`
-	OpenBrowser  bool   `toml:"open_browser"`
+	OAuth2       *OAuth         `toml:"oauth"`
+	Branch       *BranchSetting `toml:"branch"`
+	GitlabAPIURL string         `toml:"gitlab_api_url"`
+	GitlabHost   string         `toml:"gitlab_host"`
+	DebugMode    bool           `toml:"debug"`
+	OpenBrowser  bool           `toml:"open_browser"`
 }
-
-//// Apply open debug in Config if debug is true, otherwise do nothing.
-//// Deprecated
-//func (cfg *Config) Apply(debug, openBrowser bool) *Config {
-//	if debug {
-//		cfg.DebugMode = debug
-//	}
-//
-//	if openBrowser {
-//		cfg.OpenBrowser = openBrowser
-//	}
-//
-//	return cfg
-//}
 
 // Valid validates config is valid to use.
 func (cfg Config) Valid() error {
-	//if cfg.AccessToken == "" {
-	//	return ErrEmptyAccessToken
-	//}
-
 	if cfg.GitlabAPIURL == "" {
 		return ErrEmptyGitlabAPI
 	}

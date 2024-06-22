@@ -20,10 +20,9 @@ import (
 )
 
 const (
-	step1URI = "/oauth/authorize"
-	step2URI = "/oauth/token"
-	// defaultScope = "read_user api read_repository read_registry"
-	defaultScope = "read_user api read_repository"
+	step1URI    = "/oauth/authorize"
+	step2URI    = "/oauth/token"
+	callbackURI = "/callback"
 )
 
 var (
@@ -50,9 +49,12 @@ type OAuth2Config struct {
 	// if they are empty, means authorization is needed.
 	AccessToken, RefreshToken string
 
-	// // RequestTokenHook will be called while gitlabOAuth2Support get AccessToken and RefreshToken,
-	// // but if authorization failed in any step, callback will miss.
-	// RequestTokenHook func(accessToken, refreshToken string)
+	// Scopes is a string of scopes, such as: "api read_user"
+	Scopes string
+}
+
+func (c *OAuth2Config) CallbackURI() string {
+	return fmt.Sprintf("http://%s%s", c.ServeAddr, callbackURI)
 }
 
 func fixOAuthConfig(c *OAuth2Config) error {
@@ -85,7 +87,7 @@ type gitlabOAuth2Support struct {
 }
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 func NewOAuth2Support(c *OAuth2Config) IGitlabOauth2Support {
@@ -216,7 +218,7 @@ render:
 // serve is serving a backend HTTP server process to
 // receive redirect requests from gitlab.
 func (g *gitlabOAuth2Support) serve() {
-	http.HandleFunc("/callback", g.callbackHandl)
+	http.HandleFunc(callbackURI, g.callbackHandl)
 	err := http.ListenAndServe(g.oc.ServeAddr, nil)
 	if err != nil {
 		log.Errorf("gitlabOAuth2Support serve quit: %v", err)
@@ -233,10 +235,10 @@ func (g *gitlabOAuth2Support) triggerAuthorize(ctx context.Context) {
 	form := url.Values{}
 
 	form.Add("client_id", OAuth2AppID)
-	form.Add("redirect_uri", fmt.Sprintf("http://%s/callback", g.oc.ServeAddr))
+	form.Add("redirect_uri", g.oc.CallbackURI())
 	form.Add("response_type", "code")
 	form.Add("state", g.generateState())
-	form.Add("scope", defaultScope)
+	form.Add("scope", g.oc.Scopes)
 
 	fmt.Println("Your access token is invalid or expired, please click following link to authorize:")
 	uri := fmt.Sprintf("%s%s?%s", g.oc.Host, step1URI, form.Encode())
@@ -258,7 +260,7 @@ func (g *gitlabOAuth2Support) requestToken(ctx context.Context, credential strin
 	form := url.Values{}
 	form.Add("client_id", OAuth2AppID)
 	form.Add("client_secret", OAuth2AppSecret)
-	form.Add("redirect_uri", fmt.Sprintf("http://%s/callback", g.oc.ServeAddr))
+	form.Add("redirect_uri", g.oc.CallbackURI())
 
 	switch isRefresh {
 	case true:

@@ -4,12 +4,12 @@ import (
 	"path"
 	"path/filepath"
 
+	cli "github.com/urfave/cli/v2"
+	"github.com/yeqown/log"
+
 	"github.com/yeqown/gitlab-flow/internal"
 	"github.com/yeqown/gitlab-flow/internal/conf"
 	"github.com/yeqown/gitlab-flow/internal/types"
-
-	"github.com/urfave/cli/v2"
-	"github.com/yeqown/log"
 )
 
 // _cliGlobalFlags should be used like this:
@@ -140,7 +140,13 @@ func resolveFlags(flags globalFlags) *types.FlowContext {
 			Fatalf("config is invalid")
 	}
 
-	types.SyncBranchSetting(c.Branch.Master, c.Branch.Dev, c.Branch.Test)
+	types.SetBranchSetting(c.Branch.Master, c.Branch.Dev, c.Branch.Test)
+	types.SetBranchPrefix(
+		c.Branch.FeatureBranchPrefix,
+		c.Branch.HotfixBranchPrefix,
+		c.Branch.IssueBranchPrefix,
+		c.Branch.ConflictResolveBranchPrefix,
+	)
 
 	return types.NewContext(cwd, flags.ConfPath, flags.ProjectName, c, flags.ForceRemote)
 }

@@ -41,7 +41,7 @@ func NewGitlabOperator(accessToken, apiURL string) IGitlabOperator {
 				"AccessToken": accessToken,
 				"apiURL":      apiURL,
 			}).
-			Errorf("NewGitlabOperator could not initialize OAuth client: %v", err)
+			Errorf("NewGitlabOperator could not initialize OAuth2 client: %v", err)
 		// could not go ahead if we could not initialize gitlab client.
 		panic(err)
 	}
@@ -251,7 +251,7 @@ func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMerge
 			Search:       &req.Title,
 			TargetBranch: &req.TargetBranch,
 			SourceBranch: &req.SrcBranch,
-			//IIDs:         []int{req.IssueIID},
+			// IIDs:         []int{req.IssueIID},
 		}
 		mergeRequests, _, err2 := g.gitlab.MergeRequests.ListProjectMergeRequests(req.ProjectID, &opt)
 		if err2 != nil {

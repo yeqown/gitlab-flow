@@ -44,7 +44,7 @@ func NewContext(cwd, confPath, projectName string, c *Config, forceRemote bool) 
 	}
 
 	ctx := &FlowContext{
-		oauth:        c.OAuth,
+		oauth:        c.OAuth2,
 		gitlabAPIUrl: c.GitlabAPIURL,
 		cwd:          cwd,
 		project:      nil,

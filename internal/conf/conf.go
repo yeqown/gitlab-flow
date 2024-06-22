@@ -7,18 +7,55 @@ package conf
 
 import (
 	"bytes"
-	"fmt"
+	_ "embed"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"text/template"
 
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 
 	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/gitlab-flow/pkg"
+)
+
+const (
+	DefaultScopes       = "api read_user read_repository"
+	DefaultCallbackHost = "localhost:2333"
+
+	defaultConfigDirectoryName = ".gitlab-flow" // under user home path.
+	defaultConfigFilename      = "config.toml"
+)
+
+var (
+	defaultConf = &types.Config{
+		Branch: &types.BranchSetting{
+			Master:                      types.MasterBranch,
+			Dev:                         types.DevBranch,
+			Test:                        types.TestBranch,
+			FeatureBranchPrefix:         types.FeatureBranchPrefix,
+			HotfixBranchPrefix:          types.HotfixBranchPrefix,
+			ConflictResolveBranchPrefix: types.ConflictResolveBranchPrefix,
+			IssueBranchPrefix:           types.IssueBranchPrefix,
+		},
+		OAuth2: &types.OAuth{
+			Scopes:       DefaultScopes,
+			CallbackHost: DefaultCallbackHost,
+			AccessToken:  "",
+			RefreshToken: "",
+		},
+		GitlabAPIURL: "https://YOUR_HOSTNAME/api/v4",
+		GitlabHost:   "https://YOUR_HOSTNAME",
+		DebugMode:    false,
+		OpenBrowser:  true,
+	}
+
+	//go:embed config.tpl
+	configTemplateContent string
+	configTpl             = template.Must(template.New("config").Parse(configTemplateContent))
 )
 
 // Parser is an interface to parse config in different ways.
@@ -38,7 +75,7 @@ func Load(confPath string, parser Parser) (cfg *types.Config, err error) {
 	}
 
 	cfg = &types.Config{
-		OAuth:        new(types.OAuth),
+		OAuth2:       new(types.OAuth),
 		Branch:       new(types.BranchSetting),
 		GitlabAPIURL: "",
 		GitlabHost:   "",
@@ -58,42 +95,21 @@ func Load(confPath string, parser Parser) (cfg *types.Config, err error) {
 
 // Save to save config with specified parser.
 func Save(confPath string, cfg *types.Config, parser Parser) error {
-	if parser == nil {
-		parser = NewTOMLParser()
-	}
-
-	data, err := parser.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-
 	p := precheckConfigDirectory(confPath)
 	w, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "open config file")
+	}
+	defer func() {
+		_ = w.Close()
+	}()
+
+	if err = configTpl.Execute(w, cfg); err != nil {
+		return errors.Wrap(err, "execute template")
 	}
 
-	_, err = fmt.Fprint(w, string(data))
 	return err
 }
-
-var (
-	defaultConf = &types.Config{
-		Branch: &types.BranchSetting{
-			Master: types.MasterBranch,
-			Dev:    types.DevBranch,
-			Test:   types.TestBranch,
-		},
-		OAuth: &types.OAuth{
-			AccessToken:  "",
-			RefreshToken: "",
-		},
-		GitlabAPIURL: "https://YOUR_HOSTNAME/api/v4",
-		GitlabHost:   "https://YOUR_HOSTNAME",
-		DebugMode:    false,
-		OpenBrowser:  true,
-	}
-)
 
 // Default get default config which is embedded in the source file, so that
 // this program could run without any configuration file.
@@ -108,7 +124,7 @@ func DefaultConfPath() string {
 		log.Errorf("get user home failed: %v", err)
 	}
 
-	configDirectory := filepath.Join(home, _defaultConfigDirectoryName)
+	configDirectory := filepath.Join(home, defaultConfigDirectoryName)
 	if _, err = os.Stat(configDirectory); err == nil {
 		return configDirectory
 	}
@@ -155,11 +171,6 @@ func DefaultCWD() string {
 	return _defaultCWD
 }
 
-const (
-	_defaultConfigDirectoryName = ".gitlab-flow" // under user home path.
-	_defaultConfigFilename      = "config.toml"
-)
-
 // precheckConfigDirectory could parse filename and path from configDirectory.
 func precheckConfigDirectory(configDirectory string) string {
 	fi, err := os.Stat(configDirectory)
@@ -169,7 +180,7 @@ func precheckConfigDirectory(configDirectory string) string {
 	}
 
 	if fi.IsDir() {
-		return filepath.Join(configDirectory, _defaultConfigFilename)
+		return filepath.Join(configDirectory, defaultConfigFilename)
 	}
 
 	return configDirectory

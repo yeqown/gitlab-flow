@@ -31,8 +31,31 @@ There is no precompiled binary to install directly, so you need to install by yo
 ```shell
 APP_ID=YOUR_GITLAB_APP_ID \
 APP_SECRET=YOUR_GITLAB_APP_SECRET \
-make build
+BIN=gitlab-flow \ # or any name you like
+bash install.sh
 ```
+
+### Bash/Zsh Completion
+
+`gitlab-flow` using urfave/cli, so you can use `complete` command to generate completion script.
+
+1. Download urfave/cli completion script to a file from [auto-completion](https://github.com/urfave/cli/tree/main/autocomplete)
+2. Copy the content of the file to your shell folders. 
+3. Source the file in your shell profile file.
+
+```shell
+# zsh completion for example
+# download completion script
+curl -L https://raw.githubusercontent.com/urfave/cli/master/autocomplete/zsh_autocomplete -o ~/.oh-my-zsh/cache/completions/gitlab-flow
+
+# source the file in your .zshrc
+echo "source ~/.oh-my-zsh/cache/completions/gitlab-flow" >> ~/.zshrc
+
+# activate the completion
+source ~/.zshrc
+```
+
+More help information, you can find in [urfave/cli](https://cli.urfave.org/v2/examples/bash-completions/) bash completion.
 
 ### Initialization
 
@@ -100,3 +123,9 @@ GLOBAL OPTIONS:
 ```
 
 ### [Documents](./docs/README.md)
+
+This section records the documents of `gitlab-flow`, including the design, the usage, the development and the release.
+
+### [Changelog](./CHANGELOG.md)
+
+CHANGELOG.md records the changes of each version. 

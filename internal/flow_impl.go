@@ -7,6 +7,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/pkg/errors"
+	"github.com/yeqown/log"
+
 	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitop "github.com/yeqown/gitlab-flow/internal/git-operator"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
@@ -14,9 +17,6 @@ import (
 	"github.com/yeqown/gitlab-flow/internal/repository/impl"
 	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/gitlab-flow/pkg"
-
-	"github.com/pkg/errors"
-	"github.com/yeqown/log"
 )
 
 // flowImpl implement IFlow.
@@ -42,11 +42,12 @@ func checkOAuthAccessToken(ctx *types.FlowContext) {
 	c, _ := conf.Load(ctx.ConfPath(), nil)
 	oauth := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
 		Host:         c.GitlabHost,
-		ServeAddr:    "", // use default address
-		AccessToken:  c.OAuth.AccessToken,
-		RefreshToken: c.OAuth.RefreshToken,
+		ServeAddr:    c.OAuth2.CallbackHost,
+		AccessToken:  c.OAuth2.AccessToken,
+		RefreshToken: c.OAuth2.RefreshToken,
+		Scopes:       c.OAuth2.Scopes,
 	})
-	if err := oauth.Enter(c.OAuth.RefreshToken); err != nil {
+	if err := oauth.Enter(c.OAuth2.RefreshToken); err != nil {
 		log.
 			WithFields(log.Fields{
 				"config": c,
@@ -57,8 +58,8 @@ func checkOAuthAccessToken(ctx *types.FlowContext) {
 
 	accessToken, refreshToken := oauth.Load()
 
-	c.OAuth.AccessToken = accessToken
-	c.OAuth.RefreshToken = refreshToken
+	c.OAuth2.AccessToken = accessToken
+	c.OAuth2.RefreshToken = refreshToken
 	// update context oauth configuration
 	ctx.GetOAuth().AccessToken = accessToken
 	ctx.GetOAuth().RefreshToken = refreshToken
@@ -267,7 +268,7 @@ func (f flowImpl) FeatureResolveConflict(opc *types.OpFeatureContext, targetBran
 	}
 
 	// feature/branch-1 => conflict-resolve/branch-1
-	resolveConflictBranch := strings.Replace(opc.FeatureBranchName, FeatureBranchPrefix, ConflictResolveBranchPrefix, 1)
+	resolveConflictBranch := strings.Replace(opc.FeatureBranchName, types.FeatureBranchPrefix, types.ConflictResolveBranchPrefix, 1)
 
 	// locate feature branch
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
@@ -385,13 +386,13 @@ func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchNam
 		return errInvalidFeatureName
 	}
 	opc.FeatureBranchName = genFeatureBranchName(opc.FeatureBranchName)
-	//if _, err := f.repo.QueryBranch(&repository.BranchDO{
+	// if _, err := f.repo.QueryBranch(&repository.BranchDO{
 	//	ProjectID:   f.ctx.Project().ID,
 	//	BranchName:  featureBranchName,
 	//	MilestoneID: milestoneID,
-	//}); err != nil {
+	// }); err != nil {
 	//	return errors.Wrapf(err, "locate feature branch(%s) failed", featureBranchName)
-	//}
+	// }
 
 	var mr *repository.MergeRequestDO
 	if opc.ForceCreateMergeRequest {
@@ -507,7 +508,7 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 		ProjectID:   f.ctx.Project().ID,
 		MilestoneID: issue.MilestoneID,
 		IssueIID:    issue.IssueIID,
-		//SourceBranch:   "",
+		// SourceBranch:   "",
 		TargetBranch: types.MasterBranch.String(),
 	})
 	if err != nil && !repository.IsErrNotFound(err) {
@@ -696,7 +697,7 @@ func (f flowImpl) syncFormatResultIntoDO(
 			ProjectID:   projectID,
 			MilestoneID: milestoneID,
 			WebURL:      v.WebURL,
-			//RelatedBranch: ,
+			// RelatedBranch: ,
 		}
 	}
 
@@ -746,10 +747,10 @@ func (f flowImpl) syncFormatResultIntoDO(
 		})
 
 		// featureBranchName
-		if featureBranchName == "" && strings.HasPrefix(mr.SourceBranch, FeatureBranchPrefix) {
+		if featureBranchName == "" && strings.HasPrefix(mr.SourceBranch, types.FeatureBranchPrefix) {
 			featureBranchName = mr.SourceBranch
 		}
-		if featureBranchName == "" && strings.HasPrefix(mr.TargetBranch, FeatureBranchPrefix) {
+		if featureBranchName == "" && strings.HasPrefix(mr.TargetBranch, types.FeatureBranchPrefix) {
 			featureBranchName = mr.TargetBranch
 		}
 
@@ -786,8 +787,8 @@ func (f flowImpl) createBranch(
 		TargetBranch: targetBranchName,
 		SrcBranch:    srcBranch,
 		ProjectID:    f.ctx.Project().ID,
-		//MilestoneID:  milestoneID,
-		//IssueID:      issueIID,
+		// MilestoneID:  milestoneID,
+		// IssueID:      issueIID,
 	}
 
 	result, err := f.gitlabOperator.CreateBranch(ctx, &req)

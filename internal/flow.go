@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/yeqown/gitlab-flow/internal/repository"
-	"github.com/yeqown/gitlab-flow/internal/types"
-
-	"github.com/AlecAivazis/survey/v2"
+	survey "github.com/AlecAivazis/survey/v2"
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
+
+	"github.com/yeqown/gitlab-flow/internal/repository"
+	"github.com/yeqown/gitlab-flow/internal/types"
 )
 
 // IFlow to control branches, MRs, milestones and issues.
@@ -89,20 +89,13 @@ func notBuiltinBranch(branchName string) bool {
 	return true
 }
 
-const (
-	FeatureBranchPrefix         = "feature/"
-	HotfixBranchPrefix          = "hotfix/"
-	ConflictResolveBranchPrefix = "conflict-resolve/"
-	IssueBranchPrefix           = "issue/"
-)
-
 // genFeatureBranchName
 func genFeatureBranchName(name string) string {
-	if strings.HasPrefix(name, FeatureBranchPrefix) {
+	if strings.HasPrefix(name, types.FeatureBranchPrefix) {
 		return name
 	}
 
-	return FeatureBranchPrefix + name
+	return types.FeatureBranchPrefix + name
 }
 
 // tryParseFeatureNameFrom try parse feature name from issue name or other cases.
@@ -116,13 +109,13 @@ func tryParseFeatureNameFrom(branchName string, compatible bool) (string, bool) 
 
 	prefix := arr[0] + "/"
 	switch prefix {
-	case FeatureBranchPrefix:
+	case types.FeatureBranchPrefix:
 		// pass
-	case HotfixBranchPrefix:
+	case types.HotfixBranchPrefix:
 		// pass
-	case ConflictResolveBranchPrefix:
+	case types.ConflictResolveBranchPrefix:
 		// pass
-	case IssueBranchPrefix:
+	case types.IssueBranchPrefix:
 		out := strings.Join(arr[1:], "/")
 		if out = parseFeatureFromIssueName(out, compatible); out != "" {
 			return out, true
@@ -137,18 +130,18 @@ func tryParseFeatureNameFrom(branchName string, compatible bool) (string, bool) 
 }
 
 // isFeatureName judge whether branchName is feature branch or not.
-// strings.HasPrefix(name, FeatureBranchPrefix)
+// strings.HasPrefix(name, types.FeatureBranchPrefix)
 func isFeatureName(name string) bool {
-	return strings.HasPrefix(name, FeatureBranchPrefix)
+	return strings.HasPrefix(name, types.FeatureBranchPrefix)
 }
 
 // genHotfixBranchName .
 func genHotfixBranchName(name string) string {
-	if strings.HasPrefix(name, HotfixBranchPrefix) {
+	if strings.HasPrefix(name, types.HotfixBranchPrefix) {
 		return name
 	}
 
-	return HotfixBranchPrefix + name
+	return types.HotfixBranchPrefix + name
 }
 
 // genMergeRequestName generate merge request name.
@@ -159,11 +152,11 @@ func genMergeRequestName(srcBranch, targetBranch string) string {
 // genIssueBranchName .
 // @result = issue/milestoneTitle-1 as default
 func genIssueBranchName(name string, issueIID int) string {
-	if strings.HasPrefix(name, IssueBranchPrefix) {
+	if strings.HasPrefix(name, types.IssueBranchPrefix) {
 		return name
 	}
 
-	return IssueBranchPrefix + name + "-" + strconv.Itoa(issueIID)
+	return types.IssueBranchPrefix + name + "-" + strconv.Itoa(issueIID)
 }
 
 func blockingNamePrefix(name string) error {
@@ -206,7 +199,7 @@ func parseFeatureFromIssueName(issueName string, compatible bool) string {
 		return issueName[idx+1:]
 	}
 
-	issueName = strings.TrimPrefix(issueName, IssueBranchPrefix)
+	issueName = strings.TrimPrefix(issueName, types.IssueBranchPrefix)
 	idx := strings.LastIndex(issueName, "-")
 	if idx == -1 {
 		//	not errCouldNotFound

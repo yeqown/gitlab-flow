@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+
+	"github.com/yeqown/gitlab-flow/internal/types"
 )
 
 type testFlowSuite struct {
@@ -16,7 +18,7 @@ func (s *testFlowSuite) SetupAllSuite() {
 
 func (s testFlowSuite) Test_genIssueName() {
 	name := genIssueBranchName("milestone-test", 123)
-	s.Equal(IssueBranchPrefix+"milestone-test-123", name)
+	s.Equal(types.IssueBranchPrefix+"milestone-test-123", name)
 
 	feature := parseFeatureFromIssueName(name, false)
 	s.Equal("milestone-test", feature)

@@ -4,11 +4,11 @@ import (
 	"errors"
 	"os"
 
+	cli "github.com/urfave/cli/v2"
+	"github.com/yeqown/log"
+
 	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
-
-	"github.com/urfave/cli/v2"
-	"github.com/yeqown/log"
 )
 
 func getInitCommand() *cli.Command {
@@ -21,12 +21,13 @@ func getInitCommand() *cli.Command {
 			cfg, err := conf.Load(confPath, nil)
 			if err != nil {
 				if !errors.Is(err, os.ErrNotExist) {
-					panic(err)
+					panic("load config file failed: " + err.Error())
 				}
 
 				cfg = conf.Default()
 			}
 
+			// Prompt user to input configuration
 			if err = surveyConfig(cfg); err != nil {
 				log.Errorf("failed to survey config: %v", err)
 				return err
@@ -35,9 +36,10 @@ func getInitCommand() *cli.Command {
 			// DONE(@yeqown): refresh user's access token
 			support := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
 				Host:         cfg.GitlabHost,
-				ServeAddr:    "", // use default
+				ServeAddr:    cfg.OAuth2.CallbackHost,
 				AccessToken:  "", // empty
 				RefreshToken: "", // empty
+				Scopes:       cfg.OAuth2.Scopes,
 			})
 			if err = support.Enter(""); err != nil {
 				log.
@@ -45,7 +47,7 @@ func getInitCommand() *cli.Command {
 					Error("gitlab-flow initialize.oauth failed:", err)
 				return err
 			}
-			cfg.OAuth.AccessToken, cfg.OAuth.RefreshToken = support.Load()
+			cfg.OAuth2.AccessToken, cfg.OAuth2.RefreshToken = support.Load()
 
 			if err = conf.Save(confPath, cfg, nil); err != nil {
 				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)

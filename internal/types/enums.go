@@ -14,8 +14,8 @@ var (
 	TestBranch   BranchTyp = "test"
 )
 
-// SyncBranchSetting reset builtin branch enums manually.
-func SyncBranchSetting(master, dev, test BranchTyp) {
+// SetBranchSetting reset builtin branch enums manually.
+func SetBranchSetting(master, dev, test BranchTyp) {
 	if master != "" {
 		MasterBranch = master
 	}
@@ -24,5 +24,27 @@ func SyncBranchSetting(master, dev, test BranchTyp) {
 	}
 	if test != "" {
 		TestBranch = test
+	}
+}
+
+var (
+	FeatureBranchPrefix         = "feature/"
+	HotfixBranchPrefix          = "hotfix/"
+	ConflictResolveBranchPrefix = "conflict-resolve/"
+	IssueBranchPrefix           = "issue/"
+)
+
+func SetBranchPrefix(feature, hotfix, conflictResolve, issue string) {
+	if feature != "" {
+		FeatureBranchPrefix = feature
+	}
+	if hotfix != "" {
+		HotfixBranchPrefix = hotfix
+	}
+	if conflictResolve != "" {
+		ConflictResolveBranchPrefix = conflictResolve
+	}
+	if issue != "" {
+		IssueBranchPrefix = issue
 	}
 }
