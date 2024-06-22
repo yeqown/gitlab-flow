@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	step1URI     = "/oauth/authorize"
-	step2URI     = "/oauth/token"
-	defaultScope = "read_user api read_repository read_registry"
+	step1URI = "/oauth/authorize"
+	step2URI = "/oauth/token"
+	// defaultScope = "read_user api read_repository read_registry"
+	defaultScope = "read_user api read_repository"
 )
 
 var (
@@ -49,9 +50,9 @@ type OAuth2Config struct {
 	// if they are empty, means authorization is needed.
 	AccessToken, RefreshToken string
 
-	//// RequestTokenHook will be called while gitlabOAuth2Support get AccessToken and RefreshToken,
-	//// but if authorization failed in any step, callback will miss.
-	//RequestTokenHook func(accessToken, refreshToken string)
+	// // RequestTokenHook will be called while gitlabOAuth2Support get AccessToken and RefreshToken,
+	// // but if authorization failed in any step, callback will miss.
+	// RequestTokenHook func(accessToken, refreshToken string)
 }
 
 func fixOAuthConfig(c *OAuth2Config) error {
@@ -316,7 +317,7 @@ func (g *gitlabOAuth2Support) requestToken(ctx context.Context, credential strin
 func (g *gitlabOAuth2Support) _execPost(ctx context.Context, uri string, form url.Values, resp interface{}) error {
 	uri = fmt.Sprintf("%s%s?%s", g.oc.Host, uri, form.Encode())
 
-	//log.
+	// log.
 	//	WithField("uri", uri).
 	//	Debug("gitlabOAuth2Support _execPost called")
 

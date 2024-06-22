@@ -22,11 +22,13 @@ build:
 	fi
 
 	@ if [ -z ${BIN} ]; then \
+   	  echo "Empty BIN, use default name: gitlab-flow"; \
 	  $BIN="gitlab-flow";\
 	fi
 
 	@ echo "APP_ID=${APP_ID}"
 	@ echo "APP_SECRET=${APP_SECRET}"
+	@ echo "BIN=${BIN}"
 	@ echo "Start building..."
 
 	go build \

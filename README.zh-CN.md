@@ -12,6 +12,16 @@
 
 ### 安装
 
+在安装 `gitlab-flow` 之前，你需要在你的 gitlab 服务器上创建一个应用。
+
+1. 进入你的 gitlab `Preferences` -> `Applications`.
+2. 输入 `Name` 和 `Redirect URI` (http://localhost:2333/callback).
+3. 选择 scopes: `api`, `read_user`, `read_repository`, `read_registry`.
+4. 点击 `Save application`.
+5. 复制 `Application Id` 和 `Secret`.
+
+现在你已经得到了 `Application Id` 和 `Secret`。
+
 因为仓库没有提供预编译的可执行文件，所以需要你自己安装。
 
 ```shell

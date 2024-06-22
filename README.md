@@ -16,6 +16,16 @@ using `milestoneId` or interactive mode.
 
 ### Installation
 
+Before you install `gitlab-flow`, you need apply a gitlab application on your gitlab server.
+
+1. Go to your gitlab `Preferences` -> `Applications`.
+2. Input `Name` and `Redirect URI` (http://localhost:2333/callback).
+3. Choose scopes: `api`, `read_user`, `read_repository`, `read_registry`.
+4. Click `Save application`.
+5. Copy `Application Id` and `Secret`.
+
+Now, you got `Application Id` and `Secret`.
+
 There is no precompiled binary to install directly, so you need to install by yourself.
 
 ```shell
