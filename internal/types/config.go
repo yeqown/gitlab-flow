@@ -40,5 +40,9 @@ func (cfg Config) Valid() error {
 		return ErrEmptyGitlabAPI
 	}
 
+	if cfg.OAuth2 == nil || cfg.OAuth2.AccessToken == "" {
+		return ErrEmptyAccessToken
+	}
+
 	return nil
 }

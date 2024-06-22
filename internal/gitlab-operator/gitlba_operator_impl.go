@@ -52,6 +52,7 @@ func NewGitlabOperator(accessToken, apiURL string) IGitlabOperator {
 }
 
 func (g gitlabOperator) CreateBranch(ctx context.Context, req *CreateBranchRequest) (*CreateBranchResult, error) {
+	_ = ctx
 	ref := req.SrcBranch
 	opt := &gogitlab.CreateBranchOptions{
 		Branch: &req.TargetBranch,
@@ -74,6 +75,7 @@ func (g gitlabOperator) CreateBranch(ctx context.Context, req *CreateBranchReque
 }
 
 func (g gitlabOperator) CreateMilestone(ctx context.Context, req *CreateMilestoneRequest) (*CreateMilestoneResult, error) {
+	_ = ctx
 	opt := &gogitlab.CreateMilestoneOptions{
 		Title:       &req.Title,
 		Description: &req.Desc,
@@ -118,6 +120,7 @@ func (g gitlabOperator) CreateMilestone(ctx context.Context, req *CreateMileston
 }
 
 func (g gitlabOperator) GetMilestone(ctx context.Context, req *GetMilestoneRequest) (*GetMilestoneResult, error) {
+	_ = ctx
 	milestone, _, err := g.gitlab.Milestones.GetMilestone(req.ProjectID, req.MilestoneID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get milestone failed")
@@ -133,6 +136,7 @@ func (g gitlabOperator) GetMilestone(ctx context.Context, req *GetMilestoneReque
 
 func (g gitlabOperator) GetMilestoneMergeRequests(
 	ctx context.Context, req *GetMilestoneMergeRequestsRequest) (*GetMilestoneMergeRequestsResult, error) {
+	_ = ctx
 	opt := gogitlab.GetMilestoneMergeRequestsOptions{}
 	mrs, _, err := g.gitlab.Milestones.GetMilestoneMergeRequests(req.ProjectID, req.MilestoneID, &opt)
 	if err != nil {
@@ -158,6 +162,7 @@ func (g gitlabOperator) GetMilestoneMergeRequests(
 
 func (g gitlabOperator) GetMilestoneIssues(
 	ctx context.Context, req *GetMilestoneIssuesRequest) (*GetMilestoneIssuesResult, error) {
+	_ = ctx
 	opt := gogitlab.GetMilestoneIssuesOptions{}
 	issues, _, err := g.gitlab.Milestones.GetMilestoneIssues(req.ProjectID, req.MilestoneID, &opt)
 	if err != nil {
@@ -183,6 +188,7 @@ func (g gitlabOperator) GetMilestoneIssues(
 }
 
 func (g gitlabOperator) CreateIssue(ctx context.Context, req *CreateIssueRequest) (*CreateIssueResult, error) {
+	_ = ctx
 	now := time.Now()
 	opt3 := &gogitlab.CreateIssueOptions{
 		Title:       &req.Title,
@@ -229,6 +235,7 @@ func (g gitlabOperator) CreateIssue(ctx context.Context, req *CreateIssueRequest
 }
 
 func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMergeRequest) (*CreateMergeResult, error) {
+	_ = ctx
 	opt5 := &gogitlab.CreateMergeRequestOptions{
 		Title:        &req.Title,
 		Description:  &req.Desc,
@@ -280,6 +287,7 @@ func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMerge
 }
 
 func (g gitlabOperator) ListMilestones(ctx context.Context, req *ListMilestoneRequest) (*ListMilestoneResult, error) {
+	_ = ctx
 	var active = "active"
 	ms, _, err := g.gitlab.Milestones.ListMilestones(req.ProjectID, &gogitlab.ListMilestonesOptions{
 		ListOptions: gogitlab.ListOptions{
@@ -309,6 +317,7 @@ func (g gitlabOperator) ListMilestones(ctx context.Context, req *ListMilestoneRe
 }
 
 func (g gitlabOperator) ListProjects(ctx context.Context, req *ListProjectRequest) (*ListProjectResult, error) {
+	_ = ctx
 	opt := &gogitlab.ListProjectsOptions{
 		ListOptions: gogitlab.ListOptions{
 			Page:    req.Page,

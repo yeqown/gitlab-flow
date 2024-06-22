@@ -3,13 +3,13 @@ package gitlabop
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
-	"github.com/yeqown/gitlab-flow/internal/types"
-
 	"github.com/stretchr/testify/suite"
+
+	"github.com/yeqown/gitlab-flow/internal/types"
 )
 
 type gitlabOperatorTestSuite struct {
@@ -25,7 +25,7 @@ func (g *gitlabOperatorTestSuite) SetupSuite() {
 	r, err := os.Open("./testdata/secret.json")
 	g.Require().Nil(err)
 
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	g.Require().Nil(err)
 	var c = new(Config)
 	err = json.Unmarshal(data, c)
@@ -33,7 +33,7 @@ func (g *gitlabOperatorTestSuite) SetupSuite() {
 
 	g.op = NewGitlabOperator(c.AccessToken, c.ApiURL)
 
-	// this only could be test locally
+	// this only could be tested locally
 	g.projectID = 851
 	g.milestoneID = 1140
 	g.issueIID = 18
@@ -43,7 +43,7 @@ func (g *gitlabOperatorTestSuite) TearDownSuite() {
 	// do nothing
 }
 
-func (g gitlabOperatorTestSuite) Test_CreateBranch() {
+func (g *gitlabOperatorTestSuite) Test_CreateBranch() {
 	ctx := context.Background()
 	req := CreateBranchRequest{
 		TargetBranch: "feature/branch",
@@ -56,7 +56,7 @@ func (g gitlabOperatorTestSuite) Test_CreateBranch() {
 	g.T().Logf("result=%+v", result)
 }
 
-func (g gitlabOperatorTestSuite) Test_CreateMilestone() {
+func (g *gitlabOperatorTestSuite) Test_CreateMilestone() {
 	ctx := context.Background()
 	req := CreateMilestoneRequest{
 		Title:     "milestoneTest",
@@ -69,7 +69,7 @@ func (g gitlabOperatorTestSuite) Test_CreateMilestone() {
 	g.T().Logf("result=%+v", result)
 }
 
-func (g gitlabOperatorTestSuite) Test_CreateIssue() {
+func (g *gitlabOperatorTestSuite) Test_CreateIssue() {
 	ctx := context.Background()
 	req := CreateIssueRequest{
 		Title:         "milestoneTest",
@@ -84,7 +84,7 @@ func (g gitlabOperatorTestSuite) Test_CreateIssue() {
 	g.T().Logf("result=%+v", result)
 }
 
-func (g gitlabOperatorTestSuite) Test_CreateMergeRequest() {
+func (g *gitlabOperatorTestSuite) Test_CreateMergeRequest() {
 	ctx := context.Background()
 	req := CreateMergeRequest{
 		Title:        "MR Title",

@@ -232,6 +232,7 @@ func (g *gitlabOAuth2Support) generateState() string {
 }
 
 func (g *gitlabOAuth2Support) triggerAuthorize(ctx context.Context) {
+	_ = ctx
 	form := url.Values{}
 
 	form.Add("client_id", OAuth2AppID)
@@ -317,6 +318,7 @@ func (g *gitlabOAuth2Support) requestToken(ctx context.Context, credential strin
 }
 
 func (g *gitlabOAuth2Support) _execPost(ctx context.Context, uri string, form url.Values, resp interface{}) error {
+	_ = ctx
 	uri = fmt.Sprintf("%s%s?%s", g.oc.Host, uri, form.Encode())
 
 	// log.

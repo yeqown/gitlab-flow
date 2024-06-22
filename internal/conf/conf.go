@@ -94,7 +94,7 @@ func Load(confPath string, parser Parser) (cfg *types.Config, err error) {
 }
 
 // Save to save config with specified parser.
-func Save(confPath string, cfg *types.Config, parser Parser) error {
+func Save(confPath string, cfg *types.Config, _ Parser) error {
 	p := precheckConfigDirectory(confPath)
 	w, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
