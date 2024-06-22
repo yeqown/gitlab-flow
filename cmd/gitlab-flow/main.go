@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
 )
 
@@ -18,7 +18,7 @@ func main() {
 			Email: "yeqown@gmail.com",
 		},
 	}
-	app.Version = "v1.7.2"
+	app.Version = "v1.8.0"
 	app.Description = `A tool for managing gitlab Feature/Milestone/Issue/MergeRequest as gitlab-flow.`
 	app.Flags = _cliGlobalFlags
 
