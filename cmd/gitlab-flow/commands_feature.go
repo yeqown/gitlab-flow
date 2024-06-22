@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/pkg/errors"
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
 
 	"github.com/yeqown/gitlab-flow/internal/types"
@@ -52,7 +52,7 @@ func getFeatureBeginIssueSubCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "open-issue",
 		Usage:     "open an issue then create issue branch from feature branch, also merge request",
-		ArgsUsage: "open-issue -f @featureBranchName @title @desc",
+		ArgsUsage: "open-issue -f @title @desc",
 		Flags:     []cli.Flag{},
 		Action: func(c *cli.Context) error {
 			defer func() {
