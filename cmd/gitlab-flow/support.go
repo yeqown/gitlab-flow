@@ -144,8 +144,8 @@ func resolveFlags(flags globalFlags) *types.FlowContext {
 	types.SetBranchPrefix(
 		c.Branch.FeatureBranchPrefix,
 		c.Branch.HotfixBranchPrefix,
-		c.Branch.IssueBranchPrefix,
 		c.Branch.ConflictResolveBranchPrefix,
+		c.Branch.IssueBranchPrefix,
 	)
 
 	return types.NewContext(cwd, flags.ConfPath, flags.ProjectName, c, flags.ForceRemote)
