@@ -46,7 +46,7 @@ type IFlow interface {
 	HotfixFinish(hotfixBranchName string) error
 
 	// SyncProject synchronize project information from remote gitlab server.
-	SyncProject() error
+	SyncProject(isDelete bool) error
 	// SyncMilestone synchronize remote repository milestone and related issues / merge requests to local.
 	SyncMilestone(milestoneID int, interact bool) error
 }

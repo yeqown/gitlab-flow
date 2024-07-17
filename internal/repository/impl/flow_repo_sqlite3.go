@@ -44,9 +44,9 @@ type sqliteFlowRepositoryImpl struct {
 func ConnectDB(path string, debug bool) func() *gorm2.DB {
 	dbName := "gitlab-flow.db"
 	init := false
-	//if debug {
+	// if debug {
 	//	dbName = "gitlab-flow.debug.db"
-	//}
+	// }
 	path = filepath.Join(path, dbName)
 
 	if _, err := os.Stat(path); err != nil {
@@ -454,6 +454,59 @@ func (repo *sqliteFlowRepositoryImpl) batchCreate(value interface{}, size int, t
 
 	if err := tx.CreateInBatches(value, size).Error; err != nil {
 		tx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
+func (repo *sqliteFlowRepositoryImpl) RemoveProjectAndRelatedData(projectId int) (err error) {
+	if projectId <= 0 {
+		return nil
+	}
+
+	tx := repo.db.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+
+		tx.Commit()
+	}()
+
+	proj := new(repository.ProjectDO)
+	if err = tx.First(proj, &repository.ProjectDO{ProjectID: projectId}).Error; err != nil {
+		if errors.Is(err, gorm2.ErrRecordNotFound) {
+			return nil
+		}
+
+		return errors.Wrap(err, "could not locate project")
+	}
+
+	// remove project
+	delCondition := &repository.ProjectDO{ProjectID: projectId}
+	if err = tx.Unscoped().Delete(&repository.ProjectDO{}, delCondition).Error; err != nil {
+		return err
+	}
+	// remove milestones
+	delCondition2 := &repository.MilestoneDO{ProjectID: projectId}
+	if err = tx.Unscoped().Delete(&repository.MilestoneDO{}, delCondition2).Error; err != nil {
+		return err
+	}
+	// remove branches
+	delCondition3 := &repository.BranchDO{ProjectID: projectId}
+	if err = tx.Unscoped().Delete(&repository.BranchDO{}, delCondition3).Error; err != nil {
+		return err
+	}
+	// remove issues
+	delCondition4 := &repository.IssueDO{ProjectID: projectId}
+	if err = tx.Unscoped().Delete(&repository.IssueDO{}, delCondition4).Error; err != nil {
+		return err
+	}
+	// remove merge requests
+	delCondition5 := &repository.MergeRequestDO{ProjectID: projectId}
+	if err = tx.Unscoped().Delete(&repository.MergeRequestDO{}, delCondition5).Error; err != nil {
 		return err
 	}
 

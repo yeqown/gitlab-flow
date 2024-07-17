@@ -18,14 +18,25 @@ func getSyncProjectCommand() *cli.Command {
 		Usage:     "synchronize project information from remote gitlab server into local database",
 		ArgsUsage: "",
 		Flags: []cli.Flag{
+			// @yeqown 2024-07-17 remove 'sync-project' flag, because it's not necessary anymore.
+			// project-sync command is only to sync project information from remote gitlab server, so we
+			// force to sync project information by default. not the command can remove project related data.
+			//
+			// &cli.BoolFlag{
+			// 	Name:   "sync-project",
+			// 	Value:  true,
+			// 	Hidden: true,
+			// },
 			&cli.BoolFlag{
-				Name:   "sync-project",
-				Value:  true,
-				Hidden: true,
+				Name:    "delete",
+				Aliases: []string{"d"},
+				Value:   false,
+				Usage:   "delete all local data related to project",
 			},
 		},
 		Action: func(c *cli.Context) error {
-			return getFlow(c).SyncProject()
+			delFlag := c.Bool("delete")
+			return getFlow(c).SyncProject(delFlag)
 		},
 	}
 }
