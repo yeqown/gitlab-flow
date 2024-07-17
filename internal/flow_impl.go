@@ -672,6 +672,10 @@ func (f flowImpl) SyncProject(isDelete bool) error {
 	// forceRemote was set by `parseGlobalFlags` function.
 	// lookup parseGlobalFlags for more detail.
 
+	if !isDelete {
+		return nil
+	}
+
 	// DONE(@yeqown): delete local data related to project.
 	log.WithFields(log.Fields{"isDelete": isDelete}).Debug("SyncProject called")
 	if err := f.repo.RemoveProjectAndRelatedData(f.ctx.Project().ID); err != nil {
