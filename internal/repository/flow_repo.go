@@ -7,6 +7,8 @@ import (
 
 // IFlowRepository is used to manage local flow data.
 type IFlowRepository interface {
+	removeProjectRepository
+
 	StartTransaction() *gorm2.DB
 	CommitTransaction(tx *gorm2.DB) error
 
@@ -32,6 +34,10 @@ type IFlowRepository interface {
 	BatchCreateMergeRequest(records []*MergeRequestDO, txs ...*gorm2.DB) error
 	QueryMergeRequest(filter *MergeRequestDO) (*MergeRequestDO, error)
 	QueryMergeRequests(filter *MergeRequestDO) ([]*MergeRequestDO, error)
+}
+
+type removeProjectRepository interface {
+	RemoveProjectAndRelatedData(projectId int) error
 }
 
 // IsErrNotFound judge the error is gorm2.ErrRecordNotFound or not.
@@ -114,4 +120,9 @@ type MergeRequestDO struct {
 
 func (m *MergeRequestDO) TableName() string {
 	return "project_merge_request"
+}
+
+type QueryProjectsFilter struct {
+	ProjectName string
+	WorkDir     string
 }

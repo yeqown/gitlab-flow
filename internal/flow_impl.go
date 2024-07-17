@@ -109,8 +109,8 @@ func (f flowImpl) fillContextWithProject() error {
 	// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
 	var (
 		projectName = f.ctx.ProjectName()
-		projects    []*repository.ProjectDO
 		err         error
+		injected    bool
 	)
 
 	// if user specify locating project from remote directly, so skip the step of getting from local.
@@ -118,20 +118,26 @@ func (f flowImpl) fillContextWithProject() error {
 		goto locateFromRemote
 	}
 
-	// get from local
-	projects, err = f.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
-	if err == nil && len(projects) != 0 {
-		// locate project from local, and there are maybe more than one project.
-		matched, err2 := chooseOneProjectInteractively(projects)
-		if err2 == nil {
-			f.ctx.InjectProject(&types.ProjectBasics{
-				ID:     matched.ProjectID,
-				Name:   matched.ProjectName,
-				WebURL: matched.WebURL,
-			})
-			return nil
-		}
+	// get from local with name or workdir
+	injected, err = injectProjectIntoContext(f.repo, f.ctx, projectName, f.ctx.CWD())
+	if err == nil && injected {
+		return nil
 	}
+
+	// // get from local with name or workdir
+	// projects, err = f.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
+	// if err == nil && len(projects) != 0 {
+	// 	// locate project from local, and there are maybe more than one project.
+	// 	matched, err2 := chooseOneProjectInteractively(projects)
+	// 	if err2 == nil {
+	// 		f.ctx.InjectProject(&types.ProjectBasics{
+	// 			ID:     matched.ProjectID,
+	// 			Name:   matched.ProjectName,
+	// 			WebURL: matched.WebURL,
+	// 		})
+	// 		return nil
+	// 	}
+	// }
 
 	log.
 		WithFields(log.Fields{"project": projectName}).
@@ -658,13 +664,19 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 }
 
 // SyncProject want to rebuild project manually while project is not exists in local database.
-func (f flowImpl) SyncProject() error {
+func (f flowImpl) SyncProject(isDelete bool) error {
 	// NewFlow get project information earlier than SyncProject method, so synchronize project only need to
 	// set FlowContext.forceRemote as true which will read project information from remote rather than
 	// load from local database.
 
 	// forceRemote was set by `parseGlobalFlags` function.
 	// lookup parseGlobalFlags for more detail.
+
+	// DONE(@yeqown): delete local data related to project.
+	log.WithFields(log.Fields{"isDelete": isDelete}).Debug("SyncProject called")
+	if err := f.repo.RemoveProjectAndRelatedData(f.ctx.Project().ID); err != nil {
+		return errors.Wrap(err, "remove project and related data failed")
+	}
 
 	return nil
 }

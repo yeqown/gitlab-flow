@@ -75,24 +75,30 @@ func (d dashImpl) fillContextWithProject() error {
 	projectName := d.ctx.ProjectName()
 
 	// get from local
-	projects, err := d.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
-	if err == nil && len(projects) != 0 {
-		// should let user choose one
-		matched, err2 := chooseOneProjectInteractively(projects)
-		if err2 == nil {
-			d.ctx.InjectProject(&types.ProjectBasics{
-				ID:     matched.ProjectID,
-				Name:   matched.ProjectName,
-				WebURL: matched.WebURL,
-			})
-			return nil
-		}
+	injected, err := injectProjectIntoContext(d.repo, d.ctx, projectName, d.ctx.CWD())
+	if err == nil && injected {
+		return nil
 	}
 
+	// projects, err := d.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
+	// if err == nil && len(projects) != 0 {
+	// 	// should let user choose one
+	// 	matched, err2 := chooseOneProjectInteractively(projects)
+	// 	if err2 == nil {
+	// 		d.ctx.InjectProject(&types.ProjectBasics{
+	// 			ID:     matched.ProjectID,
+	// 			Name:   matched.ProjectName,
+	// 			WebURL: matched.WebURL,
+	// 		})
+	// 		return nil
+	// 	}
+	// }
+
 	log.
-		WithFields(log.Fields{"project": projectName}).
+		WithFields(log.Fields{"project": projectName, "workDir": d.ctx.CWD(), "injected": injected}).
 		Fatalf("could not found from local: %v", err)
-	return fmt.Errorf("could not match project(%s) from remote: %v", projectName, err)
+
+	return fmt.Errorf("could not found project(%s) from local: %v", projectName, err)
 }
 
 // FeatureDetail get feature detail of current project:
@@ -422,4 +428,64 @@ func (d dashImpl) printAndOpenBrowser(title, url string) {
 		"err1": err1,
 		"err2": err2,
 	}).Debugf("printAndOpenBrowser")
+}
+
+type projectQueryHelper interface {
+	QueryProjects(*repository.ProjectDO) ([]*repository.ProjectDO, error)
+}
+
+type projectInjectIntoContextHelper interface {
+	InjectProject(*types.ProjectBasics)
+}
+
+// injectProjectIntoContext query project from local persistence repository and inject into context.
+//
+// First, query project from local repository with projectName,
+// if not found, then query with localDir.
+//
+// Then, let user choose one project from matched projects if there are more than one.
+//
+// Finally, inject project into context.
+func injectProjectIntoContext(
+	q projectQueryHelper, injector projectInjectIntoContextHelper, projectName, localDir string) (bool, error) {
+	filter := &repository.ProjectDO{ProjectName: projectName}
+	tries := 1
+
+query:
+	// if tries > 2, means we have tried twice, tried with projectName and localDir.
+	// but still not found, then return false.
+	if tries > 2 {
+		return false, nil
+	}
+
+	log.WithFields(log.Fields{"filter": filter, "tries": tries}).
+		Debug("injectProjectIntoContext.query")
+	projects, err := q.QueryProjects(filter)
+	log.WithFields(log.Fields{"projects": projects, "got": len(projects)}).
+		Debugf("injectProjectIntoContext.query result, err=%v", err)
+	if err != nil {
+		return false, errors.Wrap(err, "injectProjectIntoContext.QueryProjects")
+	}
+	if len(projects) == 0 {
+		// try with localDir
+		tries += 1
+		filter = &repository.ProjectDO{LocalDir: localDir}
+		goto query
+	}
+
+	if len(projects) != 0 {
+		// let user choose one
+		matched, err2 := chooseOneProjectInteractively(projects)
+		if err2 != nil {
+			return true, errors.Wrap(err2, "injectProjectIntoContext.chooseOneProjectInteractively")
+		}
+
+		injector.InjectProject(&types.ProjectBasics{
+			ID:     matched.ProjectID,
+			Name:   matched.ProjectName,
+			WebURL: matched.WebURL,
+		})
+	}
+
+	return true, nil
 }
