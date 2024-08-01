@@ -182,15 +182,18 @@ func getCheckoutCommand() *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			listAll := c.Bool("list")
-			issueIDS := ""
-			if listAll {
-				issueIDS = c.Args().Get(1)
-			} else {
-				issueIDS = c.Args().Get(0)
-			}
+			issueIDS := c.Args().Get(0)
 			if strings.TrimSpace(issueIDS) == "" {
 				issueIDS = "0"
 			}
+
+			log.
+				WithFields(log.Fields{
+					"listAll":  listAll,
+					"issueIDS": issueIDS,
+					"args":     c.Args().Slice(),
+				}).
+				Debug("checkout command")
 
 			issueID, err := strconv.Atoi(issueIDS)
 			if err != nil {

@@ -474,6 +474,15 @@ func (f flowImpl) Checkout(opc *types.OpFeatureContext, listAll bool, issueID in
 		return
 	}
 
+	log.
+		WithFields(log.Fields{
+			"currentBranch": currentBranch,
+			"featureBranch": featureBranch,
+			"issueID":       issueID,
+			"listAll":       listAll,
+		}).
+		Debug("Checkout called")
+
 	checkout := func(branchName string) {
 		if err := f.gitOperator.Checkout(branchName, false); err != nil {
 			log.
@@ -486,6 +495,7 @@ func (f flowImpl) Checkout(opc *types.OpFeatureContext, listAll bool, issueID in
 		}
 	}
 
+	featureBranch = genFeatureBranchName(featureBranch)
 	if !listAll && issueID == 0 {
 		if currentBranch == featureBranch {
 			// do nothing
@@ -514,9 +524,11 @@ func (f flowImpl) Checkout(opc *types.OpFeatureContext, listAll bool, issueID in
 
 	if listAll {
 		for _, v := range branches {
-			fmt.Println(v)
+			if v.IssueIID == 0 {
+				fmt.Printf(" 🦁\t %s \n", v.BranchName)
+			}
+			fmt.Printf(" 🐔 #%d \t %s \n", v.IssueIID, v.BranchName)
 		}
-		return
 	}
 
 	if issueID != 0 {
