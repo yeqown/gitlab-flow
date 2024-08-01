@@ -1045,6 +1045,16 @@ func (f flowImpl) createMergeRequest(
 		}).
 		Debug("create mr success")
 
+	if autoMerge {
+		if err = f.gitlabOperator.MergeMergeRequest(ctx, &gitlabop.MergeMergeRequest{
+			ProjectID:      f.ctx.Project().ID,
+			MergeRequestID: result.ID,
+		}); err != nil {
+			log.WithFields(log.Fields{"mergeRequestID": result.ID, "URL": result.WebURL}).
+				Warnf("auto merge failed: %v", err)
+		}
+	}
+
 	if err = f.repo.SaveMergeRequest(&repository.MergeRequestDO{
 		ProjectID:      f.ctx.Project().ID,
 		MilestoneID:    milestoneID,
