@@ -124,6 +124,7 @@ type CreateMergeRequest struct {
 	Title, Desc, SrcBranch, TargetBranch string
 	MilestoneID, IssueIID                int
 	ProjectID                            int
+	AutoMerge                            bool
 }
 
 type CreateMergeResult struct {

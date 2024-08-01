@@ -1,6 +1,9 @@
 package main
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
@@ -18,6 +21,7 @@ func getFeatureSubCommands() cli.Commands {
 		getFeatureTestSubCommand(),
 		getFeatureReleaseSubCommand(),
 		getFeatureResolveConflictCommand(),
+		getCheckoutCommand(),
 	}
 }
 
@@ -154,6 +158,49 @@ func getFeatureResolveConflictCommand() *cli.Command {
 			targetBranchName := c.String("target_branch")
 			opc := getOpFeatureContext(c)
 			return getFlow(c).FeatureResolveConflict(opc, types.BranchTyp(targetBranchName))
+		},
+	}
+}
+
+// getCheckoutCommand checkout to branch related to current feature, feature branch
+// or issue branches. It will list all branches if --list is set.
+// It would interact with user to choose which branch to check out if --issue is set,
+// default is feature branch.
+// Usage:
+//
+//	gitlab-flow feature checkout [--list] [--issue]
+func getCheckoutCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "checkout",
+		Usage:     "checkout to feature branch or issue branch",
+		ArgsUsage: "checkout [--list] [issueID]",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "list",
+				Usage: "list all branches",
+			},
+		},
+		Action: func(c *cli.Context) error {
+			listAll := c.Bool("list")
+			issueIDS := ""
+			if listAll {
+				issueIDS = c.Args().Get(1)
+			} else {
+				issueIDS = c.Args().Get(0)
+			}
+			if strings.TrimSpace(issueIDS) == "" {
+				issueIDS = "0"
+			}
+
+			issueID, err := strconv.Atoi(issueIDS)
+			if err != nil {
+				return errors.Wrap(err, "issueID should be a number")
+			}
+
+			opc := getOpFeatureContext(c)
+			getFlow(c).Checkout(opc, listAll, issueID)
+
+			return nil
 		},
 	}
 }

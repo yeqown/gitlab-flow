@@ -24,6 +24,7 @@ type IFlowRepository interface {
 	SaveBranch(m *BranchDO, txs ...*gorm2.DB) error
 	BatchCreateBranch(records []*BranchDO, txs ...*gorm2.DB) error
 	QueryBranch(filter *BranchDO) (*BranchDO, error)
+	QueryBranches(filter *BranchDO) ([]*BranchDO, error)
 
 	SaveIssue(m *IssueDO, txs ...*gorm2.DB) error
 	BatchCreateIssue(records []*IssueDO, txs ...*gorm2.DB) error

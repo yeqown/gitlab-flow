@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/samber/lo"
 	"github.com/yeqown/log"
 
 	"github.com/yeqown/gitlab-flow/internal/conf"
@@ -251,21 +252,21 @@ func (f flowImpl) FeatureDebugging(opc *types.OpFeatureContext) (err error) {
 	if opc.FeatureBranchName, err = f.extractFeatureBranchName(opc); err != nil {
 		return err
 	}
-	return f.featureProcessMR(opc.FeatureBranchName, types.DevBranch, opc.ForceCreateMergeRequest)
+	return f.featureProcessMR(opc.FeatureBranchName, types.DevBranch, opc.ForceCreateMergeRequest, opc.AutoMergeRequest)
 }
 
 func (f flowImpl) FeatureTest(opc *types.OpFeatureContext) (err error) {
 	if opc.FeatureBranchName, err = f.extractFeatureBranchName(opc); err != nil {
 		return err
 	}
-	return f.featureProcessMR(opc.FeatureBranchName, types.TestBranch, opc.ForceCreateMergeRequest)
+	return f.featureProcessMR(opc.FeatureBranchName, types.TestBranch, opc.ForceCreateMergeRequest, opc.AutoMergeRequest)
 }
 
 func (f flowImpl) FeatureRelease(opc *types.OpFeatureContext) (err error) {
 	if opc.FeatureBranchName, err = f.extractFeatureBranchName(opc); err != nil {
 		return err
 	}
-	return f.featureProcessMR(opc.FeatureBranchName, types.MasterBranch, opc.ForceCreateMergeRequest)
+	return f.featureProcessMR(opc.FeatureBranchName, types.MasterBranch, opc.ForceCreateMergeRequest, opc.AutoMergeRequest)
 }
 
 func (f flowImpl) FeatureResolveConflict(opc *types.OpFeatureContext, targetBranch types.BranchTyp) (err error) {
@@ -293,7 +294,7 @@ func (f flowImpl) FeatureResolveConflict(opc *types.OpFeatureContext, targetBran
 	}
 
 	// check out one branch from target branch, and open a MergeRequest.
-	if err = f.featureProcessMR(resolveConflictBranch, targetBranch, opc.ForceCreateMergeRequest); err != nil {
+	if err = f.featureProcessMR(resolveConflictBranch, targetBranch, opc.ForceCreateMergeRequest, opc.AutoMergeRequest); err != nil {
 		return err
 	}
 
@@ -443,7 +444,8 @@ issueCreateMR:
 	// not hit, so create one
 	title := genMergeRequestName(issueBranchName, opc.FeatureBranchName)
 	desc := ""
-	result, err := f.createMergeRequest(title, desc, milestoneID, issueIID, issueBranchName, opc.FeatureBranchName)
+	result, err := f.createMergeRequest(
+		title, desc, milestoneID, issueIID, issueBranchName, opc.FeatureBranchName, opc.AutoMergeRequest)
 	if err != nil {
 		return errors.Wrap(err, "create issue merge request failed")
 	}
@@ -461,7 +463,78 @@ issueCreateMR:
 	return nil
 }
 
-func (f flowImpl) HotfixBegin(title, desc string) error {
+func (f flowImpl) Checkout(opc *types.OpFeatureContext, listAll bool, issueID int) {
+	currentBranch, _ := f.gitOperator.CurrentBranch()
+	// current branch must be feature branch or issue branch
+	featureBranch, matched := tryParseFeatureNameFrom(currentBranch, false)
+	if !matched {
+		log.
+			WithFields(log.Fields{"currentBranch": currentBranch}).
+			Warn("current branch is not feature branch or issue branch, could not checkout")
+		return
+	}
+
+	checkout := func(branchName string) {
+		if err := f.gitOperator.Checkout(branchName, false); err != nil {
+			log.
+				WithFields(log.Fields{
+					"branchName": branchName,
+					"error":      err,
+				}).
+				Error("checkout branch failed")
+			return
+		}
+	}
+
+	if !listAll && issueID == 0 {
+		if currentBranch == featureBranch {
+			// do nothing
+			return
+		}
+
+		// default is to check out feature branch
+		checkout(featureBranch)
+		return
+	}
+
+	// locate feature branch and milestoneID
+	branch, err := f.repo.QueryBranch(&repository.BranchDO{
+		ProjectID:  f.ctx.Project().ID,
+		BranchName: featureBranch,
+	})
+	if err != nil {
+		log.WithFields(log.Fields{"error": err, "branch": featureBranch, "projectID": f.ctx.Project().ID}).
+			Error("query branch failed")
+		return
+	}
+	branches, _ := f.repo.QueryBranches(&repository.BranchDO{
+		ProjectID:   f.ctx.Project().ID,
+		MilestoneID: branch.MilestoneID,
+	})
+
+	if listAll {
+		for _, v := range branches {
+			fmt.Println(v)
+		}
+		return
+	}
+
+	if issueID != 0 {
+		b, ok := lo.Find(branches, func(v *repository.BranchDO) bool {
+			return v.IssueIID == issueID
+		})
+		if !ok {
+			log.
+				WithFields(log.Fields{"issueID": issueID}).
+				Warn("could not locate issue branch")
+			return
+		}
+
+		checkout(b.BranchName)
+	}
+}
+
+func (f flowImpl) HotfixBegin(opc *types.OpHotfixContext, title, desc string) error {
 	hotfixBranchName := genHotfixBranchName(title)
 
 	// create ISSUE
@@ -486,7 +559,7 @@ func (f flowImpl) HotfixBegin(title, desc string) error {
 	return nil
 }
 
-func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
+func (f flowImpl) HotfixFinish(opc *types.OpHotfixContext, hotfixBranchName string) error {
 	if hotfixBranchName == "" {
 		hotfixBranchName, _ = f.gitOperator.CurrentBranch()
 	}
@@ -509,8 +582,13 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 		return errors.Wrap(err, "locate issue failed")
 	}
 
+	var mr *repository.MergeRequestDO
+	if opc.ForceCreateMergeRequest {
+		goto hotfixCreateMR
+	}
+
 	// locate MR first
-	mr, err := f.repo.QueryMergeRequest(&repository.MergeRequestDO{
+	mr, err = f.repo.QueryMergeRequest(&repository.MergeRequestDO{
 		ProjectID:   f.ctx.Project().ID,
 		MilestoneID: issue.MilestoneID,
 		IssueIID:    issue.IssueIID,
@@ -527,10 +605,12 @@ func (f flowImpl) HotfixFinish(hotfixBranchName string) error {
 		return nil
 	}
 
+hotfixCreateMR:
 	// then create MR to master
-	title := genMergeRequestName(hotfixBranchName, types.MasterBranch.String())
+	masterBranch := types.MasterBranch.String()
+	title := genMergeRequestName(hotfixBranchName, masterBranch)
 	result, err := f.createMergeRequest(
-		title, issue.Desc, 0, issue.IssueIID, hotfixBranchName, types.MasterBranch.String())
+		title, issue.Desc, 0, issue.IssueIID, hotfixBranchName, masterBranch, false)
 	if err != nil {
 		return errors.Wrap(err, "create hotfix MR failed")
 	}
@@ -929,7 +1009,10 @@ func (f flowImpl) createIssue(title, desc, relatedBranch string, milestoneID int
 
 // CreateMergeRequest create MergeRequest
 func (f flowImpl) createMergeRequest(
-	title, desc string, milestoneID, issueIID int, srcBranch, targetBranch string,
+	title, desc string,
+	milestoneID, issueIID int,
+	srcBranch, targetBranch string,
+	autoMerge bool,
 ) (*gitlabop.CreateMergeResult, error) {
 	ctx := context.Background()
 	// MergeRequest is still Work in progress
@@ -947,6 +1030,7 @@ func (f flowImpl) createMergeRequest(
 		MilestoneID:  milestoneID,
 		IssueIID:     issueIID,
 		ProjectID:    f.ctx.Project().ID,
+		AutoMerge:    autoMerge,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "create MR failed")
@@ -983,7 +1067,7 @@ func (f flowImpl) createMergeRequest(
 // featureProcessMR is a process for creating a merge request for feature branch to target branch. If
 // forceCreateMR is true means skipping the logic which would query MergeRequest from local.
 func (f flowImpl) featureProcessMR(
-	featureBranchName string, targetBranchName types.BranchTyp, forceCreateMR bool) error {
+	featureBranchName string, targetBranchName types.BranchTyp, forceCreateMR, autoMerge bool) error {
 	featureBranch, err := f.repo.QueryBranch(&repository.BranchDO{
 		ProjectID:  f.ctx.Project().ID,
 		BranchName: featureBranchName,
@@ -1024,7 +1108,7 @@ featureCreateMR:
 	targetBranch := targetBranchName.String()
 	title := genMergeRequestName(featureBranchName, targetBranch)
 	result, err := f.createMergeRequest(
-		title, milestone.Desc, milestone.MilestoneID, 0, featureBranch.BranchName, targetBranch)
+		title, milestone.Desc, milestone.MilestoneID, 0, featureBranch.BranchName, targetBranch, autoMerge)
 	if err != nil {
 		return errors.Wrapf(err, "featureProcessMR failed to create merge request")
 	}

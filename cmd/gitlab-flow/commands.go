@@ -82,7 +82,12 @@ func getFeatureCommand() *cli.Command {
 			},
 			&cli.BoolFlag{
 				Name:     "parse-issue-compatible",
-				Usage:    "switch to parse issue name in compatible mode",
+				Usage:    "switch to parse issue name in compatible mode [deprecated]",
+				Required: false,
+			},
+			&cli.BoolFlag{
+				Name:     "auto-merge",
+				Usage:    "auto merge request when feature is done",
 				Required: false,
 			},
 		},
@@ -93,8 +98,17 @@ func getFeatureCommand() *cli.Command {
 // gitlab-flow hotfix [command options] -p --specProject
 func getHotfixCommand() *cli.Command {
 	return &cli.Command{
-		Name:        "hotfix",
-		Usage:       "managing the works in hotfix.",
+		Name:  "hotfix",
+		Usage: "managing the works in hotfix.",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "force-create-mr",
+				Value:       false,
+				Usage:       "force to create Merge Request",
+				DefaultText: "false",
+				Required:    false,
+			},
+		},
 		Subcommands: getHotfixSubCommands(),
 	}
 }

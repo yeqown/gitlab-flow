@@ -39,11 +39,16 @@ type IFlow interface {
 	// FeatureFinishIssue open the WebURL of merge request which is from issue branch to feature branch.
 	FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchName string) error
 
+	// Checkout to branch related to current feature, feature branch or issue branches.
+	// default is to check out feature branch. It would list all branches if --list is set.
+	// It would interact with user to choose which branch to check out if --issue is set.
+	Checkout(opc *types.OpFeatureContext, listAll bool, issueID int)
+
 	// HotfixBegin checkout a hotfix branch from types.MasterBranch, also open a merge request
 	// which is from hotfix branch to types.MasterBranch.
-	HotfixBegin(title, desc string) error
+	HotfixBegin(opc *types.OpHotfixContext, title, desc string) error
 	// HotfixFinish open the WebURL of merge request which is from hotfix branch to types.MasterBranch.
-	HotfixFinish(hotfixBranchName string) error
+	HotfixFinish(opc *types.OpHotfixContext, hotfixBranchName string) error
 
 	// SyncProject synchronize project information from remote gitlab server.
 	SyncProject(isDelete bool) error

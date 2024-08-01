@@ -176,7 +176,15 @@ type OpFeatureContext struct {
 	ForceCreateMergeRequest bool
 	// FeatureBranchName specify which branch name to use in the lifecycle of feature operations.
 	FeatureBranchName string
+	// AutoMergeRequest if this is true, means merge request would be merged automatically.
+	AutoMergeRequest bool
 
 	// ParseIssueCompatible if this is true, means parse issueName to feature in compatible way.
 	ParseIssueCompatible bool
+}
+
+type OpHotfixContext struct {
+	// ForceCreateMergeRequest if this is true, means merge request would be create no matter whether
+	// merge request has been created or merged.
+	ForceCreateMergeRequest bool
 }

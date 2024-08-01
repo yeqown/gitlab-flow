@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/pkg/errors"
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
 )
 
@@ -36,7 +36,9 @@ func getHotfixStartSubCommand() *cli.Command {
 			if desc == "" {
 				return errors.New("desc could not be empty")
 			}
-			return getFlow(c).HotfixBegin(title, desc)
+
+			opc := getOpHotfixContext(c)
+			return getFlow(c).HotfixBegin(opc, title, desc)
 		},
 	}
 }
@@ -54,7 +56,7 @@ func getHotfixFinishSubCommand() *cli.Command {
 				Name:     "hotfix_branch_name",
 				Aliases:  []string{"b"},
 				Value:    "",                   // default current branch
-				Usage:    "`hotfixBranchName`", // be be overwritten
+				Usage:    "`hotfixBranchName`", // be overwritten
 				Required: false,
 			},
 		},
@@ -65,7 +67,8 @@ func getHotfixFinishSubCommand() *cli.Command {
 					Debug("finish hotfix")
 			}()
 			hotfixBranchName := c.String("hotfix_branch_name")
-			return getFlow(c).HotfixFinish(hotfixBranchName)
+			opc := getOpHotfixContext(c)
+			return getFlow(c).HotfixFinish(opc, hotfixBranchName)
 		},
 	}
 }
