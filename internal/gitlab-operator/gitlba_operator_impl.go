@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/errors"
 	gogitlab "github.com/xanzy/go-gitlab"
 	"github.com/yeqown/log"
@@ -149,6 +150,7 @@ func (g gitlabOperator) GetMilestoneMergeRequests(
 	for _, v := range mrs {
 		result.Data = append(result.Data, MergeRequestShort{
 			ID:           v.ID,
+			IID:          v.IID,
 			Title:        v.Title,
 			Description:  v.Description,
 			WebURL:       v.WebURL,
@@ -288,21 +290,57 @@ func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMerge
 
 	return &CreateMergeResult{
 		ID:     mr.ID,
+		IID:    mr.IID,
 		WebURL: mr.WebURL,
 	}, nil
 }
 
-func (g gitlabOperator) MergeMergeRequest(ctx context.Context, req *MergeMergeRequest) error {
+func (g gitlabOperator) MergeMergeRequest(ctx context.Context, req *MergeMergeRequest, retries int) error {
 	opt := &gogitlab.AcceptMergeRequestOptions{
-		//MergeCommitMessage:        nil,
-		//SquashCommitMessage:       nil,
-		//Squash:                    nil,
-		//ShouldRemoveSourceBranch:  nil,
-		//MergeWhenPipelineSucceeds: nil,
-		//SHA:                       nil,
+		// MergeCommitMessage:        nil,
+		// SquashCommitMessage:       nil,
+		// Squash:                    nil,
+		// ShouldRemoveSourceBranch:  nil,
+		// MergeWhenPipelineSucceeds: nil,
+		// SHA:                       nil,
 	}
-	_, _, err := g.gitlab.MergeRequests.AcceptMergeRequest(req.ProjectID, req.MergeRequestID, opt)
-	return errors.Wrap(err, "merge merge request failed")
+
+	// construct a backoff strategy with max retries time, and max interval time
+	// if retries is 5, retry internal would be:
+	// 1s, 2s, 4s, 8s, 13s
+	retryBackoff := backoff.NewExponentialBackOff()
+	retryBackoff.MaxElapsedTime = 30 * time.Second
+	retryBackoff.MaxInterval = 5 * time.Second
+	retryBackoff.InitialInterval = 1 * time.Second
+
+	// retryBackoff to merge
+	err := backoff.Retry(func() error {
+		_, _, err := g.gitlab.MergeRequests.AcceptMergeRequest(req.ProjectID, req.MergeRequestID, opt)
+		if err == nil {
+			return nil
+		}
+
+		// analyze error and decide if we should retry
+		// only 406 is allowed to retry.
+		var errResp = new(gogitlab.ErrorResponse)
+		if !errors.As(err, &errResp) {
+			// not a gitlab error response
+			return backoff.Permanent(err)
+		}
+
+		if errResp.Response.StatusCode == 406 {
+			// 406 is not allowed to merge
+			// retry
+			return err
+		}
+		return backoff.Permanent(err)
+	}, retryBackoff)
+
+	if err != nil {
+		return errors.Wrap(err, "merge merge request failed")
+	}
+
+	return nil
 }
 
 func (g gitlabOperator) ListMilestones(ctx context.Context, req *ListMilestoneRequest) (*ListMilestoneResult, error) {

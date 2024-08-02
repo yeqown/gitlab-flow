@@ -23,7 +23,7 @@ type IGitlabOperator interface {
 	// CreateMergeRequest create an merge request on remote repository, but this would check remote
 	// resource if create failed.
 	CreateMergeRequest(ctx context.Context, req *CreateMergeRequest) (*CreateMergeResult, error)
-	MergeMergeRequest(ctx context.Context, req *MergeMergeRequest) error
+	MergeMergeRequest(ctx context.Context, req *MergeMergeRequest, retries int) error
 
 	ListMilestones(ctx context.Context, req *ListMilestoneRequest) (*ListMilestoneResult, error)
 	ListProjects(ctx context.Context, req *ListProjectRequest) (*ListProjectResult, error)
@@ -34,8 +34,8 @@ type CreateBranchRequest struct {
 	TargetBranch string
 	SrcBranch    string
 	ProjectID    int
-	//MilestoneID  int
-	//IssueID      int
+	// MilestoneID  int
+	// IssueID      int
 }
 
 type CreateBranchResult struct {
@@ -80,6 +80,7 @@ type GetMilestoneMergeRequestsResult struct {
 
 type MergeRequestShort struct {
 	ID           int
+	IID          int
 	Title        string
 	Description  string
 	WebURL       string
@@ -130,6 +131,7 @@ type CreateMergeRequest struct {
 
 type CreateMergeResult struct {
 	ID     int
+	IID    int
 	WebURL string
 }
 

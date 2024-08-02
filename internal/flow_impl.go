@@ -523,12 +523,37 @@ func (f flowImpl) Checkout(opc *types.OpFeatureContext, listAll bool, issueID in
 	})
 
 	if listAll {
-		for _, v := range branches {
-			if v.IssueIID == 0 {
-				fmt.Printf(" 🦁\t %s \n", v.BranchName)
+		issues, _ := f.repo.QueryIssues(&repository.IssueDO{
+			ProjectID:   f.ctx.Project().ID,
+			MilestoneID: branch.MilestoneID,
+		})
+
+		getIssueName := func(iid int) (title string) {
+			for _, v := range issues {
+				if v.IssueIID == iid {
+					title = v.Title
+					break
+				}
 			}
-			fmt.Printf(" 🐔 #%d \t %s \n", v.IssueIID, v.BranchName)
+
+			if title != "" {
+				return
+			}
+
+			return "untitled"
 		}
+
+		fmt.Println()
+		fmt.Printf("\t🚀 ISSURE IID \tBRANCH NAME \t\tISSUE NAME\n")
+		for _, v := range branches {
+			issueIDStr := pkg.FormatNum(v.IssueIID, 5)
+			if v.IssueIID == 0 {
+				fmt.Printf("\t🦁 #%s\t%s \t%s\n", issueIDStr, v.BranchName, "*FEATURE-BRANCH")
+				continue
+			}
+			fmt.Printf("\t🐔 #%s\t%s\t%s\n", issueIDStr, v.BranchName, getIssueName(v.IssueIID))
+		}
+		fmt.Println()
 	}
 
 	if issueID != 0 {
@@ -845,13 +870,14 @@ func (f flowImpl) syncFormatResultIntoDO(
 		}
 
 		mrDO = append(mrDO, &repository.MergeRequestDO{
-			ProjectID:      projectID,
-			MilestoneID:    milestoneID,
-			IssueIID:       issueIID,
-			MergeRequestID: mr.ID,
-			SourceBranch:   mr.SourceBranch,
-			TargetBranch:   mr.TargetBranch,
-			WebURL:         mr.WebURL,
+			ProjectID:       projectID,
+			MilestoneID:     milestoneID,
+			IssueIID:        issueIID,
+			MergeRequestID:  mr.ID,
+			MergeRequestIID: mr.IID,
+			SourceBranch:    mr.SourceBranch,
+			TargetBranch:    mr.TargetBranch,
+			WebURL:          mr.WebURL,
 		})
 
 		// featureBranchName
@@ -1050,6 +1076,7 @@ func (f flowImpl) createMergeRequest(
 	log.
 		WithFields(log.Fields{
 			"id":     result.ID,
+			"iid":    result.IID,
 			"source": srcBranch,
 			"target": targetBranch,
 			"url":    result.WebURL,
@@ -1058,23 +1085,25 @@ func (f flowImpl) createMergeRequest(
 		Debug("create mr success")
 
 	if autoMerge {
-		if err = f.gitlabOperator.MergeMergeRequest(ctx, &gitlabop.MergeMergeRequest{
+		req := &gitlabop.MergeMergeRequest{
 			ProjectID:      f.ctx.Project().ID,
-			MergeRequestID: result.ID,
-		}); err != nil {
-			log.WithFields(log.Fields{"mergeRequestID": result.ID, "URL": result.WebURL}).
+			MergeRequestID: result.IID,
+		}
+		if err = f.gitlabOperator.MergeMergeRequest(ctx, req, 5); err != nil {
+			log.WithFields(log.Fields{"mergeRequestID": result.ID, "URL": result.WebURL, "mergeRequestIID": result.IID}).
 				Warnf("auto merge failed: %v", err)
 		}
 	}
 
 	if err = f.repo.SaveMergeRequest(&repository.MergeRequestDO{
-		ProjectID:      f.ctx.Project().ID,
-		MilestoneID:    milestoneID,
-		IssueIID:       issueIID,
-		MergeRequestID: result.ID,
-		SourceBranch:   srcBranch,
-		TargetBranch:   targetBranch,
-		WebURL:         result.WebURL,
+		ProjectID:       f.ctx.Project().ID,
+		MilestoneID:     milestoneID,
+		IssueIID:        issueIID,
+		MergeRequestID:  result.ID,
+		MergeRequestIID: result.IID,
+		SourceBranch:    srcBranch,
+		TargetBranch:    targetBranch,
+		WebURL:          result.WebURL,
 	}); err != nil {
 		log.
 			WithFields(log.Fields{

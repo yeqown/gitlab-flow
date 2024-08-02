@@ -72,17 +72,15 @@ func ConnectDB(path string, debug bool) func() *gorm2.DB {
 			}).
 			Debug("ConnectDB() called")
 
-		// if first load database then auto migrate tables into database.
-		if init {
-			if err = db.AutoMigrate(
-				&repository.ProjectDO{},
-				&repository.MilestoneDO{},
-				&repository.BranchDO{},
-				&repository.IssueDO{},
-				&repository.MergeRequestDO{},
-			); err != nil {
-				log.Warnf("auto migrate database failed: %v", err)
-			}
+		// @yeqown auto migrate enabled in each connection.
+		if err = db.AutoMigrate(
+			&repository.ProjectDO{},
+			&repository.MilestoneDO{},
+			&repository.BranchDO{},
+			&repository.IssueDO{},
+			&repository.MergeRequestDO{},
+		); err != nil {
+			log.Warnf("auto migrate database failed: %v", err)
 		}
 
 		// db logger SetLogLevel
