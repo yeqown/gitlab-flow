@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/yeqown/gitlab-flow/internal/repository"
-
-	"github.com/cenkalti/backoff/v4"
-	"github.com/mattn/go-sqlite3"
+	backoff "github.com/cenkalti/backoff/v4"
+	sqlite3 "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 	"gorm.io/driver/sqlite"
 	gorm2 "gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/yeqown/gitlab-flow/internal/repository"
 )
 
 func init() {
@@ -72,17 +72,15 @@ func ConnectDB(path string, debug bool) func() *gorm2.DB {
 			}).
 			Debug("ConnectDB() called")
 
-		// if first load database then auto migrate tables into database.
-		if init {
-			if err = db.AutoMigrate(
-				&repository.ProjectDO{},
-				&repository.MilestoneDO{},
-				&repository.BranchDO{},
-				&repository.IssueDO{},
-				&repository.MergeRequestDO{},
-			); err != nil {
-				log.Warnf("auto migrate database failed: %v", err)
-			}
+		// @yeqown auto migrate enabled in each connection.
+		if err = db.AutoMigrate(
+			&repository.ProjectDO{},
+			&repository.MilestoneDO{},
+			&repository.BranchDO{},
+			&repository.IssueDO{},
+			&repository.MergeRequestDO{},
+		); err != nil {
+			log.Warnf("auto migrate database failed: %v", err)
 		}
 
 		// db logger SetLogLevel
@@ -258,6 +256,20 @@ func (repo *sqliteFlowRepositoryImpl) QueryBranch(filter *repository.BranchDO) (
 		First(out).Error
 
 	return out, err
+}
+
+func (repo *sqliteFlowRepositoryImpl) QueryBranches(filter *repository.BranchDO) ([]*repository.BranchDO, error) {
+	out := make([]*repository.BranchDO, 0, 10)
+	err := repo.db.
+		Model(filter).
+		Order("created_at DESC").
+		Where(filter).
+		Find(&out).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 func (repo *sqliteFlowRepositoryImpl) SaveIssue(m *repository.IssueDO, txs ...*gorm2.DB) (err error) {

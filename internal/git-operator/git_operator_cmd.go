@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
 	"github.com/yeqown/log"
 )
 
@@ -95,9 +94,9 @@ func (c operatorBasedCmd) run1(dir string, cmdline string, keyvalPairs []string)
 
 // Checkout local branch and control whether create a new branch or not.
 // DONE(@yeqown) use `b` parameter.
-func (c operatorBasedCmd) Checkout(branchName string, b bool) error {
+func (c operatorBasedCmd) Checkout(branchName string, create bool) error {
 	createFlag := ""
-	if b {
+	if create {
 		createFlag = "-b"
 	}
 	return c.run(c.dir, c.checkoutCmd, "createFlag", createFlag, "branch", branchName)

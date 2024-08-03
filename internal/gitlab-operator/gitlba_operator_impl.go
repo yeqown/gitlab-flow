@@ -149,6 +149,7 @@ func (g gitlabOperator) GetMilestoneMergeRequests(
 	for _, v := range mrs {
 		result.Data = append(result.Data, MergeRequestShort{
 			ID:           v.ID,
+			IID:          v.IID,
 			Title:        v.Title,
 			Description:  v.Description,
 			WebURL:       v.WebURL,
@@ -236,6 +237,11 @@ func (g gitlabOperator) CreateIssue(ctx context.Context, req *CreateIssueRequest
 
 func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMergeRequest) (*CreateMergeResult, error) {
 	_ = ctx
+	approvals := 1
+	if req.AutoMerge {
+		approvals = 0
+	}
+
 	opt5 := &gogitlab.CreateMergeRequestOptions{
 		Title:        &req.Title,
 		Description:  &req.Desc,
@@ -246,6 +252,7 @@ func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMerge
 		// AssigneeIDs:        nil,
 		// TargetProjectID:    nil,
 		// RemoveSourceBranch: true,
+		ApprovalsBeforeMerge: &approvals,
 	}
 	mr, _, err := g.gitlab.MergeRequests.CreateMergeRequest(req.ProjectID, opt5)
 	if err != nil || mr == nil {
@@ -282,8 +289,27 @@ func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMerge
 
 	return &CreateMergeResult{
 		ID:     mr.ID,
+		IID:    mr.IID,
 		WebURL: mr.WebURL,
 	}, nil
+}
+
+func (g gitlabOperator) MergeMergeRequest(ctx context.Context, req *MergeMergeRequest) error {
+	opt := &gogitlab.AcceptMergeRequestOptions{
+		// MergeCommitMessage:        nil,
+		// SquashCommitMessage:       nil,
+		// Squash:                    nil,
+		// ShouldRemoveSourceBranch:  nil,
+		// MergeWhenPipelineSucceeds: nil,
+		// SHA:                       nil,
+	}
+
+	_, _, err := g.gitlab.MergeRequests.AcceptMergeRequest(req.ProjectID, req.MergeRequestID, opt)
+	if err != nil {
+		return errors.Wrap(err, "merge merge request failed")
+	}
+
+	return nil
 }
 
 func (g gitlabOperator) ListMilestones(ctx context.Context, req *ListMilestoneRequest) (*ListMilestoneResult, error) {

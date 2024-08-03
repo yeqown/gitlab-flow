@@ -24,6 +24,7 @@ type IFlowRepository interface {
 	SaveBranch(m *BranchDO, txs ...*gorm2.DB) error
 	BatchCreateBranch(records []*BranchDO, txs ...*gorm2.DB) error
 	QueryBranch(filter *BranchDO) (*BranchDO, error)
+	QueryBranches(filter *BranchDO) ([]*BranchDO, error)
 
 	SaveIssue(m *IssueDO, txs ...*gorm2.DB) error
 	BatchCreateIssue(records []*IssueDO, txs ...*gorm2.DB) error
@@ -109,13 +110,14 @@ func (m *IssueDO) TableName() string {
 type MergeRequestDO struct {
 	gorm2.Model
 
-	ProjectID      int    `gorm:"column:project_id"`
-	MilestoneID    int    `gorm:"column:milestone_id"`
-	IssueIID       int    `gorm:"column:issue_iid"`
-	MergeRequestID int    `gorm:"column:merge_request_id"`
-	SourceBranch   string `gorm:"column:source_branch"`
-	TargetBranch   string `gorm:"column:target_branch"`
-	WebURL         string `gorm:"column:web_url"`
+	ProjectID       int    `gorm:"column:project_id"`
+	MilestoneID     int    `gorm:"column:milestone_id"`
+	IssueIID        int    `gorm:"column:issue_iid"`
+	MergeRequestID  int    `gorm:"column:merge_request_id"`  // merge request ID
+	MergeRequestIID int    `gorm:"column:merge_request_iid"` // merge request IID (internal ID)
+	SourceBranch    string `gorm:"column:source_branch"`
+	TargetBranch    string `gorm:"column:target_branch"`
+	WebURL          string `gorm:"column:web_url"`
 }
 
 func (m *MergeRequestDO) TableName() string {
