@@ -23,7 +23,7 @@ type IGitlabOperator interface {
 	// CreateMergeRequest create an merge request on remote repository, but this would check remote
 	// resource if create failed.
 	CreateMergeRequest(ctx context.Context, req *CreateMergeRequest) (*CreateMergeResult, error)
-	MergeMergeRequest(ctx context.Context, req *MergeMergeRequest, retries int) error
+	MergeMergeRequest(ctx context.Context, req *MergeMergeRequest) error
 
 	ListMilestones(ctx context.Context, req *ListMilestoneRequest) (*ListMilestoneResult, error)
 	ListProjects(ctx context.Context, req *ListProjectRequest) (*ListProjectResult, error)

@@ -6,9 +6,12 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
+	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
+	gogitlab "github.com/xanzy/go-gitlab"
 	"github.com/yeqown/log"
 
 	"github.com/yeqown/gitlab-flow/internal/conf"
@@ -1085,11 +1088,7 @@ func (f flowImpl) createMergeRequest(
 		Debug("create mr success")
 
 	if autoMerge {
-		req := &gitlabop.MergeMergeRequest{
-			ProjectID:      f.ctx.Project().ID,
-			MergeRequestID: result.IID,
-		}
-		if err = f.gitlabOperator.MergeMergeRequest(ctx, req, 5); err != nil {
+		if err = f.autoMergeMR(ctx, result.IID); err != nil {
 			log.WithFields(log.Fields{"mergeRequestID": result.ID, "URL": result.WebURL, "mergeRequestIID": result.IID}).
 				Warnf("auto merge failed: %v", err)
 		}
@@ -1113,6 +1112,48 @@ func (f flowImpl) createMergeRequest(
 	}
 
 	return result, nil
+}
+
+func (f flowImpl) autoMergeMR(ctx context.Context, mergeRequestIID int) error {
+	req := &gitlabop.MergeMergeRequest{
+		ProjectID:      f.ctx.Project().ID,
+		MergeRequestID: mergeRequestIID,
+	}
+
+	// construct a backoff strategy with max retries time (5), and max interval(13s)
+	// if retries is 5, retry internal would be:
+	// 1s, 2s, 4s, 8s, 13s
+	retryBackoff := backoff.NewExponentialBackOff()
+	retryBackoff.MaxElapsedTime = 28 * time.Second // 1 + 2 + 4 + 8 + 13 = 28
+	retryBackoff.MaxInterval = 5 * time.Second
+	retryBackoff.InitialInterval = 1 * time.Second
+
+	// retryBackoff to merge
+	retries := 0
+	err := backoff.Retry(func() error {
+		err := f.gitlabOperator.MergeMergeRequest(ctx, req)
+		if err == nil {
+			return nil
+		}
+
+		retries++
+		// analyze error and decide if we should retry
+		// only 406 is allowed to retry.
+		var errResp = new(gogitlab.ErrorResponse)
+		if !errors.As(err, &errResp) {
+			// not a gogitlab.ErrorResponse type, so we should not retry.
+			return backoff.Permanent(err)
+		}
+
+		if errResp.Response.StatusCode == 406 {
+			// 406 is not allowed to merge, since it's not ready. so we should retry.
+			log.Infof("auto merge failed(%s), retrying... %d", errResp.Message, retries)
+			return err
+		}
+		return backoff.Permanent(err)
+	}, retryBackoff)
+
+	return err
 }
 
 // featureProcessMR is a process for creating a merge request for feature branch to target branch. If
@@ -1172,6 +1213,7 @@ featureCreateMR:
 const _printTpl = `
 	👽 Title: %s
 	🤡 URL	: %s
+
 `
 
 // printAndOpenBrowser print WebURL into stdout and open web browser.
