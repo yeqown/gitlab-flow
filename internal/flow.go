@@ -16,6 +16,12 @@ import (
 
 // IFlow to control branches, MRs, milestones and issues.
 type IFlow interface {
+	IFeature
+	IHotfix
+	ISync
+}
+
+type IFeature interface {
 	// FeatureBegin open a milestone and related to a feature branch,
 	// then CLI would automate fetch origin branches and pull them to local.
 	// Of course, flow would save data in local storage.
@@ -43,13 +49,17 @@ type IFlow interface {
 	// default is to check out feature branch. It would list all branches if --list is set.
 	// It would interact with user to choose which branch to check out if --issue is set.
 	Checkout(opc *types.OpFeatureContext, listAll bool, issueID int)
+}
 
+type IHotfix interface {
 	// HotfixBegin checkout a hotfix branch from types.MasterBranch, also open a merge request
 	// which is from hotfix branch to types.MasterBranch.
 	HotfixBegin(opc *types.OpHotfixContext, title, desc string) error
 	// HotfixFinish open the WebURL of merge request which is from hotfix branch to types.MasterBranch.
 	HotfixFinish(opc *types.OpHotfixContext, hotfixBranchName string) error
+}
 
+type ISync interface {
 	// SyncProject synchronize project information from remote gitlab server.
 	SyncProject(isDelete bool) error
 	// SyncMilestone synchronize remote repository milestone and related issues / merge requests to local.
