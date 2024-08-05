@@ -48,7 +48,8 @@ func setupCommands(app *cli.App) {
 	}
 
 	app.Commands = []*cli.Command{
-		getInitCommand(),
+		// getInitCommand(),
+		getConfigCommand(),
 		getFeatureCommand(),
 		getHotfixCommand(),
 		getDashCommand(),

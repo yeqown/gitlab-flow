@@ -110,6 +110,12 @@ func getDash(c *cli.Context) internal.IDash {
 	return internal.NewDash(ctx)
 }
 
+func getConfig(c *cli.Context) internal.IConfig {
+	flags := parseGlobalFlags(c)
+	ctx := resolveFlags(flags)
+	return internal.NewConfig(ctx)
+}
+
 // resolveFlags set global environment of debug mode.
 // DONE(@yeqown): apply project name from CLI and CWD.
 // DONE(@yeqown): CWD could be configured from CLI.

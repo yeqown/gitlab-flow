@@ -2,13 +2,140 @@ package main
 
 import (
 	"net/url"
+	"os"
 
 	survey "github.com/AlecAivazis/survey/v2"
 	"github.com/pkg/errors"
+	cli "github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
 
+	"github.com/yeqown/gitlab-flow/internal"
+	"github.com/yeqown/gitlab-flow/internal/conf"
+	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 	"github.com/yeqown/gitlab-flow/internal/types"
 )
+
+func getConfigSubCommands() []*cli.Command {
+	return []*cli.Command{
+		getConfigInitCommand(),
+		getConfigShowCommand(),
+		getConfigEditCommand(),
+	}
+}
+
+// getConfigInitCommand initialize configuration gitlab-flow, generate default config file and sqlite DB
+// related to the path. This command interact with user to get configuration.
+// Usage: gitlab-flow [flags] config init
+func getConfigInitCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "init",
+		Usage: "initialize configuration gitlab-flow, generate default config file and sqlite DB",
+		Action: func(c *cli.Context) error {
+			confPath := c.String("conf")
+			cfg, err := conf.Load(confPath, nil)
+			if err != nil {
+				if !errors.Is(err, os.ErrNotExist) {
+					panic("load config file failed: " + err.Error())
+				}
+
+				cfg = conf.Default()
+			}
+
+			// Prompt user to input configuration
+			if err = surveyConfig(cfg, true, true, true); err != nil {
+				log.Errorf("failed to survey config: %v", err)
+				return err
+			}
+
+			// DONE(@yeqown): refresh user's access token
+			support := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
+				Host:         cfg.GitlabHost,
+				ServeAddr:    cfg.OAuth2.CallbackHost,
+				AccessToken:  "", // empty
+				RefreshToken: "", // empty
+				Scopes:       cfg.OAuth2.Scopes,
+			})
+			if err = support.Enter(""); err != nil {
+				log.
+					WithFields(log.Fields{"config": cfg}).
+					Error("gitlab-flow initialize.oauth failed:", err)
+				return err
+			}
+			cfg.OAuth2.AccessToken, cfg.OAuth2.RefreshToken = support.Load()
+
+			if err = conf.Save(confPath, cfg, nil); err != nil {
+				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
+				return err
+			}
+
+			log.Infof("gitlab-flow has initialized. conf path is %s", confPath)
+			return nil
+		},
+	}
+}
+
+// getConfigShowCommand show current configuration in the terminal.
+// Usage: gitlab-flow [flags] config show
+// Default print the project configuration, if it is not exist, print the default(global) configuration.
+func getConfigShowCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "show",
+		Usage: "show current configuration",
+		Action: func(c *cli.Context) error {
+
+			flags := parseGlobalFlags(c)
+			ctx := resolveFlags(flags)
+
+			cc := internal.NewConfig(ctx)
+			cfg, ok, err := cc.SearchAndMerge()
+			_, _ = cfg, ok
+
+			// TODO: implement this
+
+			if err != nil {
+				log.Errorf("search and merge configuration failed: %v", err)
+				return errors.Wrap(err, "search and merge configuration failed")
+			}
+
+			return nil
+		},
+	}
+}
+
+// getConfigEditCommand edit current configuration in the terminal, interact with user to get configuration.
+// Usage: gitlab-flow [flags] config edit
+// Currently, only support to edit the project configuration, and branch setting.
+func getConfigEditCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "edit",
+		Usage: "edit current configuration",
+		Action: func(c *cli.Context) error {
+			flags := parseGlobalFlags(c)
+			ctx := resolveFlags(flags)
+
+			cc := internal.NewConfig(ctx)
+			cfg, ok, err := cc.SearchAndMerge()
+			_, _ = cfg, ok
+			if err != nil {
+				log.Errorf("search and merge configuration failed: %v", err)
+				return errors.Wrap(err, "search and merge configuration failed")
+			}
+
+			// Prompt user to input configuration
+			if err = surveyConfig(cfg, false, false, true); err != nil {
+				log.Errorf("failed to survey config: %v", err)
+				return err
+			}
+
+			if err = cc.Save(ctx.ConfPath(), cfg); err != nil {
+				log.Errorf("save configuration failed: %v", err)
+				return errors.Wrap(err, "save configuration failed")
+			}
+
+			return nil
+		},
+	}
+}
 
 func buildGitlabQuestions(cfg *types.Config) []*survey.Question {
 	return []*survey.Question{
@@ -127,7 +254,7 @@ func buildBranchQuestions(cfg *types.Config) []*survey.Question {
 
 // surveyConfig initialize configuration in an interactive session.
 // DONE(@yeqown): init flow2 in survey method.
-func surveyConfig(cfg *types.Config) error {
+func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error {
 	log.
 		WithField("config", cfg).
 		Debug("surveyConfig called")
