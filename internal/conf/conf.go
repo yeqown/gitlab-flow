@@ -6,20 +6,16 @@
 package conf
 
 import (
-	"bytes"
 	_ "embed"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
-	"sync"
 	"text/template"
 
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 
 	"github.com/yeqown/gitlab-flow/internal/types"
-	"github.com/yeqown/gitlab-flow/pkg"
 )
 
 const (
@@ -56,6 +52,10 @@ var (
 	//go:embed config.tpl
 	configTemplateContent string
 	configTpl             = template.Must(template.New("config").Parse(configTemplateContent))
+
+	//go:embed config.project.tpl
+	projectConfigTemplateContent string
+	projectConfigTpl             = template.Must(template.New("project_config").Parse(projectConfigTemplateContent))
 )
 
 // Parser is an interface to parse config in different ways.
@@ -93,8 +93,7 @@ func Load(confPath string, parser Parser) (cfg *types.Config, err error) {
 	return cfg, err
 }
 
-// Save to save config with specified parser.
-func Save(confPath string, cfg *types.Config, _ Parser) error {
+func Save(confPath string, cfg *types.Config, global bool) error {
 	p := precheckConfigDirectory(confPath)
 	w, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
@@ -104,7 +103,14 @@ func Save(confPath string, cfg *types.Config, _ Parser) error {
 		_ = w.Close()
 	}()
 
-	if err = configTpl.Execute(w, cfg); err != nil {
+	var tpl *template.Template
+	if global {
+		tpl = configTpl
+	} else {
+		tpl = projectConfigTpl
+	}
+
+	if err = tpl.Execute(w, cfg); err != nil {
 		return errors.Wrap(err, "execute template")
 	}
 
@@ -117,14 +123,18 @@ func Default() *types.Config {
 	return defaultConf
 }
 
-func DefaultConfPath() string {
-	// generate default config directory
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Errorf("get user home failed: %v", err)
+func ConfigPath(parent string) string {
+	if parent == "" {
+		// generate default config directory
+		home, err := os.UserHomeDir()
+		if err != nil {
+			log.Errorf("get user home failed: %v", err)
+		}
+		parent = home
 	}
 
-	configDirectory := filepath.Join(home, defaultConfigDirectoryName)
+	var err error
+	configDirectory := filepath.Join(parent, defaultConfigDirectoryName)
 	if _, err = os.Stat(configDirectory); err == nil {
 		return configDirectory
 	}
@@ -138,37 +148,6 @@ func DefaultConfPath() string {
 	}
 
 	return configDirectory
-}
-
-var (
-	_defaultCWD     string
-	_defaultCwdOnce sync.Once
-)
-
-// DefaultCWD returns the working directory of current project, default cwd is from
-// git rev-parse --show-toplevel command, but if the command could not execute successfully,
-// `pwd` command will be used instead.
-func DefaultCWD() string {
-	_defaultCwdOnce.Do(func() {
-		w := bytes.NewBuffer(nil)
-		if err := pkg.RunOutput("git rev-parse --show-toplevel", w); err != nil {
-			log.Debug("pre-exec 'git rev-parse --show-toplevel' failed:")
-			log.Debugf("%s\n", err)
-		}
-
-		if s := w.String(); s != "" {
-			_defaultCWD = s
-		}
-
-		if _defaultCWD == "" {
-			_defaultCWD, _ = os.Getwd()
-		}
-
-		_defaultCWD = strings.Trim(_defaultCWD, "\n")
-		_defaultCWD = strings.Trim(_defaultCWD, "\t")
-	})
-
-	return _defaultCWD
 }
 
 // precheckConfigDirectory could parse filename and path from configDirectory.

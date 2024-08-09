@@ -14,7 +14,6 @@ import (
 	gogitlab "github.com/xanzy/go-gitlab"
 	"github.com/yeqown/log"
 
-	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitop "github.com/yeqown/gitlab-flow/internal/git-operator"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 	"github.com/yeqown/gitlab-flow/internal/repository"
@@ -43,7 +42,7 @@ var (
 // checkOAuthAccessToken check access token is valid or not. If access token becomes invalid
 // then refresh it, if refresh failed, it leads to  re-authorize.
 func checkOAuthAccessToken(ctx *types.FlowContext) {
-	c, _ := conf.Load(ctx.ConfPath(), nil)
+	c := ctx.Config()
 	oauth := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
 		Host:         c.GitlabHost,
 		ServeAddr:    c.OAuth2.CallbackHost,
@@ -53,9 +52,7 @@ func checkOAuthAccessToken(ctx *types.FlowContext) {
 	})
 	if err := oauth.Enter(c.OAuth2.RefreshToken); err != nil {
 		log.
-			WithFields(log.Fields{
-				"config": c,
-			}).
+			WithFields(log.Fields{"config": c}).
 			Errorf("NewGitlabOperator could not renew token: %v", err)
 		panic(err)
 	}
@@ -67,18 +64,9 @@ func checkOAuthAccessToken(ctx *types.FlowContext) {
 	// update context oauth configuration
 	ctx.GetOAuth().AccessToken = accessToken
 	ctx.GetOAuth().RefreshToken = refreshToken
-
-	if err := conf.Save(ctx.ConfPath(), c, nil); err != nil {
-		log.
-			WithFields(log.Fields{
-				"config": c,
-				"error":  err,
-			}).
-			Error("checkOAuthAccessToken failed to save")
-	}
 }
 
-func NewFlow(ctx *types.FlowContext) IFlow {
+func NewFlow(ctx *types.FlowContext, ch IConfigHelper) IFlow {
 	if ctx == nil {
 		log.Fatal("empty FlowContext initialized")
 		panic("can not reach")
@@ -89,12 +77,16 @@ func NewFlow(ctx *types.FlowContext) IFlow {
 		Debugf("constructing flow")
 
 	checkOAuthAccessToken(ctx)
+	target, err := ch.Save(ctx.Config(), true)
+	if err != nil {
+		log.Debugf("checkOAuthAccessToken update access token into: %s failed: %v", target, err)
+	}
 
 	flow := &flowImpl{
 		ctx:            ctx,
 		gitlabOperator: gitlabop.NewGitlabOperator(ctx.GetOAuth().AccessToken, ctx.APIEndpoint()),
 		gitOperator:    gitop.NewBasedCmd(ctx.CWD()),
-		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.IsDebug())),
+		repo:           impl.NewBasedSqlite3(impl.ConnectDB(ch.Context().GlobalConfPath, ctx.IsDebug())),
 	}
 
 	// if flowContext has NONE project information, so we need to fill it.
@@ -1213,7 +1205,6 @@ featureCreateMR:
 const _printTpl = `
 	👽 Title: %s
 	🤡 URL	: %s
-
 `
 
 // printAndOpenBrowser print WebURL into stdout and open web browser.

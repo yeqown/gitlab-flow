@@ -1,15 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 
 	survey "github.com/AlecAivazis/survey/v2"
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
 
-	"github.com/yeqown/gitlab-flow/internal"
 	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 	"github.com/yeqown/gitlab-flow/internal/types"
@@ -31,44 +32,59 @@ func getConfigInitCommand() *cli.Command {
 		Name:  "init",
 		Usage: "initialize configuration gitlab-flow, generate default config file and sqlite DB",
 		Action: func(c *cli.Context) error {
-			confPath := c.String("conf")
-			cfg, err := conf.Load(confPath, nil)
+			global := c.Bool("global")
+			project := c.Bool("project")
+			if global && project {
+				log.Error("only one of global and project could be true")
+				return nil
+			}
+
+			flags := parseGlobalFlags(c)
+			ch, err := getConfigHelper(flags)
+			var cfg *types.Config
 			if err != nil {
 				if !errors.Is(err, os.ErrNotExist) {
 					panic("load config file failed: " + err.Error())
 				}
-
 				cfg = conf.Default()
 			}
 
 			// Prompt user to input configuration
-			if err = surveyConfig(cfg, true, true, true); err != nil {
+			if global {
+				err = surveyConfig(cfg, true, true, true)
+			} else {
+				err = surveyConfig(cfg, false, false, true)
+			}
+			if err != nil {
 				log.Errorf("failed to survey config: %v", err)
 				return err
 			}
 
-			// DONE(@yeqown): refresh user's access token
-			support := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
-				Host:         cfg.GitlabHost,
-				ServeAddr:    cfg.OAuth2.CallbackHost,
-				AccessToken:  "", // empty
-				RefreshToken: "", // empty
-				Scopes:       cfg.OAuth2.Scopes,
-			})
-			if err = support.Enter(""); err != nil {
-				log.
-					WithFields(log.Fields{"config": cfg}).
-					Error("gitlab-flow initialize.oauth failed:", err)
-				return err
+			if global {
+				// DONE(@yeqown): refresh user's access token
+				support := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
+					Host:         cfg.GitlabHost,
+					ServeAddr:    cfg.OAuth2.CallbackHost,
+					AccessToken:  "", // empty
+					RefreshToken: "", // empty
+					Scopes:       cfg.OAuth2.Scopes,
+				})
+				if err = support.Enter(""); err != nil {
+					log.
+						WithFields(log.Fields{"config": cfg}).
+						Error("gitlab-flow initialize.oauth failed:", err)
+					return err
+				}
+				cfg.OAuth2.AccessToken, cfg.OAuth2.RefreshToken = support.Load()
 			}
-			cfg.OAuth2.AccessToken, cfg.OAuth2.RefreshToken = support.Load()
 
-			if err = conf.Save(confPath, cfg, nil); err != nil {
+			target, err := ch.Save(cfg, global)
+			if err != nil {
 				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
 				return err
 			}
 
-			log.Infof("gitlab-flow has initialized. conf path is %s", confPath)
+			log.Infof("gitlab-flow has initialized into %s", target)
 			return nil
 		},
 	}
@@ -81,21 +97,88 @@ func getConfigShowCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "show",
 		Usage: "show current configuration",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "raw",
+				Aliases:     []string{"r"},
+				Usage:       "show raw configuration",
+				DefaultText: "true",
+				Value:       true,
+			},
+			&cli.StringFlag{
+				Name:        "output",
+				Aliases:     []string{"o"},
+				Usage:       "output configuration to file, support json/toml format. not support yet",
+				DefaultText: "none",
+				Value:       "none",
+			},
+		},
 		Action: func(c *cli.Context) error {
+			global := c.Bool("global")
+			project := c.Bool("project")
+			if global && project {
+				log.Error("only one of global and project could be true")
+				return nil
+			}
 
 			flags := parseGlobalFlags(c)
-			ctx := resolveFlags(flags)
-
-			cc := internal.NewConfig(ctx)
-			cfg, ok, err := cc.SearchAndMerge()
-			_, _ = cfg, ok
-
-			// TODO: implement this
-
+			ch, err := getConfigHelper(flags)
 			if err != nil {
-				log.Errorf("search and merge configuration failed: %v", err)
-				return errors.Wrap(err, "search and merge configuration failed")
+				log.Errorf("preload configuration failed: %v", err)
+				return nil
 			}
+
+			var (
+				cfg *types.Config
+			)
+
+			// Display project configuration by default.
+			cfg, err = ch.Project(true)
+			if global {
+				cfg, err = ch.Global()
+			}
+			if cfg == nil || err != nil {
+				log.Errorf("could not get configuration with err: %v", err)
+				return nil
+			}
+
+			// Branch settings
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"Module", "Setting", "Value"})
+			data := [][]string{
+				{"Branch Settings", "Master", cfg.Branch.Master.String()},
+				{"Branch Settings", "Dev", cfg.Branch.Dev.String()},
+				{"Branch Settings", "Test", cfg.Branch.Test.String()},
+				{"Branch Settings", "Feature Branch Prefix", cfg.Branch.FeatureBranchPrefix},
+				{"Branch Settings", "Hotfix Branch Prefix", cfg.Branch.HotfixBranchPrefix},
+				{"Branch Settings", "Conflict Branch Prefix", cfg.Branch.ConflictResolveBranchPrefix},
+				{"Branch Settings", "Issue Branch Prefix", cfg.Branch.IssueBranchPrefix},
+
+				{"Gitlab OAuth2", "Callback Host", cfg.OAuth2.CallbackHost},
+				{"Gitlab OAuth2", "Access Token", cfg.OAuth2.AccessToken},
+				{"Gitlab OAuth2", "Refresh Token", cfg.OAuth2.RefreshToken},
+
+				{"Gitlab", "API Endpoint", cfg.GitlabAPIURL},
+				{"Gitlab", "Host", cfg.GitlabHost},
+
+				{"Flags", "Debug", fmt.Sprintf("%v", cfg.DebugMode)},
+				{"Flags", "Auto Open Browser", fmt.Sprintf("%v", cfg.OpenBrowser)},
+			}
+			table.SetAutoMergeCells(true)
+			// table.SetHeaderColor(
+			// 	tablewriter.Colors{tablewriter.Bold, tablewriter.BgGreenColor},
+			// 	tablewriter.Colors{tablewriter.Bold, tablewriter.BgGreenColor},
+			// 	tablewriter.Colors{tablewriter.Bold, tablewriter.BgGreenColor},
+			// )
+
+			table.SetColumnColor(
+				tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiGreenColor},
+				tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiBlackColor},
+				tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
+			)
+			table.AppendBulk(data)
+
+			table.Render()
 
 			return nil
 		},
@@ -110,28 +193,50 @@ func getConfigEditCommand() *cli.Command {
 		Name:  "edit",
 		Usage: "edit current configuration",
 		Action: func(c *cli.Context) error {
-			flags := parseGlobalFlags(c)
-			ctx := resolveFlags(flags)
+			global := c.Bool("global")
+			project := c.Bool("project")
+			if global && project {
+				log.Error("only one of global and project could be true")
+				return nil
+			}
 
-			cc := internal.NewConfig(ctx)
-			cfg, ok, err := cc.SearchAndMerge()
-			_, _ = cfg, ok
+			flags := parseGlobalFlags(c)
+			ch, err := getConfigHelper(flags)
 			if err != nil {
-				log.Errorf("search and merge configuration failed: %v", err)
-				return errors.Wrap(err, "search and merge configuration failed")
+				log.Errorf("preload configuration failed: %v", err)
+				return errors.Wrap(err, "preload configuration failed")
+			}
+
+			cfg, err := ch.Project(true)
+			if global {
+				cfg, err = ch.Global()
+			}
+			if cfg == nil || err != nil {
+				log.Error("could not get configuration")
+				return errors.New("could not get configuration")
 			}
 
 			// Prompt user to input configuration
-			if err = surveyConfig(cfg, false, false, true); err != nil {
+			if global {
+				log.Info("You're editing global configuration !")
+				// DO NOT Merge the project configuration into global configuration
+				err = surveyConfig(cfg, true, true, true)
+			} else {
+				log.Info("You're editing project configuration!")
+				err = surveyConfig(cfg, false, false, true)
+			}
+			if err != nil {
 				log.Errorf("failed to survey config: %v", err)
 				return err
 			}
 
-			if err = cc.Save(ctx.ConfPath(), cfg); err != nil {
-				log.Errorf("save configuration failed: %v", err)
-				return errors.Wrap(err, "save configuration failed")
+			target, err := ch.Save(cfg, global)
+			if err != nil {
+				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
+				return err
 			}
 
+			log.Infof("gitlab-flow configuration has been updated successfully: %s", target)
 			return nil
 		},
 	}
@@ -264,9 +369,19 @@ func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error 
 	}
 
 	questions := make([]*survey.Question, 0, 8)
-	questions = append(questions, buildGitlabQuestions(cfg)...)
-	questions = append(questions, buildFlagsQuestions(cfg)...)
-	questions = append(questions, buildBranchQuestions(cfg)...)
+	if askGitlab {
+		questions = append(questions, buildGitlabQuestions(cfg)...)
+	}
+	if askFlags {
+		questions = append(questions, buildFlagsQuestions(cfg)...)
+	}
+	if askBranch {
+		questions = append(questions, buildBranchQuestions(cfg)...)
+	}
+
+	if len(questions) == 0 {
+		return nil
+	}
 
 	ans := new(answer)
 	err := survey.Ask(questions, ans)

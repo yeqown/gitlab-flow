@@ -25,7 +25,7 @@ type dashImpl struct {
 	gitOperator gitop.IGitOperator
 }
 
-func NewDash(ctx *types.FlowContext) IDash {
+func NewDash(ctx *types.FlowContext, ch IConfigHelper) IDash {
 	if ctx == nil {
 		log.Fatal("empty FlowContext initialized")
 		panic("can not reach")
@@ -37,7 +37,7 @@ func NewDash(ctx *types.FlowContext) IDash {
 
 	dash := dashImpl{
 		ctx:         ctx,
-		repo:        impl.NewBasedSqlite3(impl.ConnectDB(ctx.ConfPath(), ctx.IsDebug())),
+		repo:        impl.NewBasedSqlite3(impl.ConnectDB(ch.Context().GlobalConfPath, ctx.IsDebug())),
 		gitOperator: gitop.NewBasedCmd(ctx.CWD()),
 	}
 
