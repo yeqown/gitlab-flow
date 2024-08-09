@@ -18,6 +18,6 @@ func Example_save() {
 }
 
 func Test_Config_Template(t *testing.T) {
-	err := Save(".", defaultConf, nil)
+	err := Save(".", defaultConf, true)
 	assert.NoError(t, err)
 }

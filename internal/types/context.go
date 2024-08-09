@@ -1,9 +1,7 @@
 package types
 
 import (
-	"os"
 	"path"
-
 	"github.com/yeqown/log"
 )
 
@@ -17,18 +15,19 @@ type ProjectBasics struct {
 // FlowContext contains all necessary parameters of flow command to execute.
 // SHOULD NOT export context attributes to another package.
 type FlowContext struct {
-	oauth *OAuth
+	mergedConfig *Config
+
+	// oauth *OAuth
+	// // gitlabAPIUrl represents gitlab API endpoint.
+	// gitlabAPIUrl string
+
 	// project of current working directory, normally,
 	// get from current working directory.
 	project *ProjectBasics
 	// cwd represents current working directory.
 	cwd string
-	// gitlabAPIUrl represents gitlab API endpoint.
-	gitlabAPIUrl string
 	// projectName the actual name of project.
 	projectName string
-	// confPath of configuration file path.
-	confPath string
 	// forceRemote force choose load project from remote(gitlab) rather than local.
 	forceRemote bool
 	// debug indicates whether gitlab-flow print more detail logs.
@@ -38,34 +37,41 @@ type FlowContext struct {
 
 // NewContext be generated with non project information.
 // Do not use Project directly!!!
-func NewContext(cwd, confPath, projectName string, c *Config, forceRemote bool) *FlowContext {
+func NewContext(cwd, projectName string, c *Config, forceRemote bool) *FlowContext {
 	if cwd == "" {
 		panic("cwd could not be empty")
 	}
 
 	ctx := &FlowContext{
-		oauth:        c.OAuth2,
-		gitlabAPIUrl: c.GitlabAPIURL,
+		// oauth:        c.OAuth2,
+		// gitlabAPIUrl: c.GitlabAPIURL,
+		mergedConfig: c,
 		cwd:          cwd,
 		project:      nil,
 		projectName:  "",
-		confPath:     "",
 		forceRemote:  forceRemote,
 		debug:        c.DebugMode,
 		openBrowser:  c.OpenBrowser,
 	}
 
-	ctx.applyConfPath(confPath)
 	ctx.applyProjectName(projectName)
 
 	return ctx
 }
 
+func (c *FlowContext) Config() *Config {
+	if c == nil || c.mergedConfig == nil {
+		log.Fatal("invalid context, mergedConfig is nil")
+	}
+
+	return c.mergedConfig
+}
+
 func (c *FlowContext) GetOAuth() *OAuth {
-	if c == nil {
+	if c == nil || c.mergedConfig == nil || c.mergedConfig.OAuth2 == nil {
 		return &OAuth{}
 	}
-	return c.oauth
+	return c.mergedConfig.OAuth2
 }
 
 func (c *FlowContext) InjectProject(p *ProjectBasics) {
@@ -87,15 +93,6 @@ func (c *FlowContext) ProjectName() string {
 	}
 
 	return c.projectName
-}
-
-// ConfPath return configuration path
-func (c *FlowContext) ConfPath() string {
-	if c == nil {
-		return ""
-	}
-
-	return c.confPath
 }
 
 // ForceRemote return should module need to locate project by projectName from remote.
@@ -134,28 +131,11 @@ func (c *FlowContext) ShouldOpenBrowser() bool {
 }
 
 func (c *FlowContext) APIEndpoint() string {
-	if c == nil {
+	if c == nil || c.mergedConfig == nil {
 		return ""
 	}
 
-	return c.gitlabAPIUrl
-}
-
-// applyConfPath to get configuration directory path rather than file path.
-func (c *FlowContext) applyConfPath(confPath string) {
-	fi, err := os.Stat(confPath)
-	if err != nil {
-		log.Errorf("could not stat confPath=%s", confPath)
-		return
-	}
-
-	if fi.IsDir() {
-		c.confPath = confPath
-		return
-	}
-
-	c.confPath = path.Dir(confPath)
-	return
+	return c.mergedConfig.GitlabAPIURL
 }
 
 // applyProjectName to judge which project name should be taken.
