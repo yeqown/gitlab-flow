@@ -244,6 +244,13 @@ func getConfigEditCommand() *cli.Command {
 				return err
 			}
 
+			select {
+			case <-c.Context.Done():
+				log.Warn("user canceled the operation")
+				return nil
+			default:
+			}
+
 			target, err := ch.Save(cfg, global)
 			if err != nil {
 				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
