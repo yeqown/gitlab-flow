@@ -122,7 +122,6 @@ func (f *fileConfigImpl) Save(config *types.Config, global bool) (target string,
 	target = f.ctx.ProjectConfPath
 	if global {
 		target = f.ctx.GlobalConfPath
-
 	}
 
 	err = conf.Save(target, config, global)

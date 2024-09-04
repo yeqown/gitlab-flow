@@ -24,6 +24,23 @@ func getConfigSubCommands() []*cli.Command {
 	}
 }
 
+func explainConfigFlags(c *cli.Context) (project, global bool, err error) {
+	global = c.Bool("global")
+	project = c.Bool("project")
+	if global && project {
+		err = errors.New("only one of global and project could be true")
+		return project, global, err
+	}
+
+	if global || project {
+		return project, global, nil
+	}
+
+	// both are false, then set the project to true as default
+	project = true
+	return project, global, nil
+}
+
 // getConfigInitCommand initialize configuration gitlab-flow, generate default config file and sqlite DB
 // related to the path. This command interact with user to get configuration.
 // Usage: gitlab-flow [flags] config init
@@ -32,10 +49,9 @@ func getConfigInitCommand() *cli.Command {
 		Name:  "init",
 		Usage: "initialize configuration gitlab-flow, generate default config file and sqlite DB",
 		Action: func(c *cli.Context) error {
-			global := c.Bool("global")
-			project := c.Bool("project")
-			if global && project {
-				log.Error("only one of global and project could be true")
+			_, global, err := explainConfigFlags(c)
+			if err != nil {
+				log.Errorf("explainConfigFlags failed: %v", err)
 				return nil
 			}
 
@@ -114,10 +130,9 @@ func getConfigShowCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			global := c.Bool("global")
-			project := c.Bool("project")
-			if global && project {
-				log.Error("only one of global and project could be true")
+			_, global, err := explainConfigFlags(c)
+			if err != nil {
+				log.Errorf("explainConfigFlags failed: %v", err)
 				return nil
 			}
 
@@ -193,10 +208,9 @@ func getConfigEditCommand() *cli.Command {
 		Name:  "edit",
 		Usage: "edit current configuration",
 		Action: func(c *cli.Context) error {
-			global := c.Bool("global")
-			project := c.Bool("project")
-			if global && project {
-				log.Error("only one of global and project could be true")
+			_, global, err := explainConfigFlags(c)
+			if err != nil {
+				log.Errorf("explainConfigFlags failed: %v", err)
 				return nil
 			}
 
