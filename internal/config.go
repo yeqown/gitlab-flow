@@ -9,7 +9,13 @@ import (
 	"github.com/yeqown/gitlab-flow/internal/types"
 )
 
+type configValidator interface {
+	ValidateConfig(cfg *types.Config, global bool) error
+}
+
 type IConfigHelper interface {
+	configValidator
+
 	// Preload loads configuration from file system. If the configuration
 	// is not found, return error.
 	// NOTE: this method also refill the context of configuration helper.
@@ -39,14 +45,15 @@ type ConfigHelperContext struct {
 	GlobalConfPath  string // global configuration file path
 }
 
-func NewConfigHelper(ctx *ConfigHelperContext) IConfigHelper {
+func NewConfigHelper(helperContext *ConfigHelperContext) IConfigHelper {
 	ch := &fileConfigImpl{
-		ctx: ctx,
+		fileConfigValidator: fileConfigValidator{},
+		helperContext:       helperContext,
 
 		globalConfig:  nil,
 		projectConfig: nil,
 
-		gitOp: gitop.NewBasedCmd(ctx.CWD),
+		gitOp: gitop.NewBasedCmd(helperContext.CWD),
 	}
 
 	return ch
@@ -59,7 +66,9 @@ func NewConfigHelper(ctx *ConfigHelperContext) IConfigHelper {
 // and merge them. since the configuration in current git repository has higher priority on branch setting.
 // And the current git repository configuration can only change the branch setting yet.
 type fileConfigImpl struct {
-	ctx *ConfigHelperContext
+	fileConfigValidator
+
+	helperContext *ConfigHelperContext
 
 	globalConfig  *types.Config
 	projectConfig *types.Config
@@ -68,15 +77,15 @@ type fileConfigImpl struct {
 }
 
 func (f *fileConfigImpl) Preload() (err error) {
-	f.ctx.ProjectConfPath = conf.ConfigPath(f.ctx.CWD)
-	f.ctx.GlobalConfPath = conf.ConfigPath("")
+	f.helperContext.ProjectConfPath = conf.ConfigPath(f.helperContext.CWD)
+	f.helperContext.GlobalConfPath = conf.ConfigPath("")
 
-	f.projectConfig, err = conf.Load(f.ctx.ProjectConfPath, nil)
+	f.projectConfig, err = conf.Load(f.helperContext.ProjectConfPath, nil)
 	if err != nil {
 		log.Debugf("load project configuration failed: %v", err)
 	}
 
-	f.globalConfig, err = conf.Load(f.ctx.GlobalConfPath, nil)
+	f.globalConfig, err = conf.Load(f.helperContext.GlobalConfPath, nil)
 	if err != nil {
 		return errors.Wrap(err, "load global configuration failed")
 	}
@@ -84,13 +93,9 @@ func (f *fileConfigImpl) Preload() (err error) {
 	return nil
 }
 
-func (f *fileConfigImpl) Context() *ConfigHelperContext {
-	return f.ctx
-}
+func (f *fileConfigImpl) Context() *ConfigHelperContext { return f.helperContext }
 
-func (f *fileConfigImpl) Global() (*types.Config, error) {
-	return f.globalConfig, nil
-}
+func (f *fileConfigImpl) Global() (*types.Config, error) { return f.globalConfig, nil }
 
 func (f *fileConfigImpl) Project(merge bool) (*types.Config, error) {
 	// if !merge {
@@ -119,9 +124,9 @@ func (f *fileConfigImpl) Project(merge bool) (*types.Config, error) {
 }
 
 func (f *fileConfigImpl) Save(config *types.Config, global bool) (target string, err error) {
-	target = f.ctx.ProjectConfPath
+	target = f.helperContext.ProjectConfPath
 	if global {
-		target = f.ctx.GlobalConfPath
+		target = f.helperContext.GlobalConfPath
 	}
 
 	err = conf.Save(target, config, global)
@@ -130,4 +135,38 @@ func (f *fileConfigImpl) Save(config *types.Config, global bool) (target string,
 	}
 
 	return target, nil
+}
+
+var (
+	errEmptyBranch    = errors.New("invalid branch setting")
+	errEmptyOAuth     = errors.New("invalid gitlab OAuth setting")
+	errEmptyGitlabAPI = errors.New("empty gitlab API/HOST URL")
+)
+
+type fileConfigValidator struct{}
+
+func (f *fileConfigValidator) ValidateConfig(cfg *types.Config, global bool) error {
+	// check branch settings first.
+	if cfg.Branch == nil {
+		return errEmptyBranch
+	}
+	if cfg.Branch.Master == "" || cfg.Branch.Dev == "" || cfg.Branch.Test == "" ||
+		cfg.Branch.FeatureBranchPrefix == "" || cfg.Branch.HotfixBranchPrefix == "" ||
+		cfg.Branch.ConflictResolveBranchPrefix == "" || cfg.Branch.IssueBranchPrefix == "" {
+		return errors.Wrap(errEmptyBranch, "some branch(s) is not set")
+	}
+	if !global {
+		return nil
+	}
+
+	// if global configuration, check OAuth2 settings and GitlabAPIURL, GitlabHost.
+	if cfg.GitlabAPIURL == "" || cfg.GitlabHost == "" {
+		return errEmptyGitlabAPI
+	}
+
+	if cfg.OAuth2 == nil || cfg.OAuth2.Scopes == "" || cfg.OAuth2.CallbackHost == "" {
+		return errEmptyOAuth
+	}
+
+	return nil
 }

@@ -215,15 +215,15 @@ func getConfigEditCommand() *cli.Command {
 			}
 
 			flags := parseGlobalFlags(c)
-			ch, err := getConfigHelper(flags)
+			helper, err := getConfigHelper(flags)
 			if err != nil {
 				log.Errorf("preload configuration failed: %v", err)
 				return errors.Wrap(err, "preload configuration failed")
 			}
 
-			cfg, err := ch.Project(true)
+			cfg, err := helper.Project(true)
 			if global {
-				cfg, err = ch.Global()
+				cfg, err = helper.Global()
 			}
 			if cfg == nil || err != nil {
 				log.Error("could not get configuration")
@@ -251,7 +251,12 @@ func getConfigEditCommand() *cli.Command {
 			default:
 			}
 
-			target, err := ch.Save(cfg, global)
+			if err = helper.ValidateConfig(cfg, global); err != nil {
+				log.Errorf("config is invalid: %v", err)
+				return nil
+			}
+
+			target, err := helper.Save(cfg, global)
 			if err != nil {
 				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
 				return err

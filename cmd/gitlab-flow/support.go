@@ -139,14 +139,14 @@ func resolveFlags(flags globalFlags) (*types.FlowContext, internal.IConfigHelper
 			Fatalf("get absolute path of CWD failed: %v", err)
 	}
 
-	ch, err := getConfigHelper(flags)
+	helper, err := getConfigHelper(flags)
 	if err != nil {
 		log.
 			WithField("cwd", flags.CWD).
 			Fatalf("could not preload configuration: %v", err)
 		return nil, nil
 	}
-	c, err := ch.Project(true)
+	c, err := helper.Project(true)
 	if err != nil {
 		log.
 			WithField("cwd", flags.CWD).
@@ -162,10 +162,8 @@ func resolveFlags(flags globalFlags) (*types.FlowContext, internal.IConfigHelper
 		c.OpenBrowser = flags.OpenBrowser
 	}
 
-	if err = c.Valid(); err != nil {
-		log.
-			WithField("config", c).
-			Fatalf("config is invalid")
+	if err = helper.ValidateConfig(c, true); err != nil {
+		log.WithField("config", c).Fatalf("config is invalid")
 	}
 
 	types.SetBranchSetting(c.Branch.Master, c.Branch.Dev, c.Branch.Test)
@@ -176,7 +174,7 @@ func resolveFlags(flags globalFlags) (*types.FlowContext, internal.IConfigHelper
 		c.Branch.IssueBranchPrefix,
 	)
 
-	return types.NewContext(cwd, flags.ProjectName, c, flags.ForceRemote), ch
+	return types.NewContext(cwd, flags.ProjectName, c, flags.ForceRemote), helper
 }
 
 var (

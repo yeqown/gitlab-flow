@@ -126,7 +126,7 @@ func (f flowImpl) fillContextWithProject() error {
 	// 	// locate project from local, and there are maybe more than one project.
 	// 	matched, err2 := chooseOneProjectInteractively(projects)
 	// 	if err2 == nil {
-	// 		f.ctx.InjectProject(&types.ProjectBasics{
+	// 		f.helperContext.InjectProject(&types.ProjectBasics{
 	// 			ID:     matched.ProjectID,
 	// 			Name:   matched.ProjectName,
 	// 			WebURL: matched.WebURL,
@@ -389,7 +389,7 @@ func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchNam
 	}
 	opc.FeatureBranchName = genFeatureBranchName(opc.FeatureBranchName)
 	// if _, err := f.repo.QueryBranch(&repository.BranchDO{
-	//	ProjectID:   f.ctx.Project().ID,
+	//	ProjectID:   f.helperContext.Project().ID,
 	//	BranchName:  featureBranchName,
 	//	MilestoneID: milestoneID,
 	// }); err != nil {

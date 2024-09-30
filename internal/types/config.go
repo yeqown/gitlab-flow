@@ -1,12 +1,5 @@
 package types
 
-import "errors"
-
-var (
-	ErrEmptyAccessToken = errors.New("empty access token")
-	ErrEmptyGitlabAPI   = errors.New("empty gitlab API URL")
-)
-
 type OAuth struct {
 	Scopes       string `toml:"scopes"`
 	CallbackHost string `toml:"callback_host"` // Notice: callback host for oauth2 without scheme
@@ -32,17 +25,4 @@ type Config struct {
 	GitlabHost   string         `toml:"gitlab_host"`
 	DebugMode    bool           `toml:"debug"`
 	OpenBrowser  bool           `toml:"open_browser"`
-}
-
-// Valid validates config is valid to use.
-func (cfg Config) Valid() error {
-	if cfg.GitlabAPIURL == "" {
-		return ErrEmptyGitlabAPI
-	}
-
-	if cfg.OAuth2 == nil || cfg.OAuth2.AccessToken == "" {
-		return ErrEmptyAccessToken
-	}
-
-	return nil
 }
