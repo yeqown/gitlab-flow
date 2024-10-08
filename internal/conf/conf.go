@@ -1,8 +1,6 @@
 // Package conf implements the configuration of the application.
 // The configuration is loaded from the configuration file. The configuration
 // file is a TOML file.
-// TODO(@yeqown): store configuration in the database instead of the file,
-// and then we can use CLI application to manage and checkout these configurations.
 package conf
 
 import (

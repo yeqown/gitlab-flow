@@ -8,15 +8,15 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
+	"github.com/yeqown/log"
+
 	gitop "github.com/yeqown/gitlab-flow/internal/git-operator"
 	"github.com/yeqown/gitlab-flow/internal/repository"
 	"github.com/yeqown/gitlab-flow/internal/repository/impl"
 	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/gitlab-flow/pkg"
-
-	"github.com/olekukonko/tablewriter"
-	"github.com/pkg/errors"
-	"github.com/yeqown/log"
 )
 
 type dashImpl struct {
@@ -85,7 +85,7 @@ func (d dashImpl) fillContextWithProject() error {
 	// 	// should let user choose one
 	// 	matched, err2 := chooseOneProjectInteractively(projects)
 	// 	if err2 == nil {
-	// 		d.ctx.InjectProject(&types.ProjectBasics{
+	// 		d.helperContext.InjectProject(&types.ProjectBasics{
 	// 			ID:     matched.ProjectID,
 	// 			Name:   matched.ProjectName,
 	// 			WebURL: matched.WebURL,
