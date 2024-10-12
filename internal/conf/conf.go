@@ -67,7 +67,7 @@ type Parser interface {
 }
 
 // Load to load config from confPath with specified parser.
-func Load(confPath string, parser Parser) (cfg *types.Config, err error) {
+func Load(confPath string, parser Parser, must bool) (cfg *types.Config, err error) {
 	if parser == nil {
 		parser = NewTOMLParser()
 	}
@@ -82,10 +82,13 @@ func Load(confPath string, parser Parser) (cfg *types.Config, err error) {
 	}
 	p := precheckConfigDirectory(confPath)
 	var r io.Reader
-	r, err = os.OpenFile(p, os.O_RDONLY, 0777)
-	if err != nil {
+	if r, err = os.Open(p); err != nil {
+		if !must && os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, errors.Wrap(err, "conf.Load")
 	}
+
 	err = parser.Unmarshal(r, cfg)
 
 	return cfg, err

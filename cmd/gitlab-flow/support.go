@@ -163,7 +163,13 @@ func resolveFlags(flags globalFlags) (*types.FlowContext, internal.IConfigHelper
 	}
 
 	if err = helper.ValidateConfig(c, true); err != nil {
-		log.WithField("config", c).Fatalf("config is invalid")
+		log.
+			WithFields(log.Fields{
+				"config":          c,
+				"config.branches": c.Branch,
+				"oauth":           c.OAuth2,
+			}).
+			Fatalf("config is invalid: %v", err)
 	}
 
 	types.SetBranchSetting(c.Branch.Master, c.Branch.Dev, c.Branch.Test)
