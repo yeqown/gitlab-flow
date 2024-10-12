@@ -80,12 +80,12 @@ func (f *fileConfigImpl) Preload() (err error) {
 	f.helperContext.ProjectConfPath = conf.ConfigPath(f.helperContext.CWD)
 	f.helperContext.GlobalConfPath = conf.ConfigPath("")
 
-	f.projectConfig, err = conf.Load(f.helperContext.ProjectConfPath, nil)
+	f.projectConfig, err = conf.Load(f.helperContext.ProjectConfPath, nil, false)
 	if err != nil {
 		log.Debugf("load project configuration failed: %v", err)
 	}
 
-	f.globalConfig, err = conf.Load(f.helperContext.GlobalConfPath, nil)
+	f.globalConfig, err = conf.Load(f.helperContext.GlobalConfPath, nil, true)
 	if err != nil {
 		return errors.Wrap(err, "load global configuration failed")
 	}

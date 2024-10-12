@@ -39,10 +39,10 @@ var (
 	errInvalidFeatureName = errors.New("feature branch could not be empty")
 )
 
-// checkOAuthAccessToken check access token is valid or not. If access token becomes invalid
+// refreshOAuthAccessToken check access token is valid or not. If access token becomes invalid
 // then refresh it, if refresh failed, it leads to  re-authorize.
-func checkOAuthAccessToken(ctx *types.FlowContext) {
-	c := ctx.Config()
+func refreshOAuthAccessToken(ctx *types.FlowContext, ch IConfigHelper) {
+	c, _ := ch.Global()
 	oauth := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
 		Host:         c.GitlabHost,
 		ServeAddr:    c.OAuth2.CallbackHost,
@@ -64,6 +64,12 @@ func checkOAuthAccessToken(ctx *types.FlowContext) {
 	// update context oauth configuration
 	ctx.GetOAuth().AccessToken = accessToken
 	ctx.GetOAuth().RefreshToken = refreshToken
+
+	// FIXED: here maybe save project config(branch settings) into global config.
+	target, err := ch.Save(c, true)
+	if err != nil {
+		log.Debugf("checkOAuthAccessToken update access token into: %s failed: %v", target, err)
+	}
 }
 
 func NewFlow(ctx *types.FlowContext, ch IConfigHelper) IFlow {
@@ -76,11 +82,7 @@ func NewFlow(ctx *types.FlowContext, ch IConfigHelper) IFlow {
 		WithField("context", ctx).
 		Debugf("constructing flow")
 
-	checkOAuthAccessToken(ctx)
-	target, err := ch.Save(ctx.Config(), true)
-	if err != nil {
-		log.Debugf("checkOAuthAccessToken update access token into: %s failed: %v", target, err)
-	}
+	refreshOAuthAccessToken(ctx, ch)
 
 	flow := &flowImpl{
 		ctx:            ctx,
