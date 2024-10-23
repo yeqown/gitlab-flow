@@ -102,9 +102,9 @@ func NewFlow(ctx *types.FlowContext, ch IConfigHelper) IFlow {
 
 // fillContextWithProject .
 // FlowContext with null project information, so we need to fill it.
+// DONE(@yeqown): fill project information from local repository or remote gitlab repository.
+// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
 func (f flowImpl) fillContextWithProject() error {
-	// DONE(@yeqown): fill project information from local repository or remote gitlab repository.
-	// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
 	var (
 		projectName = f.ctx.ProjectName()
 		err         error
@@ -121,21 +121,6 @@ func (f flowImpl) fillContextWithProject() error {
 	if err == nil && injected {
 		return nil
 	}
-
-	// // get from local with name or workdir
-	// projects, err = f.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
-	// if err == nil && len(projects) != 0 {
-	// 	// locate project from local, and there are maybe more than one project.
-	// 	matched, err2 := chooseOneProjectInteractively(projects)
-	// 	if err2 == nil {
-	// 		f.helperContext.InjectProject(&types.ProjectBasics{
-	// 			ID:     matched.ProjectID,
-	// 			Name:   matched.ProjectName,
-	// 			WebURL: matched.WebURL,
-	// 		})
-	// 		return nil
-	// 	}
-	// }
 
 	log.
 		WithFields(log.Fields{"project": projectName}).

@@ -195,8 +195,8 @@ func defaultCWD() string {
 	_defaultCwdOnce.Do(func() {
 		w := bytes.NewBuffer(nil)
 		if err := pkg.RunOutput("git rev-parse --show-toplevel", w); err != nil {
-			log.Debug("pre-exec 'git rev-parse --show-toplevel' failed:")
-			log.Debugf("%s\n", err)
+			log.Warnf("executing 'git rev-parse --show-toplevel' failed: %v", err)
+			return
 		}
 
 		if s := w.String(); s != "" {
