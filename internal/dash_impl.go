@@ -69,9 +69,10 @@ func init() {
 		template.New("detail").Parse(detailTplPattern))
 }
 
+// fillContextWithProject
+// DONE(@yeqown): fill project information from local repository or remote gitlab repository.
+// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
 func (d dashImpl) fillContextWithProject() error {
-	// DONE(@yeqown): fill project information from local repository or remote gitlab repository.
-	// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
 	projectName := d.ctx.ProjectName()
 
 	// get from local
@@ -80,20 +81,7 @@ func (d dashImpl) fillContextWithProject() error {
 		return nil
 	}
 
-	// projects, err := d.repo.QueryProjects(&repository.ProjectDO{ProjectName: projectName})
-	// if err == nil && len(projects) != 0 {
-	// 	// should let user choose one
-	// 	matched, err2 := chooseOneProjectInteractively(projects)
-	// 	if err2 == nil {
-	// 		d.helperContext.InjectProject(&types.ProjectBasics{
-	// 			ID:     matched.ProjectID,
-	// 			Name:   matched.ProjectName,
-	// 			WebURL: matched.WebURL,
-	// 		})
-	// 		return nil
-	// 	}
-	// }
-
+	// err != nil or not injected
 	log.
 		WithFields(log.Fields{"project": projectName, "workDir": d.ctx.CWD(), "injected": injected}).
 		Fatalf("could not found from local: %v", err)
@@ -468,7 +456,7 @@ query:
 	}
 	if len(projects) == 0 {
 		// try with localDir
-		tries += 1
+		tries++
 		filter = &repository.ProjectDO{LocalDir: localDir}
 		goto query
 	}

@@ -25,7 +25,7 @@ func RunOutput(cmd string, rw io.ReadWriter) error {
 func Run(cmd string) error {
 	buf := bytes.NewBuffer(nil)
 	if err := run(cmd, buf); err != nil {
-		if errors.Cause(err) == errCommandExit {
+		if errors.Is(err, errCommandExit) {
 			return errors.Wrap(errCommandExit, buf.String())
 		}
 		return err
@@ -62,7 +62,8 @@ func run(s string, rw io.ReadWriter) error {
 	}
 
 	err = cmd.Wait()
-	if err2, ok := err.(*exec.ExitError); ok {
+	var err2 *exec.ExitError
+	if errors.As(err, &err2) {
 		// The program has exited with an exit code != 0
 		if status, ok := err2.Sys().(syscall.WaitStatus); ok {
 			// some commands exit 1 when files fail to pass (for example go vet)
@@ -100,10 +101,10 @@ func splitCommand(cmd string) []string {
 				assemble += strings.TrimLeft(v, "'")
 			}
 		} else if flag {
-			// do not contains but still in index
+			// do not contain but still in index
 			assemble += " " + v
 		} else {
-			// do not contains and not in index
+			// do not contain and not in index
 			out = append(out, v)
 		}
 	}

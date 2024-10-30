@@ -2,6 +2,7 @@ package types
 
 import (
 	"path"
+
 	"github.com/yeqown/log"
 )
 
@@ -17,17 +18,13 @@ type ProjectBasics struct {
 type FlowContext struct {
 	mergedConfig *Config
 
-	// oauth *OAuth
-	// // gitlabAPIUrl represents gitlab API endpoint.
-	// gitlabAPIUrl string
-
-	// project of current working directory, normally,
-	// get from current working directory.
+	// project of current working directory, normally, get from current working directory.
 	project *ProjectBasics
 	// cwd represents current working directory.
 	cwd string
 	// projectName the actual name of project.
 	projectName string
+
 	// forceRemote force choose load project from remote(gitlab) rather than local.
 	forceRemote bool
 	// debug indicates whether gitlab-flow print more detail logs.
@@ -47,8 +44,8 @@ func NewContext(cwd, projectName string, c *Config, forceRemote bool) *FlowConte
 		// gitlabAPIUrl: c.GitlabAPIURL,
 		mergedConfig: c,
 		cwd:          cwd,
-		project:      nil,
-		projectName:  "",
+		project:      nil, // set later by InjectProject
+		projectName:  "",  // set later by applyProjectName
 		forceRemote:  forceRemote,
 		debug:        c.DebugMode,
 		openBrowser:  c.OpenBrowser,
