@@ -137,6 +137,9 @@ locateFromRemote:
 		return errors.Wrap(err, "requests remote repository failed")
 	}
 
+	log.WithFields(log.Fields{"project": projectName, "result": result}).
+		Debug("locate project from remote")
+
 	// found and match
 	// DONE(@yeqown): if remote(gitlab) has not only one project with projectName, then choose one as target.
 	remoteMatched := make([]*repository.ProjectDO, 0, 5)

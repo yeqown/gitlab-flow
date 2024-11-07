@@ -1,7 +1,7 @@
 package types
 
 import (
-	"path"
+	"path/filepath"
 
 	"github.com/yeqown/log"
 )
@@ -142,7 +142,10 @@ func (c *FlowContext) applyProjectName(projectName string) {
 		return
 	}
 
-	c.projectName = path.Base(c.cwd)
+	// FIXED: this split file path to get project name is not correct.
+	// we used path.Base to get project name before, but it's not correct.
+	c.projectName = filepath.Base(c.cwd)
+
 	return
 }
 
