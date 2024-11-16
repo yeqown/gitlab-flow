@@ -5,7 +5,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"github.com/yeqown/gitlab-flow/internal/types"
 	"html/template"
 	"io"
 	"math/rand"
@@ -17,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 
+	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/gitlab-flow/pkg"
 )
 
