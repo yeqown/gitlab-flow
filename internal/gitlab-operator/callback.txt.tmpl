@@ -1,0 +1,6 @@
+Last login: {{ .Now }} on ttys011
+{{if .Error}}
+Oops! {{.ErrorMessage}}
+{{else}}
+Congratulations! You have successfully authorized the GitLab CLI.
+{{end}}

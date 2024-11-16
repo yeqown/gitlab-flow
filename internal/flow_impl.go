@@ -49,6 +49,7 @@ func refreshOAuthAccessToken(ctx *types.FlowContext, ch IConfigHelper) {
 		AccessToken:  c.OAuth2.AccessToken,
 		RefreshToken: c.OAuth2.RefreshToken,
 		Scopes:       c.OAuth2.Scopes,
+		Mode:         c.OAuth2.Mode,
 	})
 	if err := oauth.Enter(c.OAuth2.RefreshToken); err != nil {
 		log.

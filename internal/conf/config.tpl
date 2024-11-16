@@ -38,3 +38,6 @@ open_browser = {{.OpenBrowser}}
   # DO NOT MODIFY THE FOLLOWING LINES UNLESS YOU KNOW WHAT YOU ARE DOING
   scopes = "api read_user read_repository"
   callback_host = "{{.OAuth2.CallbackHost}}"
+  # The mode indicates the OAuth2 mode, 1 for authorization automatically, 2 for manual authorization which should
+  # be used only headless(this means current system could not open browser, e.g. linux server) environment.
+  mode = 1

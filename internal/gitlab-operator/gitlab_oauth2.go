@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"github.com/yeqown/gitlab-flow/internal/types"
 	"html/template"
 	"io"
 	"math/rand"
@@ -51,6 +52,9 @@ type OAuth2Config struct {
 
 	// Scopes is a string of scopes, such as: "api read_user"
 	Scopes string
+
+	// Mode represents the mode of OAuth2 authorization.
+	Mode types.OAuth2Mode
 }
 
 func (c *OAuth2Config) CallbackURI() string {
@@ -68,6 +72,10 @@ func fixOAuthConfig(c *OAuth2Config) error {
 
 	if OAuth2AppID == "" || OAuth2AppSecret == "" {
 		return errNilOAuth2Application
+	}
+
+	if c.Mode != types.OAuth2Mode_Auto && c.Mode != types.OAuth2Mode_Manual {
+		c.Mode = types.OAuth2Mode_Auto
 	}
 
 	return nil
@@ -148,8 +156,32 @@ func (g *gitlabOAuth2Support) Load() (accessToken, refreshToken string) {
 	return g.oc.AccessToken, g.oc.RefreshToken
 }
 
-//go:embed callback.tmpl
-var callbackTmpl embed.FS
+var (
+	//go:embed callback.txt.tmpl
+	callbackTxtTmpl embed.FS
+
+	//go:embed callback.html.tmpl
+	callbackHtmlTmpl embed.FS
+)
+
+func (g *gitlabOAuth2Support) renderCallback(w http.ResponseWriter, data interface{}) {
+	var fs = callbackHtmlTmpl
+	if g.oc.Mode == types.OAuth2Mode_Manual {
+		fs = callbackTxtTmpl
+	}
+
+	tmpl, err := template.ParseFS(fs, "callback.tmpl")
+	if err != nil {
+		log.Errorf("gitlabOAuth2Support.renderCallback parse FS(%s) failed: %v", g.oc.Mode, err)
+		return
+	}
+
+	if err = tmpl.Execute(w, data); err != nil {
+		log.Errorf("gitlabOAuth2Support.renderCallback failed to render: %v", err)
+	}
+
+	return
+}
 
 func (g *gitlabOAuth2Support) callbackHandl(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
@@ -164,11 +196,6 @@ func (g *gitlabOAuth2Support) callbackHandl(w http.ResponseWriter, r *http.Reque
 		"_error":           _error,
 		"errorDescription": errorDescription,
 	}).Debug("gitlabOAuth2Support serve gets a callback request")
-
-	tmpl, err := template.ParseFS(callbackTmpl, "callback.tmpl")
-	if err != nil {
-		log.Errorf("gitlabOAuth2Support.callbackHandl parse FS failed: %v", err)
-	}
 
 	var (
 		status = http.StatusOK
@@ -210,9 +237,7 @@ func (g *gitlabOAuth2Support) callbackHandl(w http.ResponseWriter, r *http.Reque
 
 render:
 	w.WriteHeader(status)
-	if err := tmpl.Execute(w, &data); err != nil {
-		log.Errorf("gitlabOAuth2Support.callbackHandl failed to render: %v", err)
-	}
+	g.renderCallback(w, data)
 }
 
 // serve is serving a backend HTTP server process to
@@ -244,6 +269,18 @@ func (g *gitlabOAuth2Support) triggerAuthorize(ctx context.Context) {
 	fmt.Println("Your access token is invalid or expired, please click following link to authorize:")
 	uri := fmt.Sprintf("%s%s?%s", g.oc.Host, step1URI, form.Encode())
 	fmt.Println(uri)
+
+	// oauth mode(OAuthMode_Manual) would not open browser,
+	// just print the uri and tips here.
+	if g.oc.Mode == types.OAuth2Mode_Manual {
+		tips := "HINT: copy the link above and paste it into your browser to authorize.\n" +
+			"Then copy the callback url from browser and execute as following command: \n" +
+			"curl -X GET ${CALLBACK_URL}"
+		fmt.Println(tips)
+		return
+	}
+
+	// oauth mode(OAuthMode_Auto)
 	if err := pkg.OpenBrowser(uri); err != nil {
 		log.
 			WithFields(log.Fields{"error": err, "uri": uri}).

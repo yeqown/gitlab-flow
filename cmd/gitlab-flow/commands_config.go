@@ -84,6 +84,7 @@ func getConfigInitCommand() *cli.Command {
 					AccessToken:  "", // empty
 					RefreshToken: "", // empty
 					Scopes:       cfg.OAuth2.Scopes,
+					Mode:         cfg.OAuth2.Mode,
 				})
 				if err = support.Enter(""); err != nil {
 					log.
@@ -312,6 +313,19 @@ func buildFlagsQuestions(cfg *types.Config) []*survey.Question {
 			Validate:  nil,
 			Transform: nil,
 		},
+		{
+			Name: "oauthMode",
+			Prompt: &survey.Select{
+				Message: "Select your OAuth2 mode. If you are not in desktop environment, please select manual",
+				Options: []string{
+					"auto",
+					"manual",
+				},
+				Default: "auto",
+			},
+			Validate:  nil,
+			Transform: nil,
+		},
 	}
 }
 
@@ -425,6 +439,15 @@ func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error 
 	// only save the scheme and host
 	cfg.GitlabHost = u.Scheme + "://" + u.Host
 	cfg.OAuth2.CallbackHost = ans.CallbackHost
+	cfg.OAuth2.Mode = func(a string) types.OAuth2Mode {
+		switch a {
+		case "auto":
+			return types.OAuth2Mode_Auto
+		case "manual":
+			return types.OAuth2Mode_Manual
+		}
+		return types.OAuth2Mode_Auto
+	}(ans.OAuthMode)
 
 	cfg.DebugMode = ans.DebugMode
 	cfg.OpenBrowser = ans.OpenBrowser
@@ -446,6 +469,7 @@ type answer struct {
 
 	OpenBrowser bool
 	DebugMode   bool
+	OAuthMode   string
 
 	MasterBranch                string
 	DevBranch                   string

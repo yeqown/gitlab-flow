@@ -40,6 +40,7 @@ var (
 			CallbackHost: DefaultCallbackHost,
 			AccessToken:  "",
 			RefreshToken: "",
+			Mode:         types.OAuth2Mode_Auto,
 		},
 		GitlabAPIURL: "https://YOUR_HOSTNAME/api/v4",
 		GitlabHost:   "https://YOUR_HOSTNAME",
