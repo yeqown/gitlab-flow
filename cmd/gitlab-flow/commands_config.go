@@ -37,7 +37,7 @@ func explainConfigFlags(c *cli.Context) (project, global bool, err error) {
 	}
 
 	// both are false, then set the project to true as default
-	project = true
+	global = true
 	return project, global, nil
 }
 
@@ -55,14 +55,20 @@ func getConfigInitCommand() *cli.Command {
 				return nil
 			}
 
-			flags := parseGlobalFlags(c)
-			ch, err := getConfigHelper(flags)
 			var cfg *types.Config
+			flags := parseGlobalFlags(c)
+			helper, err := getConfigHelper(flags)
 			if err != nil {
 				if !errors.Is(err, os.ErrNotExist) {
 					panic("load config file failed: " + err.Error())
 				}
 				cfg = conf.Default()
+			} else {
+				if global {
+					cfg, err = helper.Global()
+				} else {
+					cfg, err = helper.Project(true)
+				}
 			}
 
 			// Prompt user to input configuration
@@ -95,7 +101,7 @@ func getConfigInitCommand() *cli.Command {
 				cfg.OAuth2.AccessToken, cfg.OAuth2.RefreshToken = support.Load()
 			}
 
-			target, err := ch.Save(cfg, global)
+			target, err := helper.Save(cfg, global)
 			if err != nil {
 				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
 				return err
