@@ -37,7 +37,7 @@ func explainConfigFlags(c *cli.Context) (project, global bool, err error) {
 	}
 
 	// both are false, then set the project to true as default
-	project = true
+	global = true
 	return project, global, nil
 }
 
@@ -55,14 +55,20 @@ func getConfigInitCommand() *cli.Command {
 				return nil
 			}
 
-			flags := parseGlobalFlags(c)
-			ch, err := getConfigHelper(flags)
 			var cfg *types.Config
+			flags := parseGlobalFlags(c)
+			helper, err := getConfigHelper(flags)
 			if err != nil {
 				if !errors.Is(err, os.ErrNotExist) {
 					panic("load config file failed: " + err.Error())
 				}
 				cfg = conf.Default()
+			} else {
+				if global {
+					cfg, err = helper.Global()
+				} else {
+					cfg, err = helper.Project(true)
+				}
 			}
 
 			// Prompt user to input configuration
@@ -84,6 +90,7 @@ func getConfigInitCommand() *cli.Command {
 					AccessToken:  "", // empty
 					RefreshToken: "", // empty
 					Scopes:       cfg.OAuth2.Scopes,
+					Mode:         cfg.OAuth2.Mode,
 				})
 				if err = support.Enter(""); err != nil {
 					log.
@@ -94,7 +101,7 @@ func getConfigInitCommand() *cli.Command {
 				cfg.OAuth2.AccessToken, cfg.OAuth2.RefreshToken = support.Load()
 			}
 
-			target, err := ch.Save(cfg, global)
+			target, err := helper.Save(cfg, global)
 			if err != nil {
 				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
 				return err
@@ -312,6 +319,19 @@ func buildFlagsQuestions(cfg *types.Config) []*survey.Question {
 			Validate:  nil,
 			Transform: nil,
 		},
+		{
+			Name: "oauthMode",
+			Prompt: &survey.Select{
+				Message: "Select your OAuth2 mode. If you are not in desktop environment, please select manual",
+				Options: []string{
+					"auto",
+					"manual",
+				},
+				Default: "auto",
+			},
+			Validate:  nil,
+			Transform: nil,
+		},
 	}
 }
 
@@ -425,6 +445,15 @@ func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error 
 	// only save the scheme and host
 	cfg.GitlabHost = u.Scheme + "://" + u.Host
 	cfg.OAuth2.CallbackHost = ans.CallbackHost
+	cfg.OAuth2.Mode = func(a string) types.OAuth2Mode {
+		switch a {
+		case "auto":
+			return types.OAuth2Mode_Auto
+		case "manual":
+			return types.OAuth2Mode_Manual
+		}
+		return types.OAuth2Mode_Auto
+	}(ans.OAuthMode)
 
 	cfg.DebugMode = ans.DebugMode
 	cfg.OpenBrowser = ans.OpenBrowser
@@ -446,6 +475,7 @@ type answer struct {
 
 	OpenBrowser bool
 	DebugMode   bool
+	OAuthMode   string
 
 	MasterBranch                string
 	DevBranch                   string
