@@ -5,12 +5,13 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"html/template"
+	htmltpl "html/template"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
+	texttpl "text/template"
 	"time"
 
 	"github.com/pkg/errors"
@@ -170,7 +171,23 @@ func (g *gitlabOAuth2Support) renderCallback(w http.ResponseWriter, data interfa
 		fs = callbackTxtTmpl
 	}
 
-	tmpl, err := template.ParseFS(fs, "callback.tmpl")
+	var (
+		tmpl interface {
+			Execute(w io.Writer, data interface{}) error
+		}
+		err error
+	)
+
+	switch g.oc.Mode {
+	case types.OAuth2Mode_Manual:
+		tmpl, err = texttpl.ParseFS(fs, "callback.txt.tmpl")
+	case types.OAuth2Mode_Auto:
+		tmpl, err = htmltpl.ParseFS(fs, "callback.html.tmpl")
+	default:
+		_, _ = fmt.Fprintf(w, "invalid mode: %s", g.oc.Mode)
+		return
+	}
+
 	if err != nil {
 		log.Errorf("gitlabOAuth2Support.renderCallback parse FS(%s) failed: %v", g.oc.Mode, err)
 		return
@@ -266,15 +283,15 @@ func (g *gitlabOAuth2Support) triggerAuthorize(ctx context.Context) {
 	form.Add("state", g.generateState())
 	form.Add("scope", g.oc.Scopes)
 
-	fmt.Println("Your access token is invalid or expired, please click following link to authorize:")
 	uri := fmt.Sprintf("%s%s?%s", g.oc.Host, step1URI, form.Encode())
-	fmt.Println(uri)
+	fmt.Printf("Your access token is invalid or expired, "+
+		"please click following link to authorize: \n\t %s\n", uri)
 
 	// oauth mode(OAuthMode_Manual) would not open browser,
 	// just print the uri and tips here.
 	if g.oc.Mode == types.OAuth2Mode_Manual {
 		tips := "HINT: copy the link above and paste it into your browser to authorize.\n" +
-			"Then copy the callback url from browser and execute as following command: \n" +
+			"Then copy the callback url from browser and execute as following command: \n\n" +
 			"curl -X GET ${CALLBACK_URL}"
 		fmt.Println(tips)
 		return
