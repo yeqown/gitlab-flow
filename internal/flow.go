@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	survey "github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 
@@ -254,6 +255,10 @@ func chooseOneProjectInteractively(projects []*repository.ProjectDO) (*repositor
 		Idx int `survey:"projects"`
 	}{}
 	if err := survey.Ask(qs, &r); err != nil {
+		if errors.Is(err, terminal.InterruptErr) {
+			log.Warn("user canceled the operation")
+		}
+
 		return nil, errors.Wrap(err, "survey.Ask failed")
 	}
 

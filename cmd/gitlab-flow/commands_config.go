@@ -6,6 +6,7 @@ import (
 	"os"
 
 	survey "github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
@@ -430,12 +431,15 @@ func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error 
 	}
 
 	ans := new(answer)
-	err := survey.Ask(questions, ans)
-	if err == nil {
-		log.
-			WithField("answer", ans).
-			Debug("surveyConfig done")
+	if err := survey.Ask(questions, ans); err != nil {
+		if errors.Is(err, terminal.InterruptErr) {
+			log.Warnf("user canceled the operation")
+		}
+		return errors.Wrap(err, "survey.Ask failed")
 	}
+	log.
+		WithField("answer", ans).
+		Debug("surveyConfig done")
 
 	u, err := url.Parse(ans.APIUrl)
 	if err != nil {
