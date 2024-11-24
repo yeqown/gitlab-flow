@@ -28,26 +28,11 @@ var _cliGlobalFlags = []cli.Flag{
 	// 	Usage:       "choose which `path/to/file` to load",
 	// 	Required:    false,
 	// },
-	&cli.StringFlag{
-		Name:        "cwd",
-		Value:       defaultCWD(),
-		DefaultText: defaultCWD(),
-		Usage:       "choose which `path/to/file` to load",
-		Required:    false,
-	},
 	&cli.BoolFlag{
 		Name:        "debug",
 		Value:       false,
 		Usage:       "verbose mode",
 		DefaultText: "false",
-		Required:    false,
-	},
-	&cli.StringFlag{
-		Name:        "project",
-		Aliases:     []string{"p"},
-		Value:       "",
-		DefaultText: path.Base(defaultCWD()),
-		Usage:       "input `projectName` to locate which project should be operate.",
 		Required:    false,
 	},
 	&cli.BoolFlag{
@@ -65,24 +50,42 @@ var _cliGlobalFlags = []cli.Flag{
 		DefaultText: "false",
 		Required:    false,
 	},
+	&cli.StringFlag{
+		Name:        "cwd",
+		Value:       "",
+		DefaultText: "",
+		Usage:       "choose which `path/to/file` to load",
+		Required:    false,
+	},
+	&cli.StringFlag{
+		Name:        "project",
+		Aliases:     []string{"p"},
+		Value:       "",
+		DefaultText: "",
+		Usage:       "input `projectName` to locate which project should be operate.",
+		Required:    false,
+	},
 }
 
 type globalFlags struct {
-	// ConfPath    string
-	DebugMode   bool
+	DebugMode   bool // verbose mode
+	OpenBrowser bool // open web browser automatically or not
+	ForceRemote bool // DO NOT query from local, or create remote resource even if local has the same name.
+
+	// ProjectName is the name of project which should be operated.
+	// if not set, will use the project name from current git repository.
 	ProjectName string
-	OpenBrowser bool
-	ForceRemote bool
-	CWD         string
+	// CWD is the current working directory,
+	// if not set, will use the current git repository root path.
+	CWD string
 }
 
 func parseGlobalFlags(c *cli.Context) globalFlags {
 	return globalFlags{
-		// ConfPath:    c.String("conf"),
 		DebugMode:   c.Bool("debug"),
-		ProjectName: c.String("project"),
 		OpenBrowser: c.Bool("web"),
 		ForceRemote: c.Bool("force-remote"),
+		ProjectName: c.String("project"),
 		CWD:         c.String("cwd"),
 	}
 }
@@ -131,26 +134,34 @@ func resolveFlags(flags globalFlags) (*types.FlowContext, internal.IConfigHelper
 		WithField("flags", flags).
 		Debugf("resolveFlags called")
 
+	var (
+		cwd         string = flags.CWD
+		projectName string = flags.ProjectName
+	)
+
+	// if current working directory is not set, use default cwd.
+	if cwd == "" {
+		cwd = defaultCWD()
+	}
 	// get absolute path of current working directory.
 	cwd, err := filepath.Abs(flags.CWD)
 	if err != nil {
-		log.
-			WithField("cwd", flags.CWD).
-			Fatalf("get absolute path of CWD failed: %v", err)
+		log.Fatalf("get absolute path of CWD(%s) failed: %v", flags.CWD, err)
+	}
+
+	// if project name is not set, use the base name of current working directory.
+	if projectName == "" {
+		projectName = path.Base(cwd)
 	}
 
 	helper, err := getConfigHelper(flags)
 	if err != nil {
-		log.
-			WithField("cwd", flags.CWD).
-			Fatalf("could not preload configuration: %v", err)
+		log.Fatalf("could not preload configuration: %v", err)
 		return nil, nil
 	}
 	c, err := helper.Project(true)
 	if err != nil {
-		log.
-			WithField("cwd", flags.CWD).
-			Fatalf("could not get merged configuration: %v", err)
+		log.Fatalf("could not get merged configuration: %v", err)
 		return nil, nil
 	}
 
@@ -188,15 +199,27 @@ var (
 	_defaultCwdOnce sync.Once
 )
 
+var tips = `HINT: current working directory maybe not a git repository, please make sure you 
+HINT: are in a git repository, retry after you are in a git repository.
+HINT:
+HINT: If you're in a git repository, please make sure you have installed git command.
+HINT:
+HINT: You are able to submit an issue to: 
+HINT: https://github.com/yeqown/gitlab-flow/issues
+`
+
 // defaultCWD returns the working directory of current project, default cwd is from
 // git rev-parse --show-toplevel command, but if the command could not execute successfully,
 // `pwd` command will be used instead.
+//
+// NOTICE that: if current working directory is not a git repository, the function shutdown and
+// print tips to user.
 func defaultCWD() string {
 	_defaultCwdOnce.Do(func() {
 		w := bytes.NewBuffer(nil)
 		if err := pkg.RunOutput("git rev-parse --show-toplevel", w); err != nil {
-			log.Warnf("executing 'git rev-parse --show-toplevel' failed: %v", err)
-			return
+			fmt.Printf(tips)
+			log.Fatalf("executing 'git rev-parse --show-toplevel' failed: %v", err)
 		}
 
 		if s := w.String(); s != "" {

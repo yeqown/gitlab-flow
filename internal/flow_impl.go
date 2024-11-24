@@ -123,9 +123,7 @@ func (f flowImpl) fillContextWithProject() error {
 		return nil
 	}
 
-	log.
-		WithFields(log.Fields{"project": projectName}).
-		Warnf("could not found from local: %v", err)
+	log.Warnf("could not found project(%s) from local: %v", projectName, err)
 
 locateFromRemote:
 	// query from remote repository.
