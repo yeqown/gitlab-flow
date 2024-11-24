@@ -83,8 +83,8 @@ func (d dashImpl) fillContextWithProject() error {
 
 	// err != nil or not injected
 	log.
-		WithFields(log.Fields{"project": projectName, "workDir": d.ctx.CWD(), "injected": injected}).
-		Fatalf("could not found from local: %v", err)
+		WithFields(log.Fields{"cwd": d.ctx.CWD(), "injected": injected}).
+		Fatalf("could not found project(%s) from local: %v", projectName, err)
 
 	return fmt.Errorf("could not found project(%s) from local: %v", projectName, err)
 }
