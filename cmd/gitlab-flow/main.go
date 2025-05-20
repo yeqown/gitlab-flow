@@ -28,7 +28,7 @@ func main() {
 	setupCommands(app)
 
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+		log.Infof("App quit: %v", err)
 	}
 }
 
@@ -40,7 +40,6 @@ func setupLogger() {
 func setupCommands(app *cli.App) {
 	app.Before = func(c *cli.Context) error {
 		if c.Bool("debug") {
-			log.SetCallerReporter(true)
 			log.SetLogLevel(log.LevelDebug)
 		}
 

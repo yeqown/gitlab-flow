@@ -180,6 +180,6 @@ type IGitlabOauth2Support interface {
 	// IGitlabOauth2Support.Load will return the refreshToken and accessToken after signaling.
 	Enter(refreshToken string) (err error)
 
-	// Load only use this after any signal from Enter channel. blocked method.
+	// Load only uses this after any signal from Enter channel. Blocked method.
 	Load() (accessToken, refreshToken string)
 }

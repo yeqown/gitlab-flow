@@ -14,6 +14,7 @@ import (
 	gogitlab "github.com/xanzy/go-gitlab"
 	"github.com/yeqown/log"
 
+	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitop "github.com/yeqown/gitlab-flow/internal/git-operator"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 	"github.com/yeqown/gitlab-flow/internal/repository"
@@ -24,7 +25,7 @@ import (
 
 // flowImpl implement IFlow.
 type flowImpl struct {
-	// ctx contains all properties of those flow want to take care.
+	// ctx contains all properties of those flows want to take care.
 	ctx *types.FlowContext
 
 	// gitlabOperator operate remote gitlab repository.
@@ -39,18 +40,11 @@ var (
 	errInvalidFeatureName = errors.New("feature branch could not be empty")
 )
 
-// refreshOAuthAccessToken check access token is valid or not. If access token becomes invalid
-// then refresh it, if refresh failed, it leads to  re-authorize.
+// refreshOAuthAccessToken check access token is valid or not. If the access token becomes invalid,
+// then refresh it, if refresh failed, it leads to re-authorize.
 func refreshOAuthAccessToken(ctx *types.FlowContext, ch IConfigHelper) {
-	c, _ := ch.Global()
-	oauth := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
-		Host:         c.GitlabHost,
-		ServeAddr:    c.OAuth2.CallbackHost,
-		AccessToken:  c.OAuth2.AccessToken,
-		RefreshToken: c.OAuth2.RefreshToken,
-		Scopes:       c.OAuth2.Scopes,
-		Mode:         c.OAuth2.Mode,
-	})
+	c := ch.Config(types.ConfigType_Global).AsGlobal()
+	oauth := gitlabop.NewOAuth2Support(gitlabop.NewOAuth2ConfigFrom(c))
 	if err := oauth.Enter(c.OAuth2.RefreshToken); err != nil {
 		log.
 			WithFields(log.Fields{"config": c}).
@@ -66,9 +60,8 @@ func refreshOAuthAccessToken(ctx *types.FlowContext, ch IConfigHelper) {
 	ctx.GetOAuth().AccessToken = accessToken
 	ctx.GetOAuth().RefreshToken = refreshToken
 
-	// FIXED: here maybe save project config(branch settings) into global config.
-	target, err := ch.Save(c, true)
-	if err != nil {
+	target := ch.SaveTo(types.ConfigType_Global)
+	if err := conf.Save(target, c); err != nil {
 		log.Debugf("checkOAuthAccessToken update access token into: %s failed: %v", target, err)
 	}
 }

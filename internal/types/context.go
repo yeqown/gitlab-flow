@@ -18,21 +18,21 @@ type ProjectBasics struct {
 type FlowContext struct {
 	mergedConfig *Config
 
-	// project of current working directory, normally, get from current working directory.
+	// project of the current working directory, normally, get from the current working directory.
 	project *ProjectBasics
-	// cwd represents current working directory.
+	// cwd represents the current working directory.
 	cwd string
-	// projectName the actual name of project.
+	// projectName the actual name of a project.
 	projectName string
 
-	// forceRemote force choose load project from remote(gitlab) rather than local.
+	// forceRemote force chooses load project from remote(gitlab) rather than local.
 	forceRemote bool
-	// debug indicates whether gitlab-flow print more detail logs.
+	// debug indicates whether gitlab-flow prints more detail logs.
 	debug       bool
 	openBrowser bool
 }
 
-// NewContext be generated with non project information.
+// NewContext be generated with non-project information.
 // Do not use Project directly!!!
 func NewContext(cwd, projectName string, c *Config, forceRemote bool) *FlowContext {
 	if cwd == "" {

@@ -44,14 +44,14 @@ func Test_OAuth2_authorize(t *testing.T) {
 }
 
 func Test_OAuth2_callback(t *testing.T) {
-	OAuth2AppID = "gitlab-flow"
-	OAuth2AppSecret = "your-secret"
 
 	v := NewOAuth2Support(&OAuth2Config{
 		Host:         "https://git.example.com",
 		ServeAddr:    "localhost:2333",
 		AccessToken:  "",
 		RefreshToken: "",
+		AppID:        "gitlab-flow",
+		AppSecret:    "your-secret",
 	})
 
 	time.Sleep(30 * time.Second)
