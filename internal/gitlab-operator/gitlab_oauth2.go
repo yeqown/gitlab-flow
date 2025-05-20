@@ -28,34 +28,48 @@ const (
 )
 
 var (
-	// OAuth2AppID and OAuth2AppSecret
-	// DONE(@yeqown) These two parameters should be passed from build parameters to keep application safety.
-	// go build -ldflags="-X package/sub.OAuth2AppID=XXX -X package/sub.OAuth2AppSecret=XXX" ./cmd/gitlab-flow
-	OAuth2AppID     string
-	OAuth2AppSecret string
-
 	errNilOAuth2Application = errors.New(
 		"empty app id or secret, visit: https://github.com/yeqown/gitlab-flow#access-token for more detail")
+
+	// SecretKey is used to encrypt and decrypt access token and refresh token.
+	// NOTE: this key must be 8 bytes long.
+	SecretKey = "aflowcli"
 )
 
 // OAuth2Config helps construct gitlab OAuth2 support.
 type OAuth2Config struct {
-	// Host of gitlab code repository web application, such as: https://git.example.com
+	// Host of gitlab code repository web application, such as https://git.example.com
 	Host string
 
 	// ServeAddr indicates which port will gitlabOAuth2Support will listen
 	// to receive callback request from gitlab oauth server.
 	ServeAddr string
 
+	// AppID and AppSecret are application id and secret of gitlab oauth2 application.
+	AppID, AppSecret string
+
 	// AccessToken, RefreshToken represent tokens stored before,
 	// if they are empty, means authorization is needed.
 	AccessToken, RefreshToken string
 
-	// Scopes is a string of scopes, such as: "api read_user"
+	// Scopes is a string of scopes, such as "api read_user"
 	Scopes string
 
 	// Mode represents the mode of OAuth2 authorization.
 	Mode types.OAuth2Mode
+}
+
+func NewOAuth2ConfigFrom(cfg *types.Config) *OAuth2Config {
+	return &OAuth2Config{
+		Host:         cfg.GitlabHost,
+		ServeAddr:    cfg.OAuth2.CallbackHost,
+		AccessToken:  cfg.OAuth2.AccessToken,                                      // empty
+		RefreshToken: cfg.OAuth2.RefreshToken,                                     // empty
+		AppID:        pkg.MustDesDecrypt(cfg.OAuth2.AppID, []byte(SecretKey)),     //
+		AppSecret:    pkg.MustDesDecrypt(cfg.OAuth2.AppSecret, []byte(SecretKey)), //
+		Scopes:       cfg.OAuth2.Scopes,
+		Mode:         cfg.OAuth2.Mode,
+	}
 }
 
 func (c *OAuth2Config) CallbackURI() string {
@@ -71,7 +85,7 @@ func fixOAuthConfig(c *OAuth2Config) error {
 		c.ServeAddr = "localhost:2333"
 	}
 
-	if OAuth2AppID == "" || OAuth2AppSecret == "" {
+	if c.AppID == "" || c.AppSecret == "" {
 		return errNilOAuth2Application
 	}
 
@@ -104,9 +118,6 @@ func NewOAuth2Support(c *OAuth2Config) IGitlabOauth2Support {
 		panic(err)
 	}
 
-	log.
-		WithField("config", c).
-		Debug("NewOAuth2Support called")
 	g := &gitlabOAuth2Support{
 		oc: c,
 		hc: &http.Client{
@@ -241,7 +252,7 @@ func (g *gitlabOAuth2Support) callbackHandl(w http.ResponseWriter, r *http.Reque
 		goto render
 	}
 
-	// authorization callback is in line with forecast.
+	// authorization callback is in line with the forecast.
 	if err := g.requestToken(r.Context(), code, false); err != nil {
 		log.Errorf("gitlabOAuth2Support callbackHandl failed to requestToken: %v", err)
 		data.Error = true
@@ -277,7 +288,7 @@ func (g *gitlabOAuth2Support) triggerAuthorize(ctx context.Context) {
 	_ = ctx
 	form := url.Values{}
 
-	form.Add("client_id", OAuth2AppID)
+	form.Add("client_id", g.oc.AppID)
 	form.Add("redirect_uri", g.oc.CallbackURI())
 	form.Add("response_type", "code")
 	form.Add("state", g.generateState())
@@ -287,8 +298,8 @@ func (g *gitlabOAuth2Support) triggerAuthorize(ctx context.Context) {
 	fmt.Printf("Your access token is invalid or expired, "+
 		"please click following link to authorize: \n\t %s\n", uri)
 
-	// oauth mode(OAuthMode_Manual) would not open browser,
-	// just print the uri and tips here.
+	// oauth mode(OAuthMode_Manual) would not open a browser,
+	// print the uri and tips here.
 	if g.oc.Mode == types.OAuth2Mode_Manual {
 		tips := "HINT: copy the link above and paste it into your browser to authorize.\n" +
 			"Then copy the callback url from browser and execute as following command: \n\n" +
@@ -313,8 +324,8 @@ var (
 // in case of Enter token expired, should be forced to re-request triggerAuthorize from user.
 func (g *gitlabOAuth2Support) requestToken(ctx context.Context, credential string, isRefresh bool) error {
 	form := url.Values{}
-	form.Add("client_id", OAuth2AppID)
-	form.Add("client_secret", OAuth2AppSecret)
+	form.Add("client_id", g.oc.AppID)
+	form.Add("client_secret", g.oc.AppSecret)
 	form.Add("redirect_uri", g.oc.CallbackURI())
 
 	switch isRefresh {

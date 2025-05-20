@@ -1,22 +1,20 @@
 ## Examples
 
-There are some examples of how to using `gitlab-flow` to help manage 
+There are some examples of how to use `gitlab-flow` to help manage 
 development resources.
 
 ### 0. Global flags
 
 ```sh
-flow [-c, --conf] [--debug] [--web] [-p, --project] [--force-remote] SUB_COMMAND [options]
-# (OPTIONAL) -c, --conf path/to/config_file.
-# (OPTIONAL) --debug verbose mode.
-# (OPTIONAL) --web open web browser of resource url automatically.
-# (OPTIONAL) -p, --project projectName of current working directory.
-# (OPTIONAL) --force-remote use project from remote not from local DB.
-
-# example:
-flow -c ~/.gitlab-flow --debug init ...
-# means initialize gitlab-flow config_file in specified 
-# directory `~/.gitlab-flow` and logs will be verbose
+flow [global options] command [command options] [arguments...]
+GLOBAL OPTIONS:
+   --debug                                verbose mode (default: false)
+   --force-remote                         query project from remote not from local. This should be used when project name is duplicated, and could not found from local. (default: false)
+   --web                                  open web browser automatically or not (default: false)
+   --cwd path/to/file                     choose which path/to/file to load
+   --project projectName, -p projectName  input projectName to locate which project should be operate.
+   --help, -h                             show help (default: false)
+   --version, -v                          print the version (default: false)
 ```
 
 ### 0.1 Feature flags

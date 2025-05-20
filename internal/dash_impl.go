@@ -41,10 +41,9 @@ func NewDash(ctx *types.FlowContext, ch IConfigHelper) IDash {
 		gitOperator: gitop.NewBasedCmd(ctx.CWD()),
 	}
 
-	// DONE(@yeqown): need load project info from local database.
+	// DONE(@yeqown): need load project info from a local database.
 	if err := dash.fillContextWithProject(); err != nil {
-		log.
-			Fatalf("could not locate project(%s): %v", ctx.ProjectName(), err)
+		log.Fatalf("could not locate project(%s): %v", ctx.ProjectName(), err)
 	}
 
 	return dash

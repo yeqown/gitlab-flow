@@ -25,74 +25,55 @@ func getConfigSubCommands() []*cli.Command {
 	}
 }
 
-func explainConfigFlags(c *cli.Context) (project, global bool, err error) {
-	global = c.Bool("global")
-	project = c.Bool("project")
-	if global && project {
-		err = errors.New("only one of global and project could be true")
-		return project, global, err
+func explainConfigFlags(c *cli.Context) types.ConfigType {
+	global := c.Bool("global")
+	if global {
+		return types.ConfigType_Global
 	}
 
-	if global || project {
-		return project, global, nil
-	}
-
-	// both are false, then set the project to true as default
-	global = true
-	return project, global, nil
+	return types.ConfigType_Project
 }
 
-// getConfigInitCommand initialize configuration gitlab-flow, generate default config file and sqlite DB
-// related to the path. This command interact with user to get configuration.
+// getConfigInitCommand initialize configuration gitlab-flow, generate a default config file and sqlite DB
+// related to the path. This command interacts with user to get configuration.
 // Usage: gitlab-flow [flags] config init
 func getConfigInitCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "init",
 		Usage: "initialize configuration gitlab-flow, generate default config file and sqlite DB",
 		Action: func(c *cli.Context) error {
-			_, global, err := explainConfigFlags(c)
-			if err != nil {
-				log.Errorf("explainConfigFlags failed: %v", err)
-				return nil
-			}
-
-			var cfg *types.Config
+			configType := explainConfigFlags(c)
 			flags := parseGlobalFlags(c)
-			helper, err := getConfigHelper(flags)
+			ch, err := getConfigHelper(flags)
 			if err != nil {
 				if !errors.Is(err, os.ErrNotExist) {
 					panic("load config file failed: " + err.Error())
 				}
-				cfg = conf.Default()
-			} else {
-				if global {
-					cfg, err = helper.Global()
-				} else {
-					cfg, err = helper.Project(true)
-				}
 			}
 
-			// Prompt user to input configuration
-			if global {
-				err = surveyConfig(cfg, true, true, true)
-			} else {
-				err = surveyConfig(cfg, false, false, true)
+			var configHolder types.ConfigHolder
+
+			switch configType {
+			case types.ConfigType_Project:
+				configHolder = ch.Config(types.ConfigType_Project)
+				err = surveyProjectConfig(configHolder.AsProject())
+			default:
+				configHolder = conf.Default()
+				err = surveyConfig(configHolder.AsGlobal())
 			}
 			if err != nil {
-				log.Errorf("failed to survey config: %v", err)
+				log.Warnf("failed to survey config: %v", err)
 				return err
 			}
 
-			if global {
-				// DONE(@yeqown): refresh user's access token
-				support := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
-					Host:         cfg.GitlabHost,
-					ServeAddr:    cfg.OAuth2.CallbackHost,
-					AccessToken:  "", // empty
-					RefreshToken: "", // empty
-					Scopes:       cfg.OAuth2.Scopes,
-					Mode:         cfg.OAuth2.Mode,
-				})
+			if err = configHolder.ValidateConfig(); err != nil {
+				log.Errorf("config is invalid: %v", err)
+				return err
+			}
+
+			if configType == types.ConfigType_Global {
+				cfg := configHolder.AsGlobal()
+				support := gitlabop.NewOAuth2Support(gitlabop.NewOAuth2ConfigFrom(cfg))
 				if err = support.Enter(""); err != nil {
 					log.
 						WithFields(log.Fields{"config": cfg}).
@@ -102,8 +83,13 @@ func getConfigInitCommand() *cli.Command {
 				cfg.OAuth2.AccessToken, cfg.OAuth2.RefreshToken = support.Load()
 			}
 
-			target, err := helper.Save(cfg, global)
-			if err != nil {
+			target := ch.SaveTo(configType)
+			if !surveySaveChoice(target) {
+				log.Info("Aborted to save configuration")
+				return nil
+			}
+
+			if err = conf.Save(target, configHolder); err != nil {
 				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
 				return err
 			}
@@ -116,7 +102,8 @@ func getConfigInitCommand() *cli.Command {
 
 // getConfigShowCommand show current configuration in the terminal.
 // Usage: gitlab-flow [flags] config show
-// Default print the project configuration, if it is not exist, print the default(global) configuration.
+// Default print the project configuration, if it does not exist
+// print the default(global) configuration.
 func getConfigShowCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "show",
@@ -138,12 +125,7 @@ func getConfigShowCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			_, global, err := explainConfigFlags(c)
-			if err != nil {
-				log.Errorf("explainConfigFlags failed: %v", err)
-				return nil
-			}
-
+			configType := explainConfigFlags(c)
 			flags := parseGlobalFlags(c)
 			ch, err := getConfigHelper(flags)
 			if err != nil {
@@ -151,61 +133,100 @@ func getConfigShowCommand() *cli.Command {
 				return nil
 			}
 
-			var (
-				cfg *types.Config
-			)
-
 			// Display project configuration by default.
-			cfg, err = ch.Project(true)
-			if global {
-				cfg, err = ch.Global()
-			}
-			if cfg == nil || err != nil {
-				log.Errorf("could not get configuration with err: %v", err)
-				return nil
+			configHolder := ch.Config(configType)
+			if configHolder == nil {
+				log.Error("could not get configuration")
+				return errors.New("could not get configuration")
 			}
 
 			// Branch settings
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"Module", "Setting", "Value"})
-			data := [][]string{
-				{"Branch Settings", "Master", cfg.Branch.Master.String()},
-				{"Branch Settings", "Dev", cfg.Branch.Dev.String()},
-				{"Branch Settings", "Test", cfg.Branch.Test.String()},
-				{"Branch Settings", "Feature Branch Prefix", cfg.Branch.FeatureBranchPrefix},
-				{"Branch Settings", "Hotfix Branch Prefix", cfg.Branch.HotfixBranchPrefix},
-				{"Branch Settings", "Conflict Branch Prefix", cfg.Branch.ConflictResolveBranchPrefix},
-				{"Branch Settings", "Issue Branch Prefix", cfg.Branch.IssueBranchPrefix},
-
-				{"Gitlab OAuth2", "Callback Host", cfg.OAuth2.CallbackHost},
-				{"Gitlab OAuth2", "Access Token", cfg.OAuth2.AccessToken},
-				{"Gitlab OAuth2", "Refresh Token", cfg.OAuth2.RefreshToken},
-
-				{"Gitlab", "API Endpoint", cfg.GitlabAPIURL},
-				{"Gitlab", "Host", cfg.GitlabHost},
-
-				{"Flags", "Debug", fmt.Sprintf("%v", cfg.DebugMode)},
-				{"Flags", "Auto Open Browser", fmt.Sprintf("%v", cfg.OpenBrowser)},
-			}
 			table.SetAutoMergeCells(true)
-			// table.SetHeaderColor(
-			// 	tablewriter.Colors{tablewriter.Bold, tablewriter.BgGreenColor},
-			// 	tablewriter.Colors{tablewriter.Bold, tablewriter.BgGreenColor},
-			// 	tablewriter.Colors{tablewriter.Bold, tablewriter.BgGreenColor},
-			// )
-
 			table.SetColumnColor(
 				tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiGreenColor},
 				tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiBlackColor},
 				tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
 			)
-			table.AppendBulk(data)
+
+			switch configHolder.Type() {
+			case types.ConfigType_Project:
+				cfg := configHolder.AsProject()
+				data := fillConfigRenderData(
+					cfg.Branch,
+					nil,
+					"",
+					"",
+					cfg.DebugMode,
+					cfg.OpenBrowser,
+					cfg.ProjectName,
+				)
+				table.AppendBulk(data)
+			case types.ConfigType_Global:
+				cfg := configHolder.AsGlobal()
+				data := fillConfigRenderData(
+					cfg.Branch,
+					cfg.OAuth2,
+					cfg.GitlabAPIURL,
+					cfg.GitlabHost,
+					&cfg.DebugMode,
+					&cfg.OpenBrowser,
+					"",
+				)
+				table.AppendBulk(data)
+			}
 
 			table.Render()
 
 			return nil
 		},
 	}
+}
+
+func fillConfigRenderData(
+	branch *types.BranchSetting,
+	oauth2 *types.OAuth,
+	gitlabAPIURL, gitlabHost string,
+	debug, openBrowser *bool,
+	projectName string,
+) (data [][]string) {
+	data = make([][]string, 0, 10)
+
+	if projectName != "" {
+		data = append(data, []string{"Project", "Name", projectName})
+	}
+
+	if branch != nil {
+		data = append(data, []string{"Branch Settings", "Master", branch.Master.String()})
+		data = append(data, []string{"Branch Settings", "Dev", branch.Dev.String()})
+		data = append(data, []string{"Branch Settings", "Test", branch.Test.String()})
+		data = append(data, []string{"Branch Settings", "Feature Branch Prefix", branch.FeatureBranchPrefix})
+		data = append(data, []string{"Branch Settings", "Hotfix Branch Prefix", branch.HotfixBranchPrefix})
+		data = append(data, []string{"Branch Settings", "Conflict Branch Prefix", branch.ConflictResolveBranchPrefix})
+	}
+
+	if oauth2 != nil {
+		data = append(data, []string{"Gitlab OAuth2", "Callback Host", oauth2.CallbackHost})
+		data = append(data, []string{"Gitlab OAuth2", "Access Token", oauth2.AccessToken})
+		data = append(data, []string{"Gitlab OAuth2", "Refresh Token", oauth2.RefreshToken})
+	}
+
+	if gitlabAPIURL != "" {
+		data = append(data, []string{"Gitlab", "API Endpoint", gitlabAPIURL})
+	}
+	if gitlabHost != "" {
+		data = append(data, []string{"Gitlab", "Host", gitlabHost})
+	}
+
+	if debug != nil {
+		data = append(data, []string{"Flags", "Debug", fmt.Sprintf("%v", *debug)})
+	}
+	if openBrowser != nil {
+		data = append(data, []string{"Flags", "Auto Open Browser", fmt.Sprintf("%v", *openBrowser)})
+	}
+
+	return data
 }
 
 // getConfigEditCommand edit current configuration in the terminal, interact with user to get configuration.
@@ -216,12 +237,7 @@ func getConfigEditCommand() *cli.Command {
 		Name:  "edit",
 		Usage: "edit current configuration",
 		Action: func(c *cli.Context) error {
-			_, global, err := explainConfigFlags(c)
-			if err != nil {
-				log.Errorf("explainConfigFlags failed: %v", err)
-				return nil
-			}
-
+			configType := explainConfigFlags(c)
 			flags := parseGlobalFlags(c)
 			helper, err := getConfigHelper(flags)
 			if err != nil {
@@ -229,26 +245,20 @@ func getConfigEditCommand() *cli.Command {
 				return errors.Wrap(err, "preload configuration failed")
 			}
 
-			cfg, err := helper.Project(true)
-			if global {
-				cfg, err = helper.Global()
-			}
-			if cfg == nil || err != nil {
-				log.Error("could not get configuration")
-				return errors.New("could not get configuration")
-			}
+			configHolder := helper.Config(configType)
 
-			// Prompt user to input configuration
-			if global {
-				log.Info("You're editing global configuration !")
-				// DO NOT Merge the project configuration into global configuration
-				err = surveyConfig(cfg, true, true, true)
-			} else {
-				log.Info("You're editing project configuration!")
-				err = surveyConfig(cfg, false, false, true)
+			switch configType {
+			case types.ConfigType_Project:
+				err = surveyProjectConfig(configHolder.AsProject())
+			default:
+				err = surveyConfig(configHolder.AsGlobal())
 			}
 			if err != nil {
-				log.Errorf("failed to survey config: %v", err)
+				log.Warnf("failed to survey config: %v", err)
+				return err
+			}
+			if err = configHolder.ValidateConfig(); err != nil {
+				log.Errorf("config is invalid: %v", err)
 				return err
 			}
 
@@ -259,13 +269,13 @@ func getConfigEditCommand() *cli.Command {
 			default:
 			}
 
-			if err = helper.ValidateConfig(cfg, global); err != nil {
-				log.Errorf("config is invalid: %v", err)
+			target := helper.SaveTo(configType)
+			if !surveySaveChoice(target) {
+				log.Info("Aborted to save configuration")
 				return nil
 			}
 
-			target, err := helper.Save(cfg, global)
-			if err != nil {
+			if err = conf.Save(target, configHolder); err != nil {
 				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
 				return err
 			}
@@ -297,16 +307,34 @@ func buildGitlabQuestions(cfg *types.Config) []*survey.Question {
 			},
 			Validate: survey.Required,
 		},
+		{
+			Name: "appID",
+			Prompt: &survey.Input{
+				Message: "Input your gitlab AppID",
+				Default: "",
+				Help:    "DES + base64 encoded, default DES secret: `aflowcli`",
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "appSecret",
+			Prompt: &survey.Input{
+				Message: "Input your gitlab AppSecret",
+				Default: "",
+				Help:    "DES + base64 encoded, default DES secret: `aflowcli`",
+			},
+			Validate: survey.Required,
+		},
 	}
 }
 
-func buildFlagsQuestions(cfg *types.Config) []*survey.Question {
-	return []*survey.Question{
+func buildFlagsQuestions(debugMode, openBrowser bool, withOAuthMode bool) []*survey.Question {
+	qs := []*survey.Question{
 		{
 			Name: "debugMode",
 			Prompt: &survey.Confirm{
 				Message: "Would you like to use gitlab in debug mode?",
-				Default: cfg.DebugMode,
+				Default: debugMode,
 			},
 			Validate:  nil,
 			Transform: nil,
@@ -315,12 +343,15 @@ func buildFlagsQuestions(cfg *types.Config) []*survey.Question {
 			Name: "openBrowser",
 			Prompt: &survey.Confirm{
 				Message: "Would you let gitlab-flow open browser automatically when needed",
-				Default: cfg.OpenBrowser,
+				Default: openBrowser,
 			},
 			Validate:  nil,
 			Transform: nil,
 		},
-		{
+	}
+
+	if withOAuthMode {
+		qs = append(qs, &survey.Question{
 			Name: "oauthMode",
 			Prompt: &survey.Select{
 				Message: "Select your OAuth2 mode. If you are not in desktop environment, please select manual",
@@ -332,17 +363,31 @@ func buildFlagsQuestions(cfg *types.Config) []*survey.Question {
 			},
 			Validate:  nil,
 			Transform: nil,
+		})
+	}
+
+	return qs
+}
+
+func buildProjectNameQuestions(name string) []*survey.Question {
+	return []*survey.Question{
+		{
+			Name: "projectName",
+			Prompt: &survey.Input{
+				Message: "Input your project name",
+				Default: name,
+			},
 		},
 	}
 }
 
-func buildBranchQuestions(cfg *types.Config) []*survey.Question {
+func buildBranchQuestions(cfg *types.BranchSetting) []*survey.Question {
 	return []*survey.Question{
 		{
 			Name: "masterBranch",
 			Prompt: &survey.Input{
 				Message: "Input your master branch name",
-				Default: string(cfg.Branch.Master),
+				Default: string(cfg.Master),
 			},
 			Validate:  survey.Required,
 			Transform: nil,
@@ -351,7 +396,7 @@ func buildBranchQuestions(cfg *types.Config) []*survey.Question {
 			Name: "devBranch",
 			Prompt: &survey.Input{
 				Message: "Input your dev branch name",
-				Default: string(cfg.Branch.Dev),
+				Default: string(cfg.Dev),
 			},
 			Validate:  survey.Required,
 			Transform: nil,
@@ -360,7 +405,7 @@ func buildBranchQuestions(cfg *types.Config) []*survey.Question {
 			Name: "testBranch",
 			Prompt: &survey.Input{
 				Message: "Input your test branch name",
-				Default: string(cfg.Branch.Test),
+				Default: string(cfg.Test),
 			},
 			Validate:  survey.Required,
 			Transform: nil,
@@ -369,7 +414,7 @@ func buildBranchQuestions(cfg *types.Config) []*survey.Question {
 			Name: "featureBranchPrefix",
 			Prompt: &survey.Input{
 				Message: "Input your feature branch prefix",
-				Default: cfg.Branch.FeatureBranchPrefix,
+				Default: cfg.FeatureBranchPrefix,
 			},
 			Validate:  survey.Required,
 			Transform: nil,
@@ -378,7 +423,7 @@ func buildBranchQuestions(cfg *types.Config) []*survey.Question {
 			Name: "hotfixBranchPrefix",
 			Prompt: &survey.Input{
 				Message: "Input your hotfix branch prefix",
-				Default: cfg.Branch.HotfixBranchPrefix,
+				Default: cfg.HotfixBranchPrefix,
 			},
 			Validate:  survey.Required,
 			Transform: nil,
@@ -387,7 +432,7 @@ func buildBranchQuestions(cfg *types.Config) []*survey.Question {
 			Name: "conflictResolveBranchPrefix",
 			Prompt: &survey.Input{
 				Message: "Input your conflict resolve branch prefix",
-				Default: cfg.Branch.ConflictResolveBranchPrefix,
+				Default: cfg.ConflictResolveBranchPrefix,
 			},
 			Validate:  survey.Required,
 			Transform: nil,
@@ -396,7 +441,7 @@ func buildBranchQuestions(cfg *types.Config) []*survey.Question {
 			Name: "issueBranchPrefix",
 			Prompt: &survey.Input{
 				Message: "Input your issue branch prefix",
-				Default: cfg.Branch.IssueBranchPrefix,
+				Default: cfg.IssueBranchPrefix,
 			},
 			Validate:  survey.Required,
 			Transform: nil,
@@ -406,7 +451,7 @@ func buildBranchQuestions(cfg *types.Config) []*survey.Question {
 
 // surveyConfig initialize configuration in an interactive session.
 // DONE(@yeqown): init flow2 in survey method.
-func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error {
+func surveyConfig(cfg *types.Config) error {
 	log.
 		WithField("config", cfg).
 		Debug("surveyConfig called")
@@ -416,21 +461,11 @@ func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error 
 	}
 
 	questions := make([]*survey.Question, 0, 8)
-	if askGitlab {
-		questions = append(questions, buildGitlabQuestions(cfg)...)
-	}
-	if askFlags {
-		questions = append(questions, buildFlagsQuestions(cfg)...)
-	}
-	if askBranch {
-		questions = append(questions, buildBranchQuestions(cfg)...)
-	}
+	questions = append(questions, buildGitlabQuestions(cfg)...)
+	questions = append(questions, buildFlagsQuestions(cfg.DebugMode, cfg.OpenBrowser, true)...)
+	questions = append(questions, buildBranchQuestions(cfg.Branch)...)
 
-	if len(questions) == 0 {
-		return nil
-	}
-
-	ans := new(answer)
+	ans := new(configSurveyAns)
 	if err := survey.Ask(questions, ans); err != nil {
 		if errors.Is(err, terminal.InterruptErr) {
 			log.Warnf("user canceled the operation")
@@ -438,7 +473,7 @@ func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error 
 		return errors.Wrap(err, "survey.Ask failed")
 	}
 	log.
-		WithField("answer", ans).
+		WithField("configSurveyAns", ans).
 		Debug("surveyConfig done")
 
 	u, err := url.Parse(ans.APIUrl)
@@ -458,6 +493,8 @@ func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error 
 		}
 		return types.OAuth2Mode_Auto
 	}(ans.OAuthMode)
+	cfg.OAuth2.AppID = ans.AppID
+	cfg.OAuth2.AppSecret = ans.AppSecret
 
 	cfg.DebugMode = ans.DebugMode
 	cfg.OpenBrowser = ans.OpenBrowser
@@ -473,13 +510,15 @@ func surveyConfig(cfg *types.Config, askGitlab, askFlags, askBranch bool) error 
 	return err
 }
 
-type answer struct {
+type configSurveyAns struct {
 	APIUrl       string
 	CallbackHost string
 
 	OpenBrowser bool
 	DebugMode   bool
 	OAuthMode   string
+	AppID       string
+	AppSecret   string
 
 	MasterBranch                string
 	DevBranch                   string
@@ -488,4 +527,64 @@ type answer struct {
 	HotfixBranchPrefix          string
 	ConflictResolveBranchPrefix string
 	IssueBranchPrefix           string
+}
+
+func surveyProjectConfig(cfg *types.ProjectConfig) error {
+	questions := make([]*survey.Question, 0, 4)
+	questions = append(questions, buildProjectNameQuestions(cfg.ProjectName)...)
+	questions = append(questions, buildBranchQuestions(cfg.Branch)...)
+	questions = append(questions, buildFlagsQuestions(*cfg.DebugMode, *cfg.OpenBrowser, false)...)
+
+	ans := new(projectSurveyAns)
+	if err := survey.Ask(questions, ans); err != nil {
+		if errors.Is(err, terminal.InterruptErr) {
+			log.Warnf("user canceled the operation")
+		}
+
+		return errors.Wrap(err, "survey.Ask failed")
+	}
+
+	cfg.ProjectName = ans.ProjectName
+
+	cfg.DebugMode = &ans.DebugMode
+	cfg.OpenBrowser = &ans.OpenBrowser
+
+	cfg.Branch.Master = types.BranchTyp(ans.MasterBranch)
+	cfg.Branch.Dev = types.BranchTyp(ans.DevBranch)
+	cfg.Branch.Test = types.BranchTyp(ans.TestBranch)
+	cfg.Branch.FeatureBranchPrefix = ans.FeatureBranchPrefix
+	cfg.Branch.HotfixBranchPrefix = ans.HotfixBranchPrefix
+	cfg.Branch.ConflictResolveBranchPrefix = ans.ConflictResolveBranchPrefix
+	cfg.Branch.IssueBranchPrefix = ans.IssueBranchPrefix
+
+	return nil
+}
+
+type projectSurveyAns struct {
+	ProjectName string
+
+	OpenBrowser bool
+	DebugMode   bool
+
+	MasterBranch                string
+	DevBranch                   string
+	TestBranch                  string
+	FeatureBranchPrefix         string
+	HotfixBranchPrefix          string
+	ConflictResolveBranchPrefix string
+	IssueBranchPrefix           string
+}
+
+func surveySaveChoice(target string) bool {
+	ans := new(bool)
+	if err := survey.AskOne(&survey.Confirm{
+		Message: "The configuration would saved to " + target + ", continue?",
+		Default: true,
+	}, ans); err != nil {
+		if errors.Is(err, terminal.InterruptErr) {
+			log.Warnf("user canceled the operation")
+		}
+	}
+
+	return *ans
 }

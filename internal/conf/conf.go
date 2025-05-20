@@ -57,45 +57,23 @@ var (
 	projectConfigTpl             = template.Must(template.New("project_config").Parse(projectConfigTemplateContent))
 )
 
-// Parser is an interface to parse config in different ways.
-// For example: JSON, TOML and YAML;
-type Parser interface {
-	// Unmarshal ...
-	Unmarshal(r io.Reader, rcv *types.Config) error
-
-	// Marshal ...
-	Marshal(cfg *types.Config) ([]byte, error)
-}
-
 // Load to load config from confPath with specified parser.
-func Load(confPath string, parser Parser, must bool) (cfg *types.Config, err error) {
-	if parser == nil {
-		parser = NewTOMLParser()
-	}
-
-	cfg = &types.Config{
-		OAuth2:       new(types.OAuth),
-		Branch:       new(types.BranchSetting),
-		GitlabAPIURL: "",
-		GitlabHost:   "",
-		DebugMode:    false,
-		OpenBrowser:  false,
-	}
+func Load(confPath string, cfg types.ConfigHolder, must bool) (err error) {
 	p := precheckConfigDirectory(confPath)
 	var r io.Reader
 	if r, err = os.Open(p); err != nil {
 		if !must && os.IsNotExist(err) {
-			return nil, nil
+			return nil
 		}
-		return nil, errors.Wrap(err, "conf.Load")
+		return errors.Wrap(err, "conf.Load")
 	}
 
-	err = parser.Unmarshal(r, cfg)
+	err = NewTOMLParser().Unmarshal(r, cfg)
 
-	return cfg, err
+	return err
 }
 
-func Save(confPath string, cfg *types.Config, global bool) error {
+func Save(confPath string, c types.ConfigHolder) error {
 	p := precheckConfigDirectory(confPath)
 	w, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
@@ -106,13 +84,14 @@ func Save(confPath string, cfg *types.Config, global bool) error {
 	}()
 
 	var tpl *template.Template
-	if global {
-		tpl = configTpl
-	} else {
+	switch c.Type() {
+	case types.ConfigType_Project:
 		tpl = projectConfigTpl
+	default:
+		tpl = configTpl
 	}
 
-	if err = tpl.Execute(w, cfg); err != nil {
+	if err = tpl.Execute(w, c); err != nil {
 		return errors.Wrap(err, "execute template")
 	}
 

@@ -13,6 +13,7 @@ import (
 	"github.com/yeqown/log"
 
 	"github.com/yeqown/gitlab-flow/internal"
+	"github.com/yeqown/gitlab-flow/internal/conf"
 	"github.com/yeqown/gitlab-flow/internal/types"
 	"github.com/yeqown/gitlab-flow/pkg"
 )
@@ -73,7 +74,7 @@ type globalFlags struct {
 	ForceRemote bool // DO NOT query from local, or create remote resource even if local has the same name.
 
 	// ProjectName is the name of project which should be operated.
-	// if not set, will use the project name from current git repository.
+	// if not set, we will use the project name from the current git repository.
 	ProjectName string
 	// CWD is the current working directory,
 	// if not set, will use the current git repository root path.
@@ -118,80 +119,116 @@ func getDash(c *cli.Context) internal.IDash {
 }
 
 func getConfigHelper(flags globalFlags) (internal.IConfigHelper, error) {
-	ctx := &internal.ConfigHelperContext{
-		CWD: flags.CWD,
+	cwd := defaultCWD()
+	if flags.CWD != "" {
+		cwd = flags.CWD
 	}
-	ch := internal.NewConfigHelper(ctx)
-	err := ch.Preload()
-	return ch, err
+
+	ctx := &internal.ConfigHelperContext{
+		CWD:             cwd,
+		ProjectConfPath: conf.ConfigPath(cwd),
+		GlobalConfPath:  conf.ConfigPath(""),
+	}
+
+	return internal.NewConfigHelper(ctx)
 }
 
-// resolveFlags set global environment of debug mode.
-// DONE(@yeqown): apply project name from CLI and CWD.
-// DONE(@yeqown): CWD could be configured from CLI.
+func mergeConfig(c1 *types.ProjectConfig, c2 *types.Config) *types.Config {
+	render := &types.Config{
+		OAuth2:       c2.OAuth2,
+		Branch:       c2.Branch,
+		GitlabAPIURL: c2.GitlabAPIURL,
+		GitlabHost:   c2.GitlabHost,
+		DebugMode:    c2.DebugMode,
+		OpenBrowser:  c2.DebugMode,
+	}
+
+	if c1 == nil {
+		return render
+	}
+
+	if c1.Branch != nil {
+		render.Branch = c1.Branch
+	}
+	if c1.DebugMode != nil {
+		render.DebugMode = *c1.DebugMode
+	}
+	if c1.OpenBrowser != nil {
+		render.OpenBrowser = *c1.OpenBrowser
+	}
+
+	return render
+}
+
+// resolveFlags collects flags and config settings from a config file and flags
+// and returns a context which keeps all the settings to run the command.
 func resolveFlags(flags globalFlags) (*types.FlowContext, internal.IConfigHelper) {
 	log.
 		WithField("flags", flags).
 		Debugf("resolveFlags called")
-
-	var (
-		cwd         string = flags.CWD
-		projectName string = flags.ProjectName
-	)
-
-	// if current working directory is not set, use default cwd.
-	if cwd == "" {
-		cwd = defaultCWD()
-	}
-	// get absolute path of current working directory.
-	cwd, err := filepath.Abs(flags.CWD)
-	if err != nil {
-		log.Fatalf("get absolute path of CWD(%s) failed: %v", flags.CWD, err)
-	}
-
-	// if project name is not set, use the base name of current working directory.
-	if projectName == "" {
-		projectName = path.Base(cwd)
-	}
 
 	helper, err := getConfigHelper(flags)
 	if err != nil {
 		log.Fatalf("could not preload configuration: %v", err)
 		return nil, nil
 	}
-	c, err := helper.Project(true)
-	if err != nil {
-		log.Fatalf("could not get merged configuration: %v", err)
-		return nil, nil
-	}
 
-	// pass flags parameters into configuration
-	if flags.DebugMode {
-		c.DebugMode = flags.DebugMode
-	}
-	if flags.OpenBrowser {
-		c.OpenBrowser = flags.OpenBrowser
-	}
+	c1 := helper.Config(types.ConfigType_Project).AsProject()
+	c2 := helper.Config(types.ConfigType_Global).AsGlobal()
+	mergedConfig := mergeConfig(c1, c2)
 
-	if err = helper.ValidateConfig(c, true); err != nil {
-		log.
-			WithFields(log.Fields{
-				"config":          c,
-				"config.branches": c.Branch,
-				"oauth":           c.OAuth2,
-			}).
-			Fatalf("config is invalid: %v", err)
-	}
+	log.
+		WithFields(log.Fields{
+			"c1":     c1,
+			"c2":     c2,
+			"merged": mergedConfig,
+		}).
+		Debugf("merged config")
 
-	types.SetBranchSetting(c.Branch.Master, c.Branch.Dev, c.Branch.Test)
-	types.SetBranchPrefix(
-		c.Branch.FeatureBranchPrefix,
-		c.Branch.HotfixBranchPrefix,
-		c.Branch.ConflictResolveBranchPrefix,
-		c.Branch.IssueBranchPrefix,
+	var (
+		// The current working directory: from `pwd` < flag
+		cwd = defaultCWD()
+
+		// The project name: from `pwd` < config < flag
+		projectName string
 	)
 
-	return types.NewContext(cwd, flags.ProjectName, c, flags.ForceRemote), helper
+	/* cwd */
+	if flags.CWD != "" {
+		// get an absolute path of current working directory.
+		cwd, err = filepath.Abs(flags.CWD)
+		if err != nil {
+			log.Fatalf("get absolute path of CWD(%s) failed: %v", flags.CWD, err)
+		}
+		cwd = flags.CWD
+	}
+
+	/* project name */
+	projectName = path.Base(cwd)
+	if c1.ProjectName != "" {
+		projectName = c1.ProjectName
+	}
+	if flags.ProjectName != "" {
+		projectName = flags.ProjectName
+	}
+
+	/* debug, open browser */
+	if flags.DebugMode {
+		mergedConfig.DebugMode = flags.DebugMode
+	}
+	if flags.OpenBrowser {
+		mergedConfig.OpenBrowser = flags.OpenBrowser
+	}
+
+	types.SetBranchSetting(mergedConfig.Branch.Master, mergedConfig.Branch.Dev, mergedConfig.Branch.Test)
+	types.SetBranchPrefix(
+		mergedConfig.Branch.FeatureBranchPrefix,
+		mergedConfig.Branch.HotfixBranchPrefix,
+		mergedConfig.Branch.ConflictResolveBranchPrefix,
+		mergedConfig.Branch.IssueBranchPrefix,
+	)
+
+	return types.NewContext(cwd, projectName, mergedConfig, flags.ForceRemote), helper
 }
 
 var (
@@ -208,18 +245,18 @@ HINT: You are able to submit an issue to:
 HINT: https://github.com/yeqown/gitlab-flow/issues
 `
 
-// defaultCWD returns the working directory of current project, default cwd is from
+// defaultCWD returns the working directory of the current project, default cwd is from
 // git rev-parse --show-toplevel command, but if the command could not execute successfully,
 // `pwd` command will be used instead.
 //
-// NOTICE that: if current working directory is not a git repository, the function shutdown and
+// NOTICE that if the current working directory is not a git repository, the function shutdown and
 // print tips to user.
 func defaultCWD() string {
 	_defaultCwdOnce.Do(func() {
 		w := bytes.NewBuffer(nil)
 		if err := pkg.RunOutput("git rev-parse --show-toplevel", w); err != nil {
 			fmt.Printf(tips)
-			log.Fatalf("executing 'git rev-parse --show-toplevel' failed: %v", err)
+			log.Warnf("executing 'git rev-parse --show-toplevel' failed: %v", err)
 		}
 
 		if s := w.String(); s != "" {
@@ -233,6 +270,8 @@ func defaultCWD() string {
 		_defaultCWD = strings.Trim(_defaultCWD, "\n")
 		_defaultCWD = strings.Trim(_defaultCWD, "\t")
 	})
+
+	log.Infof("gitlab-flow working directory: %s", _defaultCWD)
 
 	return _defaultCWD
 }

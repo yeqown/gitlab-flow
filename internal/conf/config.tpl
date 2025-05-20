@@ -35,6 +35,8 @@ open_browser = {{.OpenBrowser}}
 [oauth]
   access_token = "{{.OAuth2.AccessToken}}"
   refresh_token = "{{.OAuth2.RefreshToken}}"
+  app_id = "{{.OAuth2.AppID}}"
+  app_secret = "{{.OAuth2.AppSecret}}"
   # DO NOT MODIFY THE FOLLOWING LINES UNLESS YOU KNOW WHAT YOU ARE DOING
   scopes = "api read_user read_repository"
   callback_host = "{{.OAuth2.CallbackHost}}"

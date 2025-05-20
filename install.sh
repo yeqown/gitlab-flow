@@ -1,40 +1,33 @@
 #!/bin/bash
 
-# install gitlab-flow2 with gitlab application(appId, appSecret)
+# install gitlab-flow2 with gitlab application(secretKey?)
 # replace follow variables with your personal parameters,
 # or export them into ENV variables.
-# APP_ID=__YOUR_APP_ID__
-# APP_SECRET=__YOUR_APP_SECRET__
+# SECRET_KEY=__YOUR_SECRET_KEY__
 #
 #
 # Usage:
-#   APP_ID=gitlab_app_id APP_SECRET=gitlab_app_secret BIN=gitlab-flow ./install.sh
+#   SECRET_KEY=gitlab_app_id BIN=gitlab-flow ./install.sh
+SECRET_KEY="aflowcli"
 
-if [ -z "${APP_ID}" ]; then
-  echo "Empty APP_ID, !!!replace your APP_ID at first"
-  exit 1
-fi
-
-if [ -z "${APP_SECRET}" ]; then
-  echo "Empty APP_SECRET, !!!replace your APP_SECRET at first"
-  exit 1
+if [ -z "${SECRET_KEY}" ]; then
+  echo "Warning: SECRET_KEY is empty, using default value: aflowcli"
+  $SECRET_KEY="aflowcli"
 fi
 
 if [ -z "${BIN}" ]; then
-  echo "Empty BIN, using default name: gitlab-flow"
+  echo "Warning: BIN is empty, using default value: gitlab-flow"
   BIN="gitlab-flow"
 fi
 
 # echo build info and start compiling
 echo "Start compiling..."
-echo "APP_ID=${APP_ID}"
-echo "APP_SECRET=${APP_SECRET}"
+echo "SECRET_KEY=${SECRET_KEY}"
 echo "BIN=${BIN}"
 
 go build \
   -o "${BIN}" \
-  -ldflags="-X 'github.com/yeqown/gitlab-flow/internal/gitlab-operator.OAuth2AppID=${APP_ID}' \
-            -X 'github.com/yeqown/gitlab-flow/internal/gitlab-operator.OAuth2AppSecret=${APP_SECRET}'" \
+  -ldflags="-X 'github.com/yeqown/gitlab-flow/internal/gitlab-operator.SecretKey=${SECRET_KEY}'" \
   ./cmd/gitlab-flow
 
 # check if compiled successfully, then install it

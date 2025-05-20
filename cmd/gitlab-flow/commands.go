@@ -4,58 +4,6 @@ import (
 	cli "github.com/urfave/cli/v2"
 )
 
-//
-//// getInitCommand
-//// Deprecated: use `flow config init` instead
-//func getInitCommand() *cli.Command {
-//	return &cli.Command{
-//		Name: "init",
-//		Usage: "initialize configuration gitlab-flow, generate default config file and sqlite DB " +
-//			"related to the path",
-//		Action: func(c *cli.Context) error {
-//			confPath := c.String("conf")
-//			cfg, err := conf.Load(confPath, nil)
-//			if err != nil {
-//				if !errors.Is(err, os.ErrNotExist) {
-//					panic("load config file failed: " + err.Error())
-//				}
-//
-//				cfg = conf.Default()
-//			}
-//
-//			// Prompt user to input configuration
-//			if err = surveyConfig(cfg); err != nil {
-//				log.Errorf("failed to survey config: %v", err)
-//				return err
-//			}
-//
-//			// DONE(@yeqown): refresh user's access token
-//			support := gitlabop.NewOAuth2Support(&gitlabop.OAuth2Config{
-//				Host:         cfg.GitlabHost,
-//				ServeAddr:    cfg.OAuth2.CallbackHost,
-//				AccessToken:  "", // empty
-//				RefreshToken: "", // empty
-//				Scopes:       cfg.OAuth2.Scopes,
-//			})
-//			if err = support.Enter(""); err != nil {
-//				log.
-//					WithFields(log.Fields{"config": cfg}).
-//					Error("gitlab-flow initialize.oauth failed:", err)
-//				return err
-//			}
-//			cfg.OAuth2.AccessToken, cfg.OAuth2.RefreshToken = support.Load()
-//
-//			if err = conf.Save(confPath, cfg, nil); err != nil {
-//				log.Errorf("gitlab-flow initialize.saveConfig failed: %v", err)
-//				return err
-//			}
-//
-//			log.Infof("gitlab-flow has initialized. conf path is %s", confPath)
-//			return nil
-//		},
-//	}
-//}
-
 // getFeatureCommand
 // gitlab-flow feature [command options] -c --conf
 func getFeatureCommand() *cli.Command {
@@ -142,14 +90,6 @@ func getConfigCommand() *cli.Command {
 				Value:       false,
 				DefaultText: "false",
 				Usage:       "show global configuration",
-				Required:    false,
-			},
-			&cli.BoolFlag{
-				Name:        "project",
-				Aliases:     []string{"p"},
-				Value:       false,
-				DefaultText: "false",
-				Usage:       "show project configuration",
 				Required:    false,
 			},
 		},

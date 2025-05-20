@@ -26,19 +26,16 @@ Before you install `gitlab-flow`, you need apply a gitlab application on your gi
 4. Click `Save application`.
 5. Copy `Application Id` and `Secret`.
 
-#### 2. Compile your AppId and AppSecret into binary
+#### 2. Download or Compile binary
 
-> Currently, there is no precompiled binary to install directly, since `gitlab-flow` compiled
-> `AppId` and `AppSecret` into binary. So you need to compile by yourself.
+`gitlab-flow` need a gitlab application to access gitlab server, so we need to configure the application id and secret at 
+step 4. And them are encrypted by `SECRET_KEY`, so you need to set `SECRET_KEY` to encrypt the application id and secret. 
 
-Now, you got `Application Id` and `Secret`.
-
-There is no precompiled binary to install directly, so you need to install by yourself.
+> The default `SECRET_KEY` is `aflowcli`, you can change it by compiling `gitlab-flow` yourself.
 
 ```shell
-APP_ID=YOUR_GITLAB_APP_ID \
-APP_SECRET=YOUR_GITLAB_APP_SECRET \
-BIN=gitlab-flow \ # or any name you like
+SECRET_KEY=YOUR_SECRET_KEY \ # 8 bytes ONLY
+BIN=flow2 \ # or any name you like
 bash install.sh
 ```
 
@@ -53,12 +50,23 @@ $ which gitlab-flow
 
 #### 4. Initialize gitlab-flow
 
-After installation, you need to configure `gitlab-flow` by running `init` subcommand. This is a interactive command,
-it will ask you some questions to generate a configuration file and a sqlite database file.
+After installation, you need to configure `gitlab-flow` by running `config init` subcommand. This is an interactive command,
+it will ask you some questions to generate a configuration file and a `sqlite` database file.
 The home directory of `gitlab-flow` is `~/.gitlab-flow`.
 
+Before you run `config init`, you need to encrypt your `APP_ID` and `APP_SECRET` by `SECRET_KEY` you set in step 2.
+
+Here is an example of encrypting `APP_ID` and `APP_SECRET` by `SECRET_KEY` with pseudocode.
+
 ```shell
-$ gitlab-flow config init
+def encrypt(appId, appSecret, secretKey):
+	encrypted_appId = des_encrypt(appID, secretKey)
+	encrypted_appSecret = des_encrypt(appSecret, secretKey)
+	return base64_encode(encrypted_appId), base64_encode(encrypted_appSecret)
+```
+
+```shell
+$ gitlab-flow config --global init
 ```
 
 > NOTICE: `gitlab-flow` will request OAuth2 credentials from your gitlab server, 
