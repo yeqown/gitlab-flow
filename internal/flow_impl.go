@@ -1030,7 +1030,6 @@ func (f flowImpl) createMergeRequest(
 	autoMerge bool,
 ) (*gitlabop.CreateMergeResult, error) {
 	ctx := context.Background()
-	// MergeRequest is still Work in progress
 	title = "WIP: " + title
 	// Closes related issue
 	if issueIID != 0 {
