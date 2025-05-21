@@ -94,10 +94,10 @@ func NewFlow(ctx *types.FlowContext, ch IConfigHelper) IFlow {
 	return flow
 }
 
-// fillContextWithProject .
+// fillContextWithProject
 // FlowContext with null project information, so we need to fill it.
 // DONE(@yeqown): fill project information from local repository or remote gitlab repository.
-// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
+// DONE(@yeqown): projectName would be different from a project path, use git repository name as project name.
 func (f flowImpl) fillContextWithProject() error {
 	var (
 		projectName = f.ctx.ProjectName()
@@ -105,7 +105,7 @@ func (f flowImpl) fillContextWithProject() error {
 		injected    bool
 	)
 
-	// if user specify locating project from remote directly, so skip the step of getting from local.
+	// if a user specifies locating a project from remote directly, so skip the step of getting from local.
 	if f.ctx.ForceRemote() {
 		goto locateFromRemote
 	}
@@ -190,7 +190,7 @@ func (f flowImpl) FeatureBegin(opc *types.OpFeatureContext, title, desc string) 
 		return errors.Wrap(err, "blocking name prefix detected")
 	}
 
-	// create milestone
+	// create a milestone
 	result, err := f.createMilestone(title, desc)
 	if err != nil {
 		return errors.Wrap(err, "CreateMilestone failed")
@@ -281,7 +281,7 @@ func (f flowImpl) FeatureResolveConflict(opc *types.OpFeatureContext, targetBran
 }
 
 func (f flowImpl) FeatureBeginIssue(opc *types.OpFeatureContext, title, desc string) error {
-	// DONE(@yeqown): is featureBranchName is empty, use current branch name.
+	// DONE(@yeqown): is featureBranchName empty, use current branch name.
 	if opc.FeatureBranchName == "" {
 		opc.FeatureBranchName, _ = f.gitOperator.CurrentBranch()
 	}
@@ -339,7 +339,7 @@ func (f flowImpl) FeatureBeginIssue(opc *types.OpFeatureContext, title, desc str
 // FeatureFinishIssue implements IFlow.FeatureFinishIssue
 // DONE(@yeqown): issue merge request should be called here, rather than FeatureBeginIssue
 func (f flowImpl) FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchName string) (err error) {
-	// DONE(@yeqown): if issueBranchName is empty, make current branch name as default.
+	// DONE(@yeqown): if issueBranchName is empty, make the current branch name as default.
 	if issueBranchName == "" {
 		issueBranchName, _ = f.gitOperator.CurrentBranch()
 	}
@@ -442,7 +442,7 @@ issueCreateMR:
 
 func (f flowImpl) Checkout(opc *types.OpFeatureContext, listAll bool, issueID int) {
 	currentBranch, _ := f.gitOperator.CurrentBranch()
-	// current branch must be feature branch or issue branch
+	// the current branch must be feature branch or issue branch
 	featureBranch, matched := tryParseFeatureNameFrom(currentBranch, false)
 	if !matched {
 		log.
@@ -657,7 +657,7 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 
 	// interact mode
 	if interact && milestoneID == 0 {
-		// if interact to choose milestone, and milestoneID is empty.
+		// if interact to choose a milestone, and milestoneID is empty.
 		result, err := f.gitlabOperator.ListMilestones(ctx, &gitlabop.ListMilestoneRequest{
 			Page:      1,
 			PerPage:   20,
@@ -757,11 +757,11 @@ func (f flowImpl) SyncMilestone(milestoneID int, interact bool) error {
 	return nil
 }
 
-// SyncProject want to rebuild project manually while project is not exists in local database.
+// SyncProject want to rebuild a project manually while a project does not exist in a local database.
 func (f flowImpl) SyncProject(isDelete bool) error {
-	// NewFlow get project information earlier than SyncProject method, so synchronize project only need to
+	// NewFlow get project information earlier than SyncProject method, so a synchronized project only needs to
 	// set FlowContext.forceRemote as true which will read project information from remote rather than
-	// load from local database.
+	// load from a local database.
 
 	// forceRemote was set by `parseGlobalFlags` function.
 	// lookup parseGlobalFlags for more detail.
@@ -798,7 +798,7 @@ func (f flowImpl) syncFormatResultIntoDO(
 		milestoneID       = milestone.ID
 	)
 
-	// pre handle issue into cache
+	// pre-handle issue into cache
 	for _, v := range issues {
 		c[v.IID] = &repository.IssueDO{
 			IssueIID:    v.IID,
