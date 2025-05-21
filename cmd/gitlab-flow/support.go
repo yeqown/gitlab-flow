@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -108,13 +107,13 @@ func getOpHotfixContext(c *cli.Context) *types.OpHotfixContext {
 
 func getFlow(c *cli.Context) internal.IFlow {
 	flags := parseGlobalFlags(c)
-	ctx, ch := resolveFlags(flags)
+	ctx, ch := buildFlowContextWithFlags(flags)
 	return internal.NewFlow(ctx, ch)
 }
 
 func getDash(c *cli.Context) internal.IDash {
 	flags := parseGlobalFlags(c)
-	ctx, ch := resolveFlags(flags)
+	ctx, ch := buildFlowContextWithFlags(flags)
 	return internal.NewDash(ctx, ch)
 }
 
@@ -160,12 +159,12 @@ func mergeConfig(c1 *types.ProjectConfig, c2 *types.Config) *types.Config {
 	return render
 }
 
-// resolveFlags collects flags and config settings from a config file and flags
+// buildFlowContextWithFlags collects flags and config settings from a config file and flags
 // and returns a context which keeps all the settings to run the command.
-func resolveFlags(flags globalFlags) (*types.FlowContext, internal.IConfigHelper) {
+func buildFlowContextWithFlags(flags globalFlags) (*types.FlowContext, internal.IConfigHelper) {
 	log.
 		WithField("flags", flags).
-		Debugf("resolveFlags called")
+		Debugf("buildFlowContextWithFlags called")
 
 	helper, err := getConfigHelper(flags)
 	if err != nil {
@@ -236,7 +235,7 @@ var (
 	_defaultCwdOnce sync.Once
 )
 
-var tips = `HINT: current working directory maybe not a git repository, please make sure you 
+var tips = `HINT: Current working directory maybe not a git repository, please make sure you 
 HINT: are in a git repository, retry after you are in a git repository.
 HINT:
 HINT: If you're in a git repository, please make sure you have installed git command.
@@ -252,26 +251,24 @@ HINT: https://github.com/yeqown/gitlab-flow/issues
 // NOTICE that if the current working directory is not a git repository, the function shutdown and
 // print tips to user.
 func defaultCWD() string {
-	_defaultCwdOnce.Do(func() {
-		w := bytes.NewBuffer(nil)
-		if err := pkg.RunOutput("git rev-parse --show-toplevel", w); err != nil {
-			fmt.Printf(tips)
-			log.Warnf("executing 'git rev-parse --show-toplevel' failed: %v", err)
-		}
+	_defaultCwdOnce.Do(
+		func() {
+			w := bytes.NewBuffer(nil)
+			if err := pkg.RunOutput("git rev-parse --show-toplevel", w); err != nil {
+				fmt.Printf(tips)
+				return
+			}
 
-		if s := w.String(); s != "" {
-			_defaultCWD = s
-		}
+			if s := w.String(); s != "" {
+				_defaultCWD = s
+			}
 
-		if _defaultCWD == "" {
-			_defaultCWD, _ = os.Getwd()
-		}
+			_defaultCWD = strings.Trim(_defaultCWD, "\n")
+			_defaultCWD = strings.Trim(_defaultCWD, "\t")
 
-		_defaultCWD = strings.Trim(_defaultCWD, "\n")
-		_defaultCWD = strings.Trim(_defaultCWD, "\t")
-	})
-
-	log.Infof("gitlab-flow working directory: %s", _defaultCWD)
+			log.Infof("gitlab-flow working directory: %s", _defaultCWD)
+		},
+	)
 
 	return _defaultCWD
 }

@@ -15,7 +15,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/xanzy/go-gitlab v0.107.0
-	github.com/yeqown/log v1.2.1
+	github.com/yeqown/log v1.2.2
 	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.20.11
 	modernc.org/sqlite v1.37.1

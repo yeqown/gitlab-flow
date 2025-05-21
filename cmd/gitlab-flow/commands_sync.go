@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 )
 
 func getSyncSubCommands() cli.Commands {
@@ -11,7 +11,7 @@ func getSyncSubCommands() cli.Commands {
 	}
 }
 
-// getSyncProjectCommand synchronize project from remote gitlab server into local database.
+// getSyncProjectCommand synchronize project from remote gitlab server into a local database.
 func getSyncProjectCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "project",

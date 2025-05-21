@@ -525,3 +525,55 @@ func (repo *sqliteFlowRepositoryImpl) RemoveProjectAndRelatedData(projectId int)
 
 	return nil
 }
+
+func (repo *sqliteFlowRepositoryImpl) CloseMilestone(projectId int, milestoneId int) error {
+	if projectId <= 0 || milestoneId <= 0 {
+		return nil
+	}
+
+	now := time.Now()
+
+	if err := repo.db.Model(&repository.MilestoneDO{}).
+		Where("project_id = ? AND milestone_id = ?", projectId, milestoneId).
+		Update("closed_at", now).Error; err != nil {
+		return errors.Wrap(err, "could not close milestone")
+	}
+
+	// Commit the transaction
+	return nil
+}
+
+func (repo *sqliteFlowRepositoryImpl) CloseIssue(projectId int, milestoneId int, issueIID int) error {
+	if projectId <= 0 || milestoneId <= 0 || issueIID <= 0 {
+		return nil
+	}
+
+	now := time.Now()
+
+	if err := repo.db.Model(&repository.IssueDO{}).
+		Where("project_id = ? AND milestone_id = ? AND issue_iid = ?", projectId, milestoneId, issueIID).
+		Update("closed_at", now).Error; err != nil {
+
+		return errors.Wrap(err, "could not close issue")
+	}
+
+	return nil
+}
+
+func (repo *sqliteFlowRepositoryImpl) CloseMergeRequest(projectId int, milestoneId int, mergeRequestIID int) error {
+
+	if projectId <= 0 || milestoneId <= 0 || mergeRequestIID <= 0 {
+		return nil
+	}
+
+	now := time.Now()
+
+	if err := repo.db.Model(&repository.MergeRequestDO{}).
+		Where("project_id = ? AND milestone_id = ? AND merge_request_iid = ?", projectId, milestoneId, mergeRequestIID).
+		Update("closed_at", now).Error; err != nil {
+
+		return errors.Wrap(err, "could not close merge request")
+	}
+
+	return nil
+}

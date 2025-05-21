@@ -69,7 +69,7 @@ func init() {
 
 // fillContextWithProject
 // DONE(@yeqown): fill project information from local repository or remote gitlab repository.
-// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
+// DONE(@yeqown): projectName would be different from a project path, use git repository name as project name.
 func (d dashImpl) fillContextWithProject() error {
 	projectName := d.ctx.ProjectName()
 
@@ -87,10 +87,10 @@ func (d dashImpl) fillContextWithProject() error {
 	return fmt.Errorf("could not found project(%s) from local: %v", projectName, err)
 }
 
-// FeatureDetail get feature detail of current project:
-// * basic information to current milestone.
-// * all merge request and its related issue created in current milestone.
-// * all issues created in current milestone with web url.
+// FeatureDetail get feature detail of the current project:
+// * basic information to the current milestone.
+// * all merge requests and its related issue created in the current milestone.
+// * all issues created in the current milestone with web url.
 func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
 	if branchName == "" {
 		out, err := d.gitOperator.CurrentBranch()
@@ -105,7 +105,7 @@ func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
 		}
 		branchName = out
 
-		// if current branch name could be parsed to feature branch name, then use it.
+		// if the current branch name could be parsed to feature branch name, then use it.
 		if !isFeatureName(branchName) {
 			out, ok := tryParseFeatureNameFrom(branchName, false)
 			if !ok {
