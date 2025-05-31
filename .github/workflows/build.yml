@@ -32,20 +32,20 @@ jobs:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
         run: |
-          output_name="gitlab-flow-${{ matrix.os }}-${{ matrix.arch }}"
+          bin="gitlab-flow"
           if [ "${{ matrix.os }}" == "windows" ]; then
-            output_name="${output_name}.exe"
+            bin="${bin}.exe"
           fi
           go mod tidy
-          go build -o "$output_name" ./cmd/gitlab-flow
+          go build -o "$bin" ./cmd/gitlab-flow
 
       - name: Package
         run: |
-          output_name="gitlab-flow-${{ matrix.os }}-${{ matrix.arch }}"
+          bin="gitlab-flow"
           if [ "${{ matrix.os }}" == "windows" ]; then
-            output_name="${output_name}.exe"
+            bin="${bin}.exe"
           fi
-          tar -czvf "${output_name}.tar.gz" "$output_name"
+          tar -czvf "gitlab-flow-${{ matrix.os }}-${{ matrix.arch }}.tar.gz" "${bin}"
 
       - name: Upload to release asset
         uses: actions/upload-release-asset@v1
