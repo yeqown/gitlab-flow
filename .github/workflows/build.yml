@@ -1,0 +1,57 @@
+name: release-assets
+
+# 修改触发条件为 release 事件，且在创建时触发
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }} for ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, windows, darwin]
+        arch: [amd64, arm64]
+        exclude:
+          # Windows ARM64 不被 Go 工具链原生支持
+          - os: windows
+            arch: arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'  # 可根据项目实际使用的 Go 版本修改
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+        run: |
+          output_name="gitlab-flow-${{ matrix.os }}-${{ matrix.arch }}"
+          if [ "${{ matrix.os }}" == "windows" ]; then
+            output_name="${output_name}.exe"
+          fi
+          go build -o $output_name ./cmd/gitlab-flow
+
+      - name: Package
+        run: |
+          output_name="gitlab-flow-${{ matrix.os }}-${{ matrix.arch }}"
+          if [ "${{ matrix.os }}" == "windows" ]; then
+            output_name="${output_name}.exe"
+          fi
+          tar -czvf "${output_name}.tar.gz" "$output_name"
+
+      - name: Upload to release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: "./gitlab-flow-${{ matrix.os }}-${{ matrix.arch }}.tar.gz"
+          asset_name: "gitlab-flow-${{ matrix.os }}-${{ matrix.arch }}.tar.gz"
+          asset_content_type: application/gzip
