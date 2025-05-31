@@ -16,6 +16,8 @@
 
 .idea/
 testdata/
+build/
+
 gitlab-flow
 flow-debug
 flow2

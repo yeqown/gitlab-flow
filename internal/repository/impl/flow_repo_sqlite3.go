@@ -7,12 +7,13 @@ import (
 	"time"
 
 	backoff "github.com/cenkalti/backoff/v4"
-	sqlite3 "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 	"gorm.io/driver/sqlite"
 	gorm2 "gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	sqlite3 "modernc.org/sqlite"
+	sqlite3lib "modernc.org/sqlite/lib"
 
 	"github.com/yeqown/gitlab-flow/internal/repository"
 )
@@ -23,12 +24,12 @@ func init() {
 
 // isDatabaseLocked check err is sqlite3.ErrBusy or not.
 func isDatabaseLocked(err error) bool {
-	v, ok := err.(sqlite3.Error)
-	if !ok {
+	var v *sqlite3.Error
+	if !errors.As(err, &v) {
 		return false
 	}
 
-	return v.Code == sqlite3.ErrBusy
+	return v.Code() == sqlite3lib.SQLITE_BUSY
 }
 
 type sqliteFlowRepositoryImpl struct {
