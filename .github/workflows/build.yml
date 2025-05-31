@@ -36,6 +36,7 @@ jobs:
           if [ "${{ matrix.os }}" == "windows" ]; then
             output_name="${output_name}.exe"
           fi
+          go mod tidy
           go build -o $output_name ./cmd/gitlab-flow
 
       - name: Package
