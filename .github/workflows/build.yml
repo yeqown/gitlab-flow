@@ -31,7 +31,6 @@ jobs:
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
-          CGO_ENABLED: 1
         run: |
           output_name="gitlab-flow-${{ matrix.os }}-${{ matrix.arch }}"
           if [ "${{ matrix.os }}" == "windows" ]; then
