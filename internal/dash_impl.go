@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"text/template"
 
 	"github.com/olekukonko/tablewriter"
@@ -70,7 +69,7 @@ func init() {
 
 // fillContextWithProject
 // DONE(@yeqown): fill project information from local repository or remote gitlab repository.
-// DONE(@yeqown): projectName would be different from project path, use git repository name as project name.
+// DONE(@yeqown): projectName would be different from a project path, use git repository name as project name.
 func (d dashImpl) fillContextWithProject() error {
 	projectName := d.ctx.ProjectName()
 
@@ -88,10 +87,10 @@ func (d dashImpl) fillContextWithProject() error {
 	return fmt.Errorf("could not found project(%s) from local: %v", projectName, err)
 }
 
-// FeatureDetail get feature detail of current project:
-// * basic information to current milestone.
-// * all merge request and its related issue created in current milestone.
-// * all issues created in current milestone with web url.
+// FeatureDetail get feature detail of the current project:
+// * basic information to the current milestone.
+// * all merge requests and its related issue created in the current milestone.
+// * all issues created in the current milestone with web url.
 func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
 	if branchName == "" {
 		out, err := d.gitOperator.CurrentBranch()
@@ -106,7 +105,7 @@ func (d dashImpl) FeatureDetail(branchName string) ([]byte, error) {
 		}
 		branchName = out
 
-		// if current branch name could be parsed to feature branch name, then use it.
+		// if the current branch name could be parsed to feature branch name, then use it.
 		if !isFeatureName(branchName) {
 			out, ok := tryParseFeatureNameFrom(branchName, false)
 			if !ok {
@@ -374,16 +373,33 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 }
 
 func (d dashImpl) ProjectDetail(module string) ([]byte, error) {
+
+	var (
+		projectName = d.ctx.Project().Name
+
+		homeURL   = d.ctx.Project().WebURL
+		branchURL = genProjectURL(d.ctx.Project().WebURL, "/-/branches")
+		tagURL    = genProjectURL(d.ctx.Project().WebURL, "/-/tags")
+		commitURL = genProjectURL(d.ctx.Project().WebURL, "/commits/master")
+	)
+
 	switch module {
 	case "home":
-		d.printAndOpenBrowser(d.ctx.Project().Name, d.ctx.Project().WebURL)
+		d.printAndOpenBrowser(projectName, homeURL)
 	case "branch":
-		d.printAndOpenBrowser("branches", genProjectURL(d.ctx.Project().WebURL, "/-/branches"))
+		d.printAndOpenBrowser("Branch Link", branchURL)
 	case "tag":
-		d.printAndOpenBrowser("tags", genProjectURL(d.ctx.Project().WebURL, "/-/tags"))
+		d.printAndOpenBrowser("Tags Link", tagURL)
 	case "commit":
-		d.printAndOpenBrowser("commits", genProjectURL(d.ctx.Project().WebURL, "/commits/master"))
+		d.printAndOpenBrowser("Commits Link", commitURL)
+	default:
+		d.printAndOpenBrowser(projectName, homeURL)
+		d.printAndOpenBrowser("Branches Link", branchURL)
+		d.printAndOpenBrowser("Tags Link", tagURL)
+		d.printAndOpenBrowser("Commits Link", commitURL)
 	}
+
+	// TODO: print stats
 
 	return nil, nil
 }
@@ -393,28 +409,22 @@ func genProjectURL(base, suffix string) string {
 }
 
 // printAndOpenBrowser print WebURL into stdout and open web browser.
-func (d dashImpl) printAndOpenBrowser(title, url string) {
-	if len(title) == 0 && len(url) == 0 {
+func (d dashImpl) printAndOpenBrowser(title string, urls ...string) {
+	if len(title) == 0 && len(urls) == 0 {
 		log.Warn("could not execute printAndOpenBrowser with empty title and url")
 		return
 	}
-	if !strings.HasPrefix(url, "http") {
-		log.Warnf("invalid url format: %s", url)
-		return
-	}
 
-	var (
-		err1, err2 error
-	)
+	for _, url := range urls {
+		_, err1 := fmt.Fprintf(os.Stdout, _printTpl, title, url)
+		if d.ctx.ShouldOpenBrowser() {
+			err2 := pkg.OpenBrowser(url)
+			log.
+				WithFields(log.Fields{"printErr": err1, "openBrowserError": err2}).
+				Debugf("printAndOpenBrowser")
+		}
 
-	_, err1 = fmt.Fprintf(os.Stdout, _printTpl, title, url)
-	if d.ctx.ShouldOpenBrowser() {
-		err2 = pkg.OpenBrowser(url)
 	}
-	log.WithFields(log.Fields{
-		"err1": err1,
-		"err2": err2,
-	}).Debugf("printAndOpenBrowser")
 }
 
 type projectQueryHelper interface {

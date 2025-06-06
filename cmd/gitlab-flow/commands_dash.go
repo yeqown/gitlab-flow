@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/yeqown/gitlab-flow/internal/types"
+	cli "github.com/urfave/cli/v2"
 
-	"github.com/urfave/cli/v2"
+	"github.com/yeqown/gitlab-flow/internal/types"
 )
 
 func getDashSubCommands() cli.Commands {
@@ -94,8 +94,8 @@ func getDashProjectDetailSubCommand() *cli.Command {
 				Name:        "module",
 				Aliases:     []string{"m"},
 				Usage:       "project `module`, module is one of (home, tag, branch, commit)",
-				DefaultText: "home",
-				Value:       "home",
+				DefaultText: "all",
+				Value:       "all",
 				Required:    false,
 			},
 		},

@@ -35,15 +35,9 @@ type FlowContext struct {
 // NewContext be generated with non-project information.
 // Do not use Project directly!!!
 func NewContext(cwd, projectName string, c *Config, forceRemote bool) *FlowContext {
-	if cwd == "" {
-		panic("cwd could not be empty")
-	}
-
 	ctx := &FlowContext{
-		// oauth:        c.OAuth2,
-		// gitlabAPIUrl: c.GitlabAPIURL,
 		mergedConfig: c,
-		cwd:          cwd,
+		cwd:          cwd, // set later by applyProjectName
 		project:      nil, // set later by InjectProject
 		projectName:  "",  // set later by applyProjectName
 		forceRemote:  forceRemote,
