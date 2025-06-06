@@ -37,7 +37,8 @@ func NewConfigHelper(helperContext *ConfigHelperContext) (IConfigHelper, error) 
 
 	err := ch.preload()
 	if err != nil {
-		return nil, errors.Wrap(err, "preload configuration failed")
+		log.Warnf("NewConfigHelper failed to preload: %v", err)
+		return ch, errors.Wrap(err, "preload configuration failed")
 	}
 
 	return ch, nil
@@ -61,12 +62,13 @@ type fileConfigImpl struct {
 func (f *fileConfigImpl) preload() (err error) {
 	err = conf.Load(f.helperContext.ProjectConfPath, f.projectConfig, false)
 	if err != nil {
-		log.Debugf("load project configuration failed: %v", err)
+		log.Debugf("load project config file failed: %v", err)
 	}
 
 	err = conf.Load(f.helperContext.GlobalConfPath, f.globalConfig, true)
 	if err != nil {
-		return errors.Wrap(err, "load global configuration failed")
+		log.Debugf("load global config file failed: %v", err)
+		return errors.Wrap(err, "load global config file failed")
 	}
 
 	return nil
