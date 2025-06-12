@@ -33,21 +33,21 @@ type IFeature interface {
 	FeatureTest(opc *types.OpFeatureContext) error
 	// FeatureRelease open a MergeRequest of feature branch and types.MasterBranch branch.
 	FeatureRelease(opc *types.OpFeatureContext) error
-	// DONE(@yeqown) this would be useful while you merge feature into master but there is conflict.
+	// DONE(@yeqown) this would be useful while you merge feature into master, but there is conflict.
 
-	// FeatureResolveConflict will check out a new branch from target branch,
-	// then create a merge request from current feature branch to the new branch.
+	// FeatureResolveConflict will check out a new branch from the target branch,
+	// then create a merge request from the current feature branch to the new branch.
 	// newBranch = "resolve-conflict/featureBranchName-to-master"
 	FeatureResolveConflict(opc *types.OpFeatureContext, targetBranch types.BranchTyp) error
 
-	// FeatureBeginIssue checkout a issue branch from feature branch, also open a merge request
+	// FeatureBeginIssue checkout an issue branch from feature branch, also open a merge request
 	// which is from issue branch to feature branch.
 	FeatureBeginIssue(opc *types.OpFeatureContext, title, desc string) error
 	// FeatureFinishIssue open the WebURL of merge request which is from issue branch to feature branch.
 	FeatureFinishIssue(opc *types.OpFeatureContext, issueBranchName string) error
 
 	// Checkout to branch related to current feature, feature branch or issue branches.
-	// default is to check out feature branch. It would list all branches if --list is set.
+	// Default is to check out the feature branch. It would list all branches if --list is set.
 	// It would interact with user to choose which branch to check out if --issue is set.
 	Checkout(opc *types.OpFeatureContext, listAll bool, issueID int)
 }
