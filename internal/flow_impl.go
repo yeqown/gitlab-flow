@@ -11,8 +11,8 @@ import (
 	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
-	gogitlab "github.com/xanzy/go-gitlab"
 	"github.com/yeqown/log"
+	gogitlab "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitop "github.com/yeqown/gitlab-flow/internal/git-operator"

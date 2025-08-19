@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	gogitlab "github.com/xanzy/go-gitlab"
 	"github.com/yeqown/log"
+	gogitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 // gitlabOperator implement IGitlabOperator to operate remote gitlab repository.
