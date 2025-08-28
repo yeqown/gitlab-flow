@@ -141,14 +141,14 @@ func getConfigShowCommand() *cli.Command {
 			}
 
 			// Branch settings
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Module", "Setting", "Value"})
-			table.SetAutoMergeCells(true)
-			table.SetColumnColor(
-				tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiGreenColor},
-				tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiBlackColor},
-				tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
-			)
+			table := tablewriter.NewTable(os.Stdout)
+			table.Header([]string{"Module", "Setting", "Value"})
+			// table.Configure(func(cfg *tablewriter.Config) {
+			// 	cfg.Header.Alignment.Global = tw.AlignLeft
+			// 	cfg.Header.Formatting.AutoFormat = tw.On
+			// 	cfg.Row.Alignment.Global = tw.AlignLeft
+			// 	cfg.Row.Formatting.MergeMode = tw.MergeBoth
+			// })
 
 			switch configHolder.Type() {
 			case types.ConfigType_Project:
@@ -162,7 +162,7 @@ func getConfigShowCommand() *cli.Command {
 					cfg.OpenBrowser,
 					cfg.ProjectName,
 				)
-				table.AppendBulk(data)
+				table.Bulk(data)
 			case types.ConfigType_Global:
 				cfg := configHolder.AsGlobal()
 				data := fillConfigRenderData(
@@ -174,7 +174,7 @@ func getConfigShowCommand() *cli.Command {
 					&cfg.OpenBrowser,
 					"",
 				)
-				table.AppendBulk(data)
+				table.Bulk(data)
 			}
 
 			table.Render()

@@ -235,8 +235,7 @@ func (g gitlabOperator) CreateIssue(ctx context.Context, req *CreateIssueRequest
 	}, nil
 }
 
-func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMergeRequest) (*CreateMergeResult, error) {
-	_ = ctx
+func (g gitlabOperator) CreateMergeRequest(_ context.Context, req *CreateMergeRequest) (*CreateMergeResult, error) {
 	approvals := 1
 	if req.AutoMerge {
 		approvals = 0
@@ -255,43 +254,45 @@ func (g gitlabOperator) CreateMergeRequest(ctx context.Context, req *CreateMerge
 		ApprovalsBeforeMerge: &approvals,
 	}
 	mr, _, err := g.gitlab.MergeRequests.CreateMergeRequest(req.ProjectID, opt5)
-	if err != nil || mr == nil {
-		// if create failed then query from remote, if got then return
-		opt := gogitlab.ListProjectMergeRequestsOptions{
-			ListOptions: gogitlab.ListOptions{
-				Page:    1,
-				PerPage: 20,
-			},
-			Search:       &req.Title,
-			TargetBranch: &req.TargetBranch,
-			SourceBranch: &req.SrcBranch,
-			// IIDs:         []int{req.IssueIID},
-		}
-		mergeRequests, _, err2 := g.gitlab.MergeRequests.ListProjectMergeRequests(req.ProjectID, &opt)
-		if err2 != nil {
-			return nil, fmt.Errorf("create merge request failed: %v, query failed: %v", err, err2)
+	if err == nil {
+		result := &CreateMergeResult{
+			ID:     mr.ID,
+			IID:    mr.IID,
+			WebURL: mr.WebURL,
 		}
 
-		matched := false
-		for idx, v := range mergeRequests {
-			if strings.Compare(req.Title, v.Title) == 0 &&
-				strings.Compare(req.Desc, v.Description) == 0 {
-				//	matched
-				mr = mergeRequests[idx]
-				matched = true
+		return result, nil
+	}
+
+	// Create merge request got error but that DOES NOT mean that the merge request is not created.
+	// We need to query from remote to check if the merge request is created.
+	opt := gogitlab.ListProjectMergeRequestsOptions{
+		ListOptions: gogitlab.ListOptions{
+			Page:    1,
+			PerPage: 20,
+		},
+		Search:       &req.Title,
+		TargetBranch: &req.TargetBranch,
+		SourceBranch: &req.SrcBranch,
+		// IIDs:         []int{req.IssueIID},
+	}
+	mergeRequests, _, err2 := g.gitlab.MergeRequests.ListProjectMergeRequests(req.ProjectID, &opt)
+	if err2 != nil {
+		return nil, fmt.Errorf("create merge request failed: %v, query failed: %v", err, err2)
+	}
+	for _, v := range mergeRequests {
+		if strings.Compare(req.Title, v.Title) == 0 && strings.Compare(req.Desc, v.Description) == 0 {
+			result := &CreateMergeResult{
+				ID:     v.ID,
+				IID:    v.IID,
+				WebURL: v.WebURL,
 			}
-		}
 
-		if !matched || mr == nil {
-			return nil, fmt.Errorf("[matched: %v] create merge request failed: %v", matched, err)
+			return result, nil
 		}
 	}
 
-	return &CreateMergeResult{
-		ID:     mr.ID,
-		IID:    mr.IID,
-		WebURL: mr.WebURL,
-	}, nil
+	return nil, fmt.Errorf("create merge request failed: %v, query failed: %v", err, err2)
 }
 
 func (g gitlabOperator) MergeMergeRequest(ctx context.Context, req *MergeMergeRequest) error {
