@@ -7,7 +7,6 @@ import (
 
 	survey "github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
-	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
@@ -15,6 +14,7 @@ import (
 	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 	"github.com/yeqown/gitlab-flow/internal/types"
+	"github.com/yeqown/gitlab-flow/pkg"
 )
 
 func getConfigSubCommands() []*cli.Command {
@@ -141,14 +141,8 @@ func getConfigShowCommand() *cli.Command {
 			}
 
 			// Branch settings
-			table := tablewriter.NewTable(os.Stdout)
+			table := pkg.NewTableWriter()
 			table.Header([]string{"Module", "Setting", "Value"})
-			// table.Configure(func(cfg *tablewriter.Config) {
-			// 	cfg.Header.Alignment.Global = tw.AlignLeft
-			// 	cfg.Header.Formatting.AutoFormat = tw.On
-			// 	cfg.Row.Alignment.Global = tw.AlignLeft
-			// 	cfg.Row.Formatting.MergeMode = tw.MergeBoth
-			// })
 
 			switch configHolder.Type() {
 			case types.ConfigType_Project:

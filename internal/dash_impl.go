@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/olekukonko/tablewriter"
-	"github.com/olekukonko/tablewriter/tw"
 	"github.com/pkg/errors"
 	"github.com/yeqown/log"
 
@@ -224,52 +222,17 @@ func (d dashImpl) dealDataIntoFeatureDetail(
 	buf.WriteString("All Merge Requests:\n")
 
 	// output all merge request into table
-	w := tablewriter.NewTable(buf)
+	w := pkg.NewTableWriter()
 	w.Header(_featureDetailTblHeader)
-	w.Configure(func(cfg *tablewriter.Config) {
-		cfg.Header.Alignment.Global = tw.AlignLeft
-		cfg.Header.Formatting.AutoFormat = tw.On
-		cfg.Row.Alignment.Global = tw.AlignLeft
-		cfg.Row.Formatting.MergeMode = tw.MergeBoth
-	})
-
 	for _, row := range mrTblData {
-		// // if master merge request
-		// if row[1] == types.MasterBranch.String() {
-		// 	w.Rich(row, []tablewriter.Colors{
-		// 		{tablewriter.Bold, tablewriter.FgHiRedColor},
-		// 		{tablewriter.Bold, tablewriter.FgHiRedColor},
-		// 		{},
-		// 		{tablewriter.Bold, tablewriter.FgBlackColor},
-		// 	})
-		// 	continue
-		// }
-		//
-		// if row[1] == types.TestBranch.String() {
-		// 	w.Rich(row, []tablewriter.Colors{
-		// 		{tablewriter.Bold, tablewriter.FgHiGreenColor},
-		// 		{tablewriter.Bold, tablewriter.FgHiGreenColor},
-		// 		{},
-		// 		{tablewriter.Bold, tablewriter.FgBlackColor},
-		// 	})
-		// 	continue
-		// }
-
 		_ = w.Append(row)
 	}
 	_ = w.Render()
-
 	buf.WriteString("All Issues:\n")
 
 	// output all issues into detail
-	w2 := tablewriter.NewTable(buf)
+	w2 := pkg.NewTableWriter()
 	w2.Header(_featureDetailIssueTblHeader)
-	w2.Configure(func(cfg *tablewriter.Config) {
-		cfg.Header.Alignment.Global = tw.AlignLeft
-		cfg.Header.Formatting.AutoFormat = tw.On
-		cfg.Row.Alignment.Global = tw.AlignLeft
-		cfg.Row.Formatting.MergeMode = tw.MergeBoth
-	})
 	_ = w2.Bulk(issueTblData)
 	_ = w2.Render()
 
@@ -367,22 +330,10 @@ func (d dashImpl) MilestoneOverview(milestoneName, branchFilter string) ([]byte,
 	}
 
 	buf := bytes.NewBuffer(nil)
-	w := tablewriter.NewWriter(buf)
+	w := pkg.NewTableWriter()
 	w.Header(_milestoneOverviewTblHeader)
-	w.Configure(func(cfg *tablewriter.Config) {
-		cfg.Row.Formatting.MergeMode = tw.MergeBoth
-	})
-
-	// w.SetColumnColor(
-	// 	tablewriter.Colors{tablewriter.Bold, tablewriter.FgGreenColor},
-	// 	tablewriter.Colors{},
-	// 	tablewriter.Colors{},
-	// )
-	// w.SetRowLine(true)
-	// w.SetAutoMergeCells(true)
-
-	w.Bulk(tblData)
-	w.Render()
+	_ = w.Bulk(tblData)
+	_ = w.Render()
 
 	return buf.Bytes(), nil
 }
