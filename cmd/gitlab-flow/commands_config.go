@@ -7,7 +7,6 @@ import (
 
 	survey "github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
-	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 	"github.com/yeqown/log"
@@ -15,6 +14,7 @@ import (
 	"github.com/yeqown/gitlab-flow/internal/conf"
 	gitlabop "github.com/yeqown/gitlab-flow/internal/gitlab-operator"
 	"github.com/yeqown/gitlab-flow/internal/types"
+	"github.com/yeqown/gitlab-flow/pkg"
 )
 
 func getConfigSubCommands() []*cli.Command {
@@ -141,14 +141,8 @@ func getConfigShowCommand() *cli.Command {
 			}
 
 			// Branch settings
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Module", "Setting", "Value"})
-			table.SetAutoMergeCells(true)
-			table.SetColumnColor(
-				tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiGreenColor},
-				tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiBlackColor},
-				tablewriter.Colors{tablewriter.Bold, tablewriter.FgWhiteColor},
-			)
+			table := pkg.NewTableWriter()
+			table.Header([]string{"Module", "Setting", "Value"})
 
 			switch configHolder.Type() {
 			case types.ConfigType_Project:
@@ -162,7 +156,7 @@ func getConfigShowCommand() *cli.Command {
 					cfg.OpenBrowser,
 					cfg.ProjectName,
 				)
-				table.AppendBulk(data)
+				table.Bulk(data)
 			case types.ConfigType_Global:
 				cfg := configHolder.AsGlobal()
 				data := fillConfigRenderData(
@@ -174,7 +168,7 @@ func getConfigShowCommand() *cli.Command {
 					&cfg.OpenBrowser,
 					"",
 				)
-				table.AppendBulk(data)
+				table.Bulk(data)
 			}
 
 			table.Render()
