@@ -2,6 +2,8 @@
 
 # gitlab-flow
 
+> **⚠️ MAINTENANCE STATUS**: This project is no longer actively maintained. We recommend using the official [glab CLI](https://gitlab.com/gitlab-org/cli) instead. For users who prefer the gitlab-flow workflow, see our lightweight [flow3 wrapper](./scripts/) that provides similar functionality using glab as the backend.
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/yeqown/gitlab-flow)](https://goreportcard.com/report/github.com/yeqown/gitlab-flow) [![go.de
 │ v reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/yeqown/gitlab-flow)
 
