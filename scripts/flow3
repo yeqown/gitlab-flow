@@ -9,83 +9,154 @@ DEFAULT_TARGET_BRANCH="main"
 FEATURE_PREFIX="version/"
 HOTFIX_PREFIX="hotfix/"
 
+# 调试模式开关
+FLOW_DEBUG=${FLOW_DEBUG:-false}
+
+# 全局变量
+GIT_ROOT=""
+CONFIG_FILE=""
+BRANCH_MILESTONES_FILE=""
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+GRAY='\033[0;37m'
+NC='\033[0m'
 
 # 日志函数
+log_debug() {
+  #  仅在 FLOW_DEBUG 变量为 true 时输出
+  [ "$FLOW_DEBUG" != "true" ] && return 0
+  echo -e "${GRAY}[DEBUG]${NC} $1";
+}
 log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# 初始化全局变量
+init_globals() {
+    GIT_ROOT=$(get_git_root)
+    CONFIG_FILE="$GIT_ROOT/.flow3/config"
+    BRANCH_MILESTONES_FILE="$GIT_ROOT/.flow3/branch_milestones"
+}
+
 # 检查依赖
 check_dependencies() {
-    command -v glab >/dev/null || { log_error "glab is required but not installed"; exit 1; }
-    command -v git >/dev/null || { log_error "git is required but not installed"; exit 1; }
+    local missing_deps=()
+    
+    command -v glab >/dev/null || missing_deps+=("glab")
+    command -v git >/dev/null || missing_deps+=("git")
+    command -v jq >/dev/null || missing_deps+=("jq")
+    
+    if [ ${#missing_deps[@]} -gt 0 ]; then
+        log_error "Missing dependencies: ${missing_deps[*]}"
+        exit 1
+    fi
 }
 
 # 获取 git 根目录
 get_git_root() {
-    git rev-parse --show-toplevel 2>/dev/null
+    git rev-parse --show-toplevel 2>/dev/null || {
+        log_error "Not in a git repository"
+        exit 1
+    }
 }
 
 # 加载项目配置
 load_config() {
-    local git_root=$(get_git_root)
-    if [ -z "$git_root" ]; then
-        log_error "Not in a git repository"
-        exit 1
-    fi
-    
-    local config_file="$git_root/.flow3/config"
-    if [ -f "$config_file" ]; then
-        log_info "Loading project config from $config_file"
-        source "$config_file"
+    if [ -f "$CONFIG_FILE" ]; then
+        log_debug "Loading project config from $CONFIG_FILE"
+        source "$CONFIG_FILE"
     fi
 }
 
-# 保存分支和milestone关联
-save_branch_milestone() {
+# 验证配置
+validate_config() {
+    log_debug "Validating project config"
+
+    [ -z "$DEFAULT_TARGET_BRANCH" ] && DEFAULT_TARGET_BRANCH="main"
+    [ -z "$FEATURE_PREFIX" ] && FEATURE_PREFIX="version/"
+    [ -z "$HOTFIX_PREFIX" ] && HOTFIX_PREFIX="hotfix/"
+
+    log_debug "Validated project config: DEFAULT_TARGET_BRANCH=$DEFAULT_TARGET_BRANCH, FEATURE_PREFIX=$FEATURE_PREFIX, HOTFIX_PREFIX=$HOTFIX_PREFIX"
+}
+
+# 分支-milestone 关联管理
+manage_branch_association() {
+    local action="$1"
+    local branch="$2"
+    local milestone="$3"
+    
+    mkdir -p "$GIT_ROOT/.flow3"
+    
+    case "$action" in
+        "save")
+            echo "$branch:$milestone" >> "$BRANCH_MILESTONES_FILE"
+            ;;
+        "get")
+            [ -f "$BRANCH_MILESTONES_FILE" ] && grep "^$branch:" "$BRANCH_MILESTONES_FILE" | cut -d':' -f2
+            ;;
+        "remove")
+            if [ -f "$BRANCH_MILESTONES_FILE" ]; then
+                grep -v "^$branch:" "$BRANCH_MILESTONES_FILE" > "$BRANCH_MILESTONES_FILE.tmp" || true
+                mv "$BRANCH_MILESTONES_FILE.tmp" "$BRANCH_MILESTONES_FILE"
+            fi
+            ;;
+    esac
+}
+
+# 检查分支是否存在
+check_branch_exists() {
     local branch="$1"
-    local milestone="$2"
-    local git_root=$(get_git_root)
-    [ -z "$git_root" ] && return 1
+    local location="$2" # local, remote, both
     
-    mkdir -p "$git_root/.flow3"
-    echo "$branch:$milestone" >> "$git_root/.flow3/branch_milestones"
+    case "$location" in
+        "local")
+            git show-ref --verify --quiet "refs/heads/$branch"
+            ;;
+        "remote")
+            git ls-remote --heads origin "$branch" | grep -q "$branch"
+            ;;
+        "both")
+            check_branch_exists "$branch" "local" || check_branch_exists "$branch" "remote"
+            ;;
+    esac
 }
 
-# 获取分支关联的milestone
-get_branch_milestone() {
+# 安全的分支切换/创建
+safe_branch_checkout() {
     local branch="$1"
-    local git_root=$(get_git_root)
-    [ -z "$git_root" ] && return 1
+    local base_branch="${2:-$DEFAULT_TARGET_BRANCH}"
     
-    if [ -f "$git_root/.flow3/branch_milestones" ]; then
-        grep "^$branch:" "$git_root/.flow3/branch_milestones" | cut -d':' -f2
+    # 更新基础分支
+    git checkout "$base_branch"
+    git pull origin "$base_branch"
+    
+    if check_branch_exists "$branch" "local"; then
+        log_warn "Branch $branch already exists locally, switching to it"
+        git checkout "$branch"
+    elif check_branch_exists "$branch" "remote"; then
+        log_warn "Branch $branch exists on remote, checking it out"
+        git checkout -b "$branch" "origin/$branch"
+    else
+        git checkout -b "$branch"
+        git push -u origin "$branch"
+        log_info "Created branch: $branch"
     fi
 }
 
-# 移除分支milestone关联
-remove_branch_milestone() {
-    local branch="$1"
-    local git_root=$(get_git_root)
-    [ -z "$git_root" ] && return 1
-    
-    if [ -f "$git_root/.flow3/branch_milestones" ]; then
-        grep -v "^$branch:" "$git_root/.flow3/branch_milestones" > "$git_root/.flow3/branch_milestones.tmp" || true
-        mv "$git_root/.flow3/branch_milestones.tmp" "$git_root/.flow3/branch_milestones"
-    fi
-}
-
-# 检查 MR 是否已存在并返回链接
+# 检查 MR 是否已存在
 check_mr_exists() {
     local source_branch="$1"
     local target_branch="$2"
     
-    local mr_info=$(glab api "projects/:id/merge_requests?state=opened&source_branch=$source_branch&target_branch=$target_branch" 2>/dev/null)
+    local mr_info
+    mr_info=$(glab api "projects/:id/merge_requests?state=opened&source_branch=$source_branch&target_branch=$target_branch" 2>/dev/null) || {
+        log_warn "Failed to check existing MRs"
+        return 1
+    }
+    
     local count=$(echo "$mr_info" | jq -r 'length' 2>/dev/null || echo "0")
     
     if [ "$count" != "0" ]; then
@@ -96,9 +167,172 @@ check_mr_exists() {
     fi
 }
 
-# 获取当前分支
-get_current_branch() {
-    git branch --show-current
+# 解析 finish 命令参数
+parse_finish_args() {
+    local target="$DEFAULT_TARGET_BRANCH"
+    local force_create=false
+    local auto_merge=false
+    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --force-create-mr)
+                force_create=true
+                shift
+                ;;
+            --auto-merge)
+                auto_merge=true
+                shift
+                ;;
+            *)
+                target="$1"
+                shift
+                ;;
+        esac
+    done
+    
+    echo "$target:$force_create:$auto_merge"
+}
+
+# 创建 MR 的通用函数
+create_merge_request() {
+    local source_branch="$1"
+    local target_branch="$2"
+    local title="$3"
+    local description="$4"
+    local milestone="$5"
+    local auto_merge="$6"
+    
+    local mr_args="--title '$title' --description '$description' --source-branch '$source_branch' --target-branch '$target_branch' --assignee @me --yes"
+    
+    [ "$auto_merge" = true ] && mr_args="$mr_args --remove-source-branch"
+    [ -n "$milestone" ] && mr_args="$mr_args --milestone '$milestone'"
+    
+    local result
+    result=$(eval "glab mr create $mr_args" 2>&1)
+    local exit_code=$?
+    
+    if [ $exit_code -eq 0 ]; then
+        echo "$result" | grep -o 'https://[^[:space:]]*'
+    else
+        log_warn "Failed to create MR: $result"
+        return 1
+    fi
+}
+
+# 通用的 finish 逻辑
+finish_branch() {
+    local branch_type="$1" # feature 或 hotfix
+    local current_branch="$2"
+    local target="$3"
+    local force_create="$4"
+    local auto_merge="$5"
+    
+    log_info "Finishing $branch_type: $current_branch"
+    
+    # 推送当前分支
+    git push -u origin "$current_branch" || {
+        log_error "Failed to push branch"
+        exit 1
+    }
+    
+    local mr_url=""
+    local prefix
+    if [ "$branch_type" = "feature" ]; then
+        prefix="$FEATURE_PREFIX"
+    else
+        prefix="$HOTFIX_PREFIX"
+    fi
+    
+    # 检查现有 MR
+    if [ "$force_create" = false ]; then
+        mr_url=$(check_mr_exists "$current_branch" "$target") || true
+        [ -n "$mr_url" ] && log_warn "Merge request already exists!!"
+    fi
+    
+    # 创建新 MR
+    if [ -z "$mr_url" ]; then
+        local name="${current_branch#$prefix}"
+        local title="$branch_type: $name"
+        local description="$branch_type: $name"
+        local milestone=$(manage_branch_association "get" "$current_branch")
+        
+        # 特殊处理 hotfix 的 issue 关联
+        if [ "$branch_type" = "hotfix" ] && [ -n "$milestone" ]; then
+            description="Closes #$milestone"
+        fi
+
+        log_info "Creating MR: $title"
+        mr_url=$(create_merge_request "$current_branch" "$target" "$title" "$description" "$milestone" "$auto_merge")
+        [ -z "$mr_url" ] && log_warn "Failed to create MR"
+    fi
+    
+    # 输出 MR 链接
+    [ -n "$mr_url" ] && echo "$mr_url"
+    
+    # 自动合并
+    if [ "$auto_merge" = true ] && [ -n "$mr_url" ]; then
+        local mr_id=$(echo "$mr_url" | grep -o '[0-9]*$')
+        if [ -n "$mr_id" ]; then
+            log_info "Auto-merging MR #$mr_id"
+            local merge_result
+            merge_result=$(glab mr merge "$mr_id" --yes --remove-source-branch 2>&1) || {
+                log_warn "Failed to auto-merge MR: $merge_result"
+            }
+        fi
+    fi
+    
+    # 清理关联
+    manage_branch_association "remove" "$current_branch"
+}
+
+# 安全创建 milestone
+safe_create_milestone() {
+    local name="$1"
+    local desc="$2"
+    local branch_name="$3"
+    local existing_milestone_id=""
+    
+    # 1. 检查本地 branch_milestones 是否已存在
+    existing_milestone_id=$(manage_branch_association "get" "$branch_name")
+    
+    # 2. 如果本地不存在，检查远程是否存在同名 milestone
+    if [ -z "$existing_milestone_id" ]; then
+        log_info "Checking for existing milestone: $name"
+        existing_milestone_id=$(glab api "projects/:id/milestones?search=$name" 2>/dev/null | jq -r '.[] | select(.title=="'$name'") | .id' 2>/dev/null | head -1)
+        
+        # 如果远程存在，保存到本地关联
+        if [ -n "$existing_milestone_id" ] && [ "$existing_milestone_id" != "null" ]; then
+            manage_branch_association "save" "$branch_name" "$existing_milestone_id"
+        fi
+    fi
+    
+    # 3. 如果找到现有 milestone，获取并展示信息
+    if [ -n "$existing_milestone_id" ] && [ "$existing_milestone_id" != "null" ]; then
+        local milestone_info=$(glab api "projects/:id/milestones/$existing_milestone_id" 2>/dev/null)
+        local milestone_url=$(echo "$milestone_info" | jq -r '.web_url // empty' 2>/dev/null)
+        local milestone_state=$(echo "$milestone_info" | jq -r '.state // empty' 2>/dev/null)
+        
+        log_info "Using existing milestone #$existing_milestone_id:"
+        log_info "  State: $milestone_state"
+        log_info "  URL: $milestone_url"
+        return 0
+    fi
+    
+    # 4. 创建新 milestone
+    log_info "Creating new milestone: $name"
+    local milestone_result=$(glab api "projects/:id/milestones" --method POST --field "title=$name" --field "description=$desc" 2>&1)
+    
+    local milestone_id=$(echo "$milestone_result" | jq -r '.id // empty' 2>/dev/null)
+    if [ -n "$milestone_id" ] && [ "$milestone_id" != "null" ]; then
+        local milestone_url=$(echo "$milestone_result" | jq -r '.web_url // empty' 2>/dev/null)
+        manage_branch_association "save" "$branch_name" "$milestone_id"
+        log_info "Created milestone #$milestone_id:"
+        log_info "  URL: $milestone_url"
+        return 0
+    else
+        log_warn "Failed to create milestone: $milestone_result"
+        return 1
+    fi
 }
 
 # 功能：开始 feature
@@ -111,136 +345,77 @@ feature_start() {
     local branch_name="${FEATURE_PREFIX}${name}"
     
     log_info "Starting feature: $name"
+    safe_branch_checkout "$branch_name"
     
-    # 切换到主分支并更新
-    git checkout "$DEFAULT_TARGET_BRANCH"
-    git pull origin "$DEFAULT_TARGET_BRANCH"
-    
-    # 检查分支是否已存在
-    if git show-ref --verify --quiet "refs/heads/$branch_name"; then
-        log_warn "Branch $branch_name already exists locally, switching to it"
-        git checkout "$branch_name"
-    elif git ls-remote --heads origin "$branch_name" | grep -q "$branch_name"; then
-        log_warn "Branch $branch_name exists on remote, checking it out"
-        git checkout -b "$branch_name" "origin/$branch_name"
-    else
-        # 创建新分支
-        git checkout -b "$branch_name"
-        
-        # 推送分支到远端
-        git push -u origin "$branch_name"
-        
-        log_info "Created branch: $branch_name"
-    fi
-    
-    # 创建 milestone
+    # 安全创建 milestone
     local milestone_desc="${desc:-Feature: $name}"
-    log_info "Creating milestone: $name"
-    local milestone_result=$(glab api "projects/:id/milestones" --method POST --field "title=$name" --field "description=$milestone_desc" 2>/dev/null)
-    
-    if [ $? -eq 0 ] && [ -n "$milestone_result" ]; then
-        local milestone_id=$(echo "$milestone_result" | jq -r '.id // empty' 2>/dev/null)
-        if [ -n "$milestone_id" ] && [ "$milestone_id" != "null" ]; then
-            save_branch_milestone "$branch_name" "$milestone_id"
-            log_info "Created milestone #$milestone_id and associated with branch"
-        else
-            log_warn "Failed to extract milestone ID"
-        fi
-    else
-        log_warn "Failed to create milestone"
-    fi
+    safe_create_milestone "$name" "$milestone_desc" "$branch_name"
 }
 
 # 功能：完成 feature
 feature_finish() {
-    local target="$DEFAULT_TARGET_BRANCH"
-    local force_create=false
-    local auto_merge=false
+    local current_branch=$(git branch --show-current)
     
-    # 解析参数
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --force-create-mr)
-                force_create=true
-                shift
-                ;;
-            --auto-merge)
-                auto_merge=true
-                shift
-                ;;
-            *)
-                target="$1"
-                shift
-                ;;
-        esac
-    done
-    
-    local current_branch=$(get_current_branch)
-    
-    # 检查是否在 feature 分支
-    if [[ ! "$current_branch" =~ ^${FEATURE_PREFIX} ]]; then
+    [[ ! "$current_branch" =~ ^${FEATURE_PREFIX} ]] && {
         log_error "Not on a feature branch"
         exit 1
-    fi
+    }
     
-    log_info "Finishing feature: $current_branch"
+    local args=$(parse_finish_args "$@")
+    IFS=':' read -r target force_create auto_merge <<< "$args"
     
-    # 推送当前分支
-    git push -u origin "$current_branch"
+    finish_branch "feature" "$current_branch" "$target" "$force_create" "$auto_merge"
+}
+
+# 安全创建 issue
+safe_create_issue() {
+    local name="$1"
+    local desc="$2"
+    local branch_name="$3"
+    local existing_issue_id=""
     
-    local mr_url=""
+    # 1. 检查本地 branch_milestones 是否已存在
+    existing_issue_id=$(manage_branch_association "get" "$branch_name")
     
-    # 检查 MR 是否已存在（除非强制创建）
-    if [ "$force_create" = false ]; then
-        local existing_mr
-        existing_mr=$(check_mr_exists "$current_branch" "$target") || true
-        local check_result=$?
+    # 2. 如果本地不存在，检查远程是否存在同名 issue
+    if [ -z "$existing_issue_id" ]; then
+        log_info "Checking for existing issue: $name"
+        existing_issue_id=$(glab api "projects/:id/issues?search=$name" 2>/dev/null | jq -r '.[] | select(.title=="'$name'") | .iid' 2>/dev/null | head -1)
         
-        if [ $check_result -eq 0 ] && [ -n "$existing_mr" ]; then
-            log_warn "Merge request already exists for $current_branch -> $target"
-            mr_url="$existing_mr"
+        # 如果远程存在，保存到本地关联
+        if [ -n "$existing_issue_id" ] && [ "$existing_issue_id" != "null" ]; then
+            manage_branch_association "save" "$branch_name" "$existing_issue_id"
         fi
     fi
     
-    # 创建 MR（如果不存在或强制创建）
-    if [ -z "$mr_url" ]; then
-        log_info "Creating merge request"
+    # 3. 如果找到现有 issue，获取并展示信息
+    if [ -n "$existing_issue_id" ] && [ "$existing_issue_id" != "null" ]; then
+        local issue_info=$(glab api "projects/:id/issues/$existing_issue_id" 2>/dev/null)
+        local issue_url=$(echo "$issue_info" | jq -r '.web_url // empty' 2>/dev/null)
+        local issue_state=$(echo "$issue_info" | jq -r '.state // empty' 2>/dev/null)
         
-        # 获取关联的milestone
-        local milestone=$(get_branch_milestone "$current_branch")
-        
-        if [ -n "$milestone" ]; then
-            log_info "Using associated milestone: $milestone"
-            if [ "$auto_merge" = true ]; then
-                mr_url=$(glab mr create --title "${current_branch#$FEATURE_PREFIX}" --description "Feature: ${current_branch#$FEATURE_PREFIX}" --source-branch "$current_branch" --target-branch "$target" --milestone "$milestone" --assignee "@me" --remove-source-branch --yes 2>/dev/null | grep -o 'https://[^[:space:]]*')
-            else
-                mr_url=$(glab mr create --title "${current_branch#$FEATURE_PREFIX}" --description "Feature: ${current_branch#$FEATURE_PREFIX}" --source-branch "$current_branch" --target-branch "$target" --milestone "$milestone" --assignee "@me" --yes 2>/dev/null | grep -o 'https://[^[:space:]]*')
-            fi
-        else
-            if [ "$auto_merge" = true ]; then
-                mr_url=$(glab mr create --title "${current_branch#$FEATURE_PREFIX}" --description "Feature: ${current_branch#$FEATURE_PREFIX}" --source-branch "$current_branch" --target-branch "$target" --assignee "@me" --remove-source-branch --yes 2>/dev/null | grep -o 'https://[^[:space:]]*')
-            else
-                mr_url=$(glab mr create --title "${current_branch#$FEATURE_PREFIX}" --description "Feature: ${current_branch#$FEATURE_PREFIX}" --source-branch "$current_branch" --target-branch "$target" --assignee "@me" --yes 2>/dev/null | grep -o 'https://[^[:space:]]*')
-            fi
-        fi
-        
-        [ -n "$mr_url" ] || log_warn "Failed to create MR"
+        log_info "Using existing issue #$existing_issue_id:"
+        log_info "  State: $issue_state"
+        log_info "  URL: $issue_url"
+        return 0
     fi
     
-    # 输出 MR 链接
-    [ -n "$mr_url" ] && echo "$mr_url"
+    # 4. 创建新 issue
+    log_info "Creating new issue: $name"
+    local issue_result=$(glab issue create --title "$name" --description "$desc" --assignee "@me" 2>&1)
     
-    # 自动合并 MR
-    if [ "$auto_merge" = true ] && [ -n "$mr_url" ]; then
-        local mr_id=$(echo "$mr_url" | grep -o '[0-9]*$')
-        if [ -n "$mr_id" ]; then
-            log_info "Auto-merging MR #$mr_id"
-            glab mr merge "$mr_id" --yes --remove-source-branch || log_warn "Failed to auto-merge MR"
-        fi
+    if echo "$issue_result" | grep -q "https://"; then
+        local issue_url=$(echo "$issue_result" | grep -o 'https://[^[:space:]]*')
+        local issue_id=$(echo "$issue_url" | grep -o '[0-9]*$')
+        
+        manage_branch_association "save" "$branch_name" "$issue_id"
+        log_info "Created issue #$issue_id:"
+        log_info "  URL: $issue_url"
+        return 0
+    else
+        log_warn "Failed to create issue: $issue_result"
+        return 1
     fi
-    
-    # 清理分支milestone关联
-    remove_branch_milestone "$current_branch"
 }
 
 # 热修复：开始
@@ -253,135 +428,36 @@ hotfix_start() {
     local branch_name="${HOTFIX_PREFIX}${name}"
     
     log_info "Starting hotfix: $name"
+    safe_branch_checkout "$branch_name"
     
-    git checkout "$DEFAULT_TARGET_BRANCH"
-    git pull origin "$DEFAULT_TARGET_BRANCH"
-    
-    # 检查分支是否已存在
-    if git show-ref --verify --quiet "refs/heads/$branch_name"; then
-        log_warn "Branch $branch_name already exists locally, switching to it"
-        git checkout "$branch_name"
-    elif git ls-remote --heads origin "$branch_name" | grep -q "$branch_name"; then
-        log_warn "Branch $branch_name exists on remote, checking it out"
-        git checkout -b "$branch_name" "origin/$branch_name"
-    else
-        git checkout -b "$branch_name"
-        
-        # 推送分支到远端
-        git push -u origin "$branch_name"
-        
-        log_info "Created hotfix branch: $branch_name"
-    fi
-    
-    # 创建 issue
+    # 安全创建 issue
     local issue_desc="${desc:-Hotfix: $name}"
-    log_info "Creating issue: $name"
-    local issue_result=$(glab issue create --title "$name" --description "$issue_desc" --assignee "@me" --output json 2>/dev/null)
-    
-    if [ $? -eq 0 ] && [ -n "$issue_result" ]; then
-        local issue_id=$(echo "$issue_result" | jq -r '.iid // empty' 2>/dev/null)
-        if [ -n "$issue_id" ] && [ "$issue_id" != "null" ]; then
-            save_branch_milestone "$branch_name" "$issue_id"
-            log_info "Created issue #$issue_id and associated with branch"
-        else
-            log_warn "Failed to extract issue ID"
-        fi
-    else
-        log_warn "Failed to create issue"
-    fi
+    safe_create_issue "$name" "$issue_desc" "$branch_name"
 }
 
 # 热修复：完成
 hotfix_finish() {
-    local target="$DEFAULT_TARGET_BRANCH"
-    local force_create=false
-    local auto_merge=false
+    local current_branch=$(git branch --show-current)
     
-    # 解析参数
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --force-create-mr)
-                force_create=true
-                shift
-                ;;
-            --auto-merge)
-                auto_merge=true
-                shift
-                ;;
-            *)
-                target="$1"
-                shift
-                ;;
-        esac
-    done
-    
-    local current_branch=$(get_current_branch)
-    
-    if [[ ! "$current_branch" =~ ^${HOTFIX_PREFIX} ]]; then
+    [[ ! "$current_branch" =~ ^${HOTFIX_PREFIX} ]] && {
         log_error "Not on a hotfix branch"
         exit 1
-    fi
+    }
     
-    log_info "Finishing hotfix: $current_branch"
+    local args=$(parse_finish_args "$@")
+    IFS=':' read -r target force_create auto_merge <<< "$args"
     
-    git push -u origin "$current_branch"
-    
-    # 获取关联的issue
-    local issue_id=$(get_branch_milestone "$current_branch")
-    local mr_url=""
-    
-    # 检查 MR 是否已存在（除非强制创建）
-    if [ "$force_create" = false ]; then
-        local existing_mr
-        existing_mr=$(check_mr_exists "$current_branch" "$target") || true
-        local check_result=$?
-        
-        if [ $check_result -eq 0 ] && [ -n "$existing_mr" ]; then
-            log_warn "Merge request already exists for $current_branch -> $target"
-            mr_url="$existing_mr"
-        fi
-    fi
-    
-    # 创建 MR（如果不存在或强制创建）
-    if [ -z "$mr_url" ]; then
-        local mr_args="--title Hotfix: ${current_branch#$HOTFIX_PREFIX} --source-branch $current_branch --target-branch $target --assignee @me --yes"
-        
-        # 添加自动合并参数
-        if [ "$auto_merge" = true ]; then
-            mr_args="$mr_args --remove-source-branch"
-        fi
-        
-        if [ -n "$issue_id" ]; then
-            log_info "Using associated issue: #$issue_id"
-            mr_url=$(glab mr create $mr_args --description "Closes #$issue_id" 2>/dev/null | grep -o 'https://[^[:space:]]*')
-        else
-            mr_url=$(glab mr create $mr_args --description "Hotfix: ${current_branch#$HOTFIX_PREFIX}" 2>/dev/null | grep -o 'https://[^[:space:]]*')
-        fi
-        
-        [ -n "$mr_url" ] || log_warn "Failed to create MR"
-    fi
-    
-    # 输出 MR 链接
-    [ -n "$mr_url" ] && echo "$mr_url"
-    
-    # 自动合并 MR
-    if [ "$auto_merge" = true ] && [ -n "$mr_url" ]; then
-        local mr_id=$(echo "$mr_url" | grep -o '[0-9]*$')
-        if [ -n "$mr_id" ]; then
-            log_info "Auto-merging MR #$mr_id"
-            glab mr merge "$mr_id" --yes --remove-source-branch || log_warn "Failed to auto-merge MR"
-        fi
-    fi
-    
-    # 清理分支关联
-    remove_branch_milestone "$current_branch"
+    finish_branch "hotfix" "$current_branch" "$target" "$force_create" "$auto_merge"
 }
 
 # 同步 milestones
 sync_milestones() {
     log_info "Syncing milestones..."
     glab api "projects/:id/milestones?state=active" | \
-        jq -r '.[] | "\(.id): \(.title) - \(.description // "No description")"'
+        jq -r '.[] | "\(.id): \(.title) - \(.description // "No description")"' || {
+        log_error "Failed to sync milestones"
+        exit 1
+    }
 }
 
 # 显示帮助
@@ -421,56 +497,49 @@ EOF
 # 显示配置
 show_config() {
     local git_root=$(get_git_root)
-    if [ -z "$git_root" ]; then
-        log_error "Not in a git repository"
-        exit 1
-    fi
     
     log_info "Current configuration:"
     echo "DEFAULT_TARGET_BRANCH=$DEFAULT_TARGET_BRANCH"
     echo "FEATURE_PREFIX=$FEATURE_PREFIX"
     echo "HOTFIX_PREFIX=$HOTFIX_PREFIX"
-    
-    if [ -f "$git_root/.flow3/config" ]; then
-        echo ""
-        log_info "Project config ($git_root/.flow3/config):"
-        cat "$git_root/.flow3/config"
-    fi
-    
-    if [ -f "$git_root/.flow3/branch_milestones" ]; then
-        echo ""
-        log_info "Branch-Milestone associations:"
-        cat "$git_root/.flow3/branch_milestones"
-    fi
+
+#    local config_file="$git_root/.flow3/config"
+#    if [ -f "$config_file" ]; then
+#        echo ""
+#        log_info "Project config ($config_file):"
+#        cat "$config_file"
+#    fi
+#
+#    local assoc_file="$git_root/.flow3/branch_milestones"
+#    if [ -f "$assoc_file" ]; then
+#        echo ""
+#        log_info "Branch-Milestone associations:"
+#        cat "$assoc_file"
+#    fi
 }
 
 # 初始化项目配置
 init_project_config() {
     local git_root=$(get_git_root)
-    if [ -z "$git_root" ]; then
-        log_error "Not in a git repository"
-        exit 1
-    fi
+    local config_file="$git_root/.flow3/config"
     
     mkdir -p "$git_root/.flow3"
-    if [ ! -f "$git_root/.flow3/config" ]; then
-        cat > "$git_root/.flow3/config" << EOF
+    
+    if [ ! -f "$config_file" ]; then
+        cat > "$config_file" << EOF
 # Project-specific flow3 configuration
 # DEFAULT_TARGET_BRANCH=main
 # FEATURE_PREFIX=version/
 # HOTFIX_PREFIX=hotfix/
 EOF
-        log_info "Project config created at $git_root/.flow3/config"
+        log_info "Project config created at $config_file"
     else
-        log_warn "Project config already exists at $git_root/.flow3/config"
+        log_warn "Project config already exists at $config_file"
     fi
 }
 
 # 主函数
 main() {
-    check_dependencies
-    load_config
-    
     case "${1:-}" in
         "feature")
             case "${2:-}" in
@@ -500,5 +569,11 @@ main() {
         *) log_error "Unknown command: $1"; show_help; exit 1 ;;
     esac
 }
+
+check_dependencies
+init_globals
+load_config
+validate_config
+
 
 main "$@"
