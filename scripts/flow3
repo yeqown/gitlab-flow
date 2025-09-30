@@ -36,13 +36,23 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # 初始化全局变量
 init_globals() {
-    GIT_ROOT=$(get_git_root)
+    log_debug "Initializing globals"
+
+    git rev-parse --show-toplevel 2>/dev/null || {
+        log_warn "Not in a git repository"
+        exit 1
+    }
+    GIT_ROOT=$(git rev-parse --show-toplevel)
     CONFIG_FILE="$GIT_ROOT/.flow3/config"
     BRANCH_MILESTONES_FILE="$GIT_ROOT/.flow3/branch_milestones"
+
+    log_debug "Initialized globals: GIT_ROOT=$GIT_ROOT, CONFIG_FILE=$CONFIG_FILE, BRANCH_MILESTONES_FILE=$BRANCH_MILESTONES_FILE"
 }
 
 # 检查依赖
 check_dependencies() {
+    log_debug "Checking dependencies"
+
     local missing_deps=()
     
     command -v glab >/dev/null || missing_deps+=("glab")
@@ -53,14 +63,8 @@ check_dependencies() {
         log_error "Missing dependencies: ${missing_deps[*]}"
         exit 1
     fi
-}
 
-# 获取 git 根目录
-get_git_root() {
-    git rev-parse --show-toplevel 2>/dev/null || {
-        log_error "Not in a git repository"
-        exit 1
-    }
+    log_debug "All dependencies found"
 }
 
 # 加载项目配置
@@ -520,10 +524,9 @@ show_config() {
 
 # 初始化项目配置
 init_project_config() {
-    local git_root=$(get_git_root)
-    local config_file="$git_root/.flow3/config"
+    local config_file="$GIT_ROOT/.flow3/config"
     
-    mkdir -p "$git_root/.flow3"
+    mkdir -p "$GIT_ROOT/.flow3"
     
     if [ ! -f "$config_file" ]; then
         cat > "$config_file" << EOF
@@ -569,6 +572,8 @@ main() {
         *) log_error "Unknown command: $1"; show_help; exit 1 ;;
     esac
 }
+
+log_debug "Flow3 v$VERSION"
 
 check_dependencies
 init_globals
