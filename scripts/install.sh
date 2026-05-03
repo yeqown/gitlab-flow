@@ -4,8 +4,6 @@ set -euo pipefail
 
 DEFAULT_INSTALL_DIR="/usr/local/bin"
 INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOCAL_FLOW3="$SCRIPT_DIR/flow3"
 FLOW3_URL="${FLOW3_URL:-https://raw.githubusercontent.com/yeqown/gitlab-flow/main/scripts/flow3}"
 FALLBACK_DIR="$HOME/.local/bin"
 TMP_FILE=""
@@ -85,7 +83,16 @@ if [ -n "$INSTALLED_PATH" ] && [ -f "$INSTALLED_PATH" ]; then
     echo "Found installed flow3: $INSTALLED_PATH"
     echo "Local md5 : $INSTALLED_MD5"
     echo "Remote md5: $REMOTE_MD5"
-    read -r -p "MD5 differs, do you want to upgrade? [y/N] " confirm_upgrade
+
+    confirm_upgrade="n"
+    if [ -t 0 ]; then
+        read -r -p "MD5 differs, do you want to upgrade? [y/N] " confirm_upgrade
+    elif [ -r /dev/tty ] && read -r -p "MD5 differs, do you want to upgrade? [y/N] " confirm_upgrade < /dev/tty; then
+        :
+    else
+        echo "⚠️ Non-interactive shell detected, upgrade cancelled by default."
+    fi
+
     case "$confirm_upgrade" in
         y|Y|yes|YES)
             ;;
@@ -95,9 +102,7 @@ if [ -n "$INSTALLED_PATH" ] && [ -f "$INSTALLED_PATH" ]; then
             ;;
     esac
 else
-    if [ -f "$LOCAL_FLOW3" ]; then
-        echo "No installed flow3 found in PATH. Proceeding with fresh install."
-    fi
+    echo "No installed flow3 found in PATH. Proceeding with fresh install."
 fi
 
 if [ "$USE_SUDO" = "true" ]; then

@@ -7,7 +7,7 @@
 ### Quick install flow3
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yeqown/gitlab-flow/main/scripts/flow3 -o /tmp/flow3 && sudo install -m 755 /tmp/flow3 /usr/local/bin/flow3
+curl -fsSL https://raw.githubusercontent.com/yeqown/gitlab-flow/main/scripts/install.sh | bash
 ```
 
 > `flow3` requires `glab` in your PATH.
